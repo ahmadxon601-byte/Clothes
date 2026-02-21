@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "npm run dev --workspaces",
     "lint": "npm run lint --workspaces",
-    "build": "npm run build -w frontend && npm run build -w @clothes/backend && mkdir -p public && cp -r apps/frontend/dist/. public/",
+    "build": "bash vercel-build.sh",
     "test": "npm run test --workspaces"
   }
 }
