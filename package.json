@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "npm run dev --workspaces",
     "lint": "npm run lint --workspaces",
-    "build": "npm run build --workspaces",
+    "build": "npm run build -w apps/frontend && npm run build -w apps/backend && mkdir public && cp -r apps/frontend/dist/* public/",
     "test": "npm run test --workspaces"
   }
 }
