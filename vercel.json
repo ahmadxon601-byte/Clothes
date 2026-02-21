@@ -28,7 +28,7 @@
         },
         {
             "source": "/(.*)",
-            "destination": "apps/frontend/$1"
+            "destination": "/apps/frontend/dist/$1"
         }
     ],
     "env": {
