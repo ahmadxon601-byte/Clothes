@@ -1,5 +1,6 @@
 {
     "version": 2,
+    "public": false,
     "builds": [
         {
             "src": "apps/frontend/package.json",
@@ -28,10 +29,7 @@
         },
         {
             "source": "/(.*)",
-            "destination": "/apps/frontend/dist/$1"
+            "destination": "apps/frontend/$1"
         }
-    ],
-    "env": {
-        "NODE_ENV": "production"
-    }
+    ]
 }
