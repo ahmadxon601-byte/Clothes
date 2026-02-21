@@ -3,8 +3,13 @@ import fp from "fastify-plugin";
 import { Bot, Keyboard, InlineKeyboard, webhookCallback } from "grammy";
 import { config } from "./config";
 
-// Initialize the bot with the token from config
-const bot = new Bot(config.telegramBotToken);
+// Initialize the bot with the token from config - only if token exists
+let bot: Bot | null = null;
+if (config.telegramBotToken) {
+  bot = new Bot(config.telegramBotToken);
+} else {
+  console.warn("⚠️ Warning: TELEGRAM_BOT_TOKEN is missing. Bot features will be disabled.");
+}
 
 // --- Bot Logic ---
 
@@ -43,6 +48,9 @@ bot.on("message:contact", async (ctx) => {
 async function telegramWebhook(app: FastifyInstance) {
   // Use grammy's built-in webhook handler with better error catching
   app.post("/telegram/webhook", async (req, reply) => {
+    if (!bot) {
+      return reply.code(503).send({ ok: false, error: "bot_not_initialized" });
+    }
     try {
       app.log.info({ body: req.body }, "Webhook hit!");
       return await webhookCallback(bot, "fastify")(req, reply);
@@ -54,6 +62,7 @@ async function telegramWebhook(app: FastifyInstance) {
 
   // Health check/Status for the bot
   app.get("/telegram/info", async () => {
+    if (!bot) return { ok: false, message: "Bot not initialized" };
     const info = await bot.api.getMe();
     return { ok: true, bot: info.username };
   });

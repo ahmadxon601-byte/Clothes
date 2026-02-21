@@ -34,9 +34,19 @@ const buildServer = () => {
   return app;
 };
 
-const app = buildServer();
+// Safe initialization
+let app;
+try {
+  app = buildServer();
+} catch (error) {
+  console.error("FATAL_APP_INIT_ERROR:", error);
+}
 
 export default async (req: any, res: any) => {
+  if (!app) {
+    res.statusCode = 500;
+    return res.end("App initialization failed");
+  }
   await app.ready();
   app.server.emit('request', req, res);
 };
