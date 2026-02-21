@@ -34,12 +34,11 @@ const buildServer = () => {
   return app;
 };
 
-// For Vercel Serverless Functions
-const server = buildServer();
+const app = buildServer();
 
 export default async (req: any, res: any) => {
-  await server.ready();
-  server.server.emit('request', req, res);
+  await app.ready();
+  app.server.emit('request', req, res);
 };
 
-export { buildServer };
+export { buildServer, app };
