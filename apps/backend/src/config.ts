@@ -2,11 +2,12 @@ import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 
+dotenv.config(); // Load from system environment variables
 const envPath = path.resolve(__dirname, "../.env");
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 } else {
-  console.error(`ERROR: .env file not found at ${envPath}`);
+  console.log("ℹ️ Info: Local .env file not found, using system environment variables.");
 }
 
 export const config = {
