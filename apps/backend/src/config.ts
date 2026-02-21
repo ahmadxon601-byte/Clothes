@@ -1,0 +1,23 @@
+import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+
+const envPath = path.resolve(__dirname, "../.env");
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  console.error(`ERROR: .env file not found at ${envPath}`);
+}
+
+export const config = {
+  port: Number(process.env.PORT || 4000),
+  host: process.env.HOST || "0.0.0.0",
+  corsOrigins: (process.env.CORS_ORIGINS || "*").split(",").map((o) => o.trim()),
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || ""
+};
+
+if (!config.telegramBotToken) {
+  console.error("CRITICAL ERROR: TELEGRAM_BOT_TOKEN is missing in .env!");
+  console.log("Check if apps/backend/.env file exists and has TELEGRAM_BOT_TOKEN defined.");
+}

@@ -1,0 +1,37 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "apps/frontend/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
+        },
+        {
+            "src": "apps/backend/src/index.ts",
+            "use": "@vercel/node"
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "apps/backend/src/index.ts"
+        },
+        {
+            "source": "/telegram/(.*)",
+            "destination": "apps/backend/src/index.ts"
+        },
+        {
+            "source": "/health",
+            "destination": "apps/backend/src/index.ts"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "apps/frontend/$1"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    }
+}
