@@ -35,7 +35,9 @@ const buildServer = () => {
 };
 
 // Safe initialization
-let app;
+import { FastifyInstance } from "fastify";
+
+let app: FastifyInstance;
 try {
   app = buildServer();
 } catch (error) {
