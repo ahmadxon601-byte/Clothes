@@ -53,7 +53,7 @@ async function telegramWebhook(app: FastifyInstance) {
     }
     try {
       app.log.info({ body: req.body }, "Webhook hit!");
-      return await webhookCallback(bot, "fastify")(req, reply);
+      return await webhookCallback(bot!, "fastify")(req, reply);
     } catch (error) {
       app.log.error({ error }, "Error processing Telegram webhook");
       return reply.code(500).send({ ok: false, error: "webhook_error" });
@@ -63,7 +63,7 @@ async function telegramWebhook(app: FastifyInstance) {
   // Health check/Status for the bot
   app.get("/telegram/info", async () => {
     if (!bot) return { ok: false, message: "Bot not initialized" };
-    const info = await bot.api.getMe();
+    const info = await bot!.api.getMe();
     return { ok: true, bot: info.username };
   });
 }
