@@ -1,11 +1,6 @@
-const DEFAULT_MARKETPLACE_URL = "https://clothesmarketplace.netlify.app";
+const DEFAULT_LOCAL_MARKETPLACE_URL = "http://localhost:3000";
 
 export const getMarketplaceUrl = (): string => {
-  const legacyWebappUrl = process.env.WEBAPP_URL?.trim();
-  if (legacyWebappUrl) {
-    return legacyWebappUrl;
-  }
-
   const directUrl = process.env.URL?.trim();
   if (directUrl) {
     return directUrl;
@@ -16,5 +11,9 @@ export const getMarketplaceUrl = (): string => {
     return `https://${vercelUrl}`;
   }
 
-  return DEFAULT_MARKETPLACE_URL;
+  if (process.env.NODE_ENV !== "production") {
+    return DEFAULT_LOCAL_MARKETPLACE_URL;
+  }
+
+  throw new Error("Marketplace URL is not configured. Set URL or VERCEL_URL.");
 };

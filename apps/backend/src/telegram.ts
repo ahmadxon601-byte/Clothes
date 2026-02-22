@@ -32,7 +32,7 @@ bot.on("message:contact", async (ctx) => {
   // Placeholder: In a real app, you would save this to a database
   console.log("Received contact:", contact);
 
-  const marketplaceUrl = process.env.URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://clothesmarketplace.netlify.app");
+  const marketplaceUrl = process.env.URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const inlineKeyboard = new InlineKeyboard()
     .webApp("🛒 Open Marketplace", marketplaceUrl);
