@@ -8,12 +8,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
-    "lint": "npm run lint --workspaces",
-    "build": "bash netlify-build.sh",
-    "test": "npm run test --workspaces"
-  },
-  "dependencies": {
-    "serverless-http": "^4.0.0"
+    "dev": "npm run dev -w web",
+    "lint": "npm run lint -w web",
+    "build": "npm run build -w web",
+    "test": "npm run test --workspaces",
+    "dev:legacy:frontend": "npm run dev -w frontend",
+    "dev:legacy:backend": "npm run dev -w @clothes/backend"
   }
 }
