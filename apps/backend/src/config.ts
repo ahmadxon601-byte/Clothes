@@ -10,12 +10,15 @@ if (fs.existsSync(envPath)) {
   console.log("ℹ️ Info: Local .env file not found, using system environment variables.");
 }
 
+const isLocal = process.env.NODE_ENV === "development" || !process.env.NETLIFY || !process.env.VERCEL;
+
 export const config = {
   port: Number(process.env.PORT || 4000),
   host: process.env.HOST || "0.0.0.0",
   corsOrigins: (process.env.CORS_ORIGINS || "*").split(",").map((o) => o.trim()),
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
-  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || ""
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || "",
+  isLocal
 };
 
 if (!config.telegramBotToken) {
