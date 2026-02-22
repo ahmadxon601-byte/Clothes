@@ -12,38 +12,40 @@ if (config.telegramBotToken) {
 }
 
 // --- Bot Logic ---
+const botInstance = bot;
+if (botInstance) {
+  // 1. Handle /start command - Ask for phone number
+  botInstance.command("start", async (ctx) => {
+    console.log("DEBUG: /start command received from", ctx.from?.username);
+    const keyboard = new Keyboard()
+      .requestContact("Raqamni yuborish")
+      .resized()
+      .oneTime();
 
-// 1. Handle /start command - Ask for phone number
-bot.command("start", async (ctx) => {
-  console.log("DEBUG: /start command received from", ctx.from?.username);
-  const keyboard = new Keyboard()
-    .requestContact("Raqamni yuborish")
-    .resized()
-    .oneTime();
+    await ctx.reply(
+      `Assalomu alaykum ${ctx.from?.first_name || "foydalanuvchi"}! 👋\n\nRo'yxatdan o'tish uchun telefon raqamingizni yuboring.`,
+      { reply_markup: keyboard }
+    );
+  });
 
-  await ctx.reply(
-    `Assalomu alaykum ${ctx.from?.first_name || "foydalanuvchi"}! 👋\n\nRo'yxatdan o'tish uchun telefon raqamingizni yuboring.`,
-    { reply_markup: keyboard }
-  );
-});
+  // 2. Handle contact (phone number) sharing
+  botInstance.on("message:contact", async (ctx) => {
+    const contact = ctx.message.contact;
 
-// 2. Handle contact (phone number) sharing
-bot.on("message:contact", async (ctx) => {
-  const contact = ctx.message.contact;
+    // Placeholder: In a real app, you would save this to a database
+    console.log("Received contact:", contact);
 
-  // Placeholder: In a real app, you would save this to a database
-  console.log("Received contact:", contact);
+    const marketplaceUrl = process.env.URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://clothesmarketplace.netlify.app");
 
-  const marketplaceUrl = process.env.URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://clothesmarketplace.netlify.app");
+    const inlineKeyboard = new InlineKeyboard()
+      .webApp("🛒 Open Marketplace", marketplaceUrl);
 
-  const inlineKeyboard = new InlineKeyboard()
-    .webApp("🛒 Open Marketplace", marketplaceUrl);
-
-  await ctx.reply(
-    `Xush kelibsiz, ${contact.first_name}! ✅\n\nMarketplace'ni ochish uchun pastdagi tugmani bosing:`,
-    { reply_markup: inlineKeyboard }
-  );
-});
+    await ctx.reply(
+      `Xush kelibsiz, ${contact.first_name}! ✅\n\nMarketplace'ni ochish uchun pastdagi tugmani bosing:`,
+      { reply_markup: inlineKeyboard }
+    );
+  });
+}
 
 async function telegramWebhook(app: FastifyInstance) {
   // Use grammy's built-in webhook handler with better error catching
