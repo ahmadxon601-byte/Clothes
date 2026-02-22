@@ -1,26 +1,10 @@
 [build]
   command = "npm run build"
   publish = "apps/frontend/dist"
-  functions = "netlify/functions"
 
 [[redirects]]
-  from = "/ping"
-  to = "/.netlify/functions/ping"
-  status = 200
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/index/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/telegram/*"
-  to = "/.netlify/functions/index/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/health"
-  to = "/.netlify/functions/index"
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 [[redirects]]
