@@ -1,0 +1,173 @@
+.shell {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 20px;
+  color: #1f2636;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.description {
+  margin: 0;
+  color: #66748f;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.nav {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.navLink {
+  border-radius: 999px;
+  border: 1px solid #dce3ee;
+  padding: 6px 10px;
+  font-size: 12px;
+  text-decoration: none;
+  color: #30405c;
+  background: #ffffff;
+}
+
+.navLinkActive {
+  background: #0d1936;
+  color: #ffffff;
+  border-color: #0d1936;
+}
+
+.content {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  border-radius: 14px;
+  border: 1px solid #e2e7f0;
+  background: #ffffff;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.muted {
+  margin: 0;
+  color: #6f7f99;
+  font-size: 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.input,
+.select {
+  width: 100%;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #dbe2ee;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.button {
+  height: 42px;
+  border-radius: 10px;
+  border: 0;
+  background: #a6d900;
+  color: #0f182a;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 14px;
+}
+
+.buttonSecondary {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #dbe2ee;
+  background: #ffffff;
+  color: #1f2a40;
+  cursor: pointer;
+  padding: 0 14px;
+}
+
+.dangerButton {
+  height: 42px;
+  border-radius: 10px;
+  border: 0;
+  background: #ffe4e4;
+  color: #9b1c1c;
+  cursor: pointer;
+  padding: 0 14px;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.badge {
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #2a467f;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.success {
+  color: #0f7a37;
+  font-size: 13px;
+  margin: 0;
+}
+
+.empty {
+  border-radius: 14px;
+  border: 1px dashed #c9d3e3;
+  background: #f8fafd;
+  padding: 14px;
+  color: #6b7b95;
+  font-size: 14px;
+}
