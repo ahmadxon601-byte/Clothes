@@ -7,6 +7,7 @@ import { Input } from '../../../shared/ui/Input';
 import { useToast } from '../../../shared/ui/useToast';
 import { useTelegram } from '../../../telegram/useTelegram';
 import { Skeleton } from '../../../shared/ui/Skeleton';
+import { useTranslation } from '../../../shared/lib/i18n';
 
 export function CommentList({ productId }: { productId: string }) {
     const [comments, setComments] = useState<Comment[]>([]);
@@ -15,6 +16,7 @@ export function CommentList({ productId }: { productId: string }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { showToast } = useToast();
     const { user } = useTelegram();
+    const { t } = useTranslation();
 
     useEffect(() => {
         mockApi.listComments(productId).then(data => {
@@ -32,9 +34,9 @@ export function CommentList({ productId }: { productId: string }) {
             const newComment = await mockApi.addComment(productId, username, text);
             setComments(prev => [...prev, newComment]);
             setText('');
-            showToast({ message: 'Comment added successfully', type: 'success' });
+            showToast({ message: t.comment_added, type: 'success' });
         } catch (err) {
-            showToast({ message: 'Failed to add comment', type: 'error' });
+            showToast({ message: t.failed_to_add_comment, type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
@@ -42,7 +44,7 @@ export function CommentList({ productId }: { productId: string }) {
 
     return (
         <div className="mt-6 border-t border-[var(--color-border)] pt-8">
-            <h3 className="text-[18px] font-bold mb-6 text-[var(--color-text)]">Izohlar</h3>
+            <h3 className="text-[18px] font-bold mb-6 text-[var(--color-text)]">{t.comments}</h3>
 
             <div className="space-y-4 mb-8">
                 {loading ? (
@@ -59,14 +61,14 @@ export function CommentList({ productId }: { productId: string }) {
                     ))
                 ) : (
                     <div className="py-10 text-center">
-                        <p className="text-[15px] text-[var(--color-hint)] font-medium">Hali izohlar yo'q. Birinchi bo'ling!</p>
+                        <p className="text-[15px] text-[var(--color-hint)] font-medium">{t.no_comments}</p>
                     </div>
                 )}
             </div>
 
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
-                    placeholder="Write a comment..."
+                    placeholder={t.placeholder_search}
                     value={text}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setText(e.target.value)}
                     disabled={isSubmitting}
@@ -77,7 +79,7 @@ export function CommentList({ productId }: { productId: string }) {
                     isLoading={isSubmitting}
                     className="shrink-0"
                 >
-                    Send
+                    {t.send}
                 </Button>
             </form>
         </div>

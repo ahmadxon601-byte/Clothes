@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../src/**/*.{js,ts,jsx,tsx,mdx}";
 
 @theme {
     /* Base Colors mapping to Telegram Theme or Fallbacks */
@@ -42,7 +44,6 @@
     --color-border: rgba(255, 255, 255, 0.08);
 
     --color-primary: #13EC37;
-    /* Stays neon, but can be adjusted via mapping */
     --color-primary-contrast: #121417;
 
     --color-nav-bg: #1a1a1c;

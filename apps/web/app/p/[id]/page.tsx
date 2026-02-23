@@ -2,7 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, ChevronLeft, ChevronRight, Store as StoreIcon, MapPin, Share2 } from 'lucide-react';
+import { Heart, ChevronLeft, ChevronRight, MapPin, Share2 } from 'lucide-react';
 import { mockApi } from '../../../src/services/mockServer';
 import type { Product, Store } from '../../../src/shared/types';
 import { formatPrice } from '../../../src/shared/lib/formatPrice';
@@ -13,6 +13,7 @@ import { Button } from '../../../src/shared/ui/Button';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
 import { cn } from '../../../src/shared/lib/utils';
 import { useToast } from '../../../src/shared/ui/useToast';
+import { useTranslation } from '../../../src/shared/lib/i18n';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const unwrappedParams = use(params);
@@ -22,6 +23,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [loading, setLoading] = useState(true);
     const { favorites, toggleFavorite } = useFavoritesStore();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     useEffect(() => {
         (async () => {
@@ -55,8 +57,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) {
         return (
             <div className="flex flex-col items-center justify-center p-8 h-[100dvh]">
-                <h2 className="text-xl font-bold mb-4">Product not found</h2>
-                <Button onClick={() => router.back()} variant="primary">Go Back</Button>
+                <h2 className="text-xl font-bold mb-4">{t.no_results}</h2>
+                <Button onClick={() => router.back()} variant="primary">{t.back}</Button>
             </div>
         );
     }
@@ -81,9 +83,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         onClick={async () => {
                             try {
                                 await toggleFavorite(product.id);
-                                showToast({ message: isFav ? 'Removed from favorites' : 'Added to favorites', type: 'success' });
+                                showToast({ message: isFav ? t.fav_removed : t.fav_added, type: 'success' });
                             } catch {
-                                showToast({ message: 'Failed to update favorites', type: 'error' });
+                                showToast({ message: t.error_occurred, type: 'error' });
                             }
                         }}
                         className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm"
@@ -115,12 +117,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {formatPrice(product.price, product.currency)}
                     </p>
                     <div className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[12px] font-bold rounded-lg border border-[var(--color-primary)]/10">
-                        In Stock
+                        {t.in_stock}
                     </div>
                 </div>
 
                 <div className="mt-8">
-                    <h3 className="text-[16px] font-bold text-[var(--color-text)] mb-3">Description</h3>
+                    <h3 className="text-[16px] font-bold text-[var(--color-text)] mb-3">{t.description}</h3>
                     <p className="text-[14px] text-[var(--color-hint)] leading-relaxed font-medium">
                         {product.description}
                     </p>
@@ -159,7 +161,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         size="lg"
                         className="flex-1 h-16 shadow-lg shadow-[var(--color-primary)]/20"
                     >
-                        Sotib olish
+                        {t.buy}
                     </Button>
                     <button
                         onClick={() => toggleFavorite(product.id)}

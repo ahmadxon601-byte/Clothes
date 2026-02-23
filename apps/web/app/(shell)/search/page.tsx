@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Search, ChevronLeft, SlidersHorizontal, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '../../../src/shared/lib/utils';
-import { APP_ROUTES } from '../../../src/shared/config/constants';
+import { useTranslation } from '../../../src/shared/lib/i18n';
 import { mockApi } from '../../../src/services/mockServer';
 import { ProductCard } from '../../../src/features/products/ui/ProductCard';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
@@ -19,6 +19,7 @@ export default function SearchPage() {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!search.trim() && !activeCategory) {
@@ -51,7 +52,7 @@ export default function SearchPage() {
                 >
                     <ChevronLeft size={24} />
                 </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">Qidiruv</h1>
+                <h1 className="text-[20px] font-bold text-[var(--color-text)]">{t.search_results}</h1>
                 <button className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm border border-[var(--color-border)] text-[var(--color-text)]">
                     <SlidersHorizontal size={20} />
                 </button>
@@ -65,7 +66,7 @@ export default function SearchPage() {
                     </div>
                     <input
                         autoFocus
-                        placeholder="Mahsulot qidirish"
+                        placeholder={t.placeholder_search}
                         className="h-[56px] w-full bg-[var(--color-surface2)] rounded-full pl-[56px] pr-12 outline-none font-medium text-[15px] text-[var(--color-text)] focus:ring-2 ring-[var(--color-primary)]/20 transition-all placeholder:text-[var(--color-hint)]/60"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -108,10 +109,10 @@ export default function SearchPage() {
                 {(search || activeCategory) && (
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-[var(--color-text)]">
-                            {loading ? 'Qidirilmoqda...' : `${products.length} ta mahsulot topildi`}
+                            {loading ? t.loading : `${products.length} ${t.products_found}`}
                         </h2>
                         {products.length > 0 && !loading && (
-                            <span className="text-xs font-medium text-[var(--color-hint)]">Natijalar</span>
+                            <span className="text-xs font-medium text-[var(--color-hint)]">{t.search_results}</span>
                         )}
                     </div>
                 )}
@@ -137,9 +138,9 @@ export default function SearchPage() {
                         <div className="w-20 h-20 bg-[var(--color-surface2)] rounded-full flex items-center justify-center mb-4 text-[var(--color-hint)] opacity-50">
                             <Search size={32} />
                         </div>
-                        <h3 className="text-lg font-bold text-[var(--color-text)]">Hech narsa topilmadi</h3>
+                        <h3 className="text-lg font-bold text-[var(--color-text)]">{t.no_search_results}</h3>
                         <p className="text-sm text-[var(--color-hint)] mt-1 max-w-[200px]">
-                            Boshqa kalit so'zlar bilan qidirib ko'ring
+                            {t.try_different_keywords}
                         </p>
                     </div>
                 ) : null}

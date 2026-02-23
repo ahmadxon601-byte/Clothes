@@ -8,6 +8,7 @@ import { Skeleton } from '../../../src/shared/ui/Skeleton';
 import { ChevronLeft, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '../../../src/shared/lib/utils';
+import { useTranslation } from '../../../src/shared/lib/i18n';
 
 const CATEGORIES = ['All', 'Shirts', 'Shoes', 'Pants', 'Jackets', 'Accessories'];
 
@@ -17,6 +18,7 @@ export default function FavoritesPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
+    const { t } = useTranslation();
 
     useEffect(() => {
         mockApi.listFavorites().then(data => {
@@ -38,7 +40,7 @@ export default function FavoritesPage() {
                 >
                     <ChevronLeft size={24} />
                 </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">Sevimlilar</h1>
+                <h1 className="text-[20px] font-bold text-[var(--color-text)]">{t.favorites}</h1>
                 <div className="w-12" /> {/* Spacer */}
             </header>
 
@@ -55,7 +57,7 @@ export default function FavoritesPage() {
                                 : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"
                         )}
                     >
-                        {cat}
+                        {cat === 'All' ? t.all : cat}
                     </button>
                 ))}
             </div>
@@ -79,7 +81,7 @@ export default function FavoritesPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-60 text-gray-400">
                         <Heart size={48} className="mb-4 opacity-10" />
-                        <p className="text-[15px] font-medium">Hali sevimli mahsulotlar yo'q.</p>
+                        <p className="text-[15px] font-medium">{t.no_favorites}</p>
                     </div>
                 )}
             </div>

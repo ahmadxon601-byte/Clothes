@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Search, Moon, Globe, Sun } from 'lucide-react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Search, Moon, Sun } from 'lucide-react';
 import { ProductCard } from '../../src/features/products/ui/ProductCard';
 import { Skeleton } from '../../src/shared/ui/Skeleton';
 import { mockApi } from '../../src/services/mockServer';
@@ -9,6 +9,8 @@ import { useSettingsStore } from '../../src/features/settings/model';
 import type { Product } from '../../src/shared/types';
 import { cn } from '../../src/shared/lib/utils';
 import Link from 'next/link';
+import { useTranslation } from '../../src/shared/lib/i18n';
+import { LanguageSelector } from '../../src/shared/ui/LanguageSelector';
 
 const CATEGORIES = ['All', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
@@ -33,7 +35,7 @@ const PROMOS = [
     }
 ];
 
-export default function HomePage() {
+function HomeContent() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
@@ -56,7 +58,6 @@ export default function HomePage() {
         }
     }, []);
 
-    const pathname = usePathname();
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -86,6 +87,7 @@ export default function HomePage() {
         updateSettings({ themeMode: settings.themeMode === 'dark' ? 'light' : 'dark' });
     };
 
+    const { t } = useTranslation();
     const currentPromo = PROMOS[activePromo];
 
     return (
@@ -99,33 +101,35 @@ export default function HomePage() {
                     {settings.themeMode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
                 <h1 className="text-[20px] font-bold text-[var(--color-text)]">Clothes MP</h1>
-                <button className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]">
-                    <Globe size={20} />
-                </button>
+                <LanguageSelector />
             </header>
 
             {/* Search Bar Link */}
             <div className="px-6 py-2">
                 <Link href="/search" className="flex items-center h-[56px] w-full bg-[var(--color-surface)] rounded-full px-5 gap-3 shadow-sm text-[var(--color-hint)]">
                     <Search size={22} className="opacity-40" />
-                    <span className="text-[15px]">Mahsulot qidirish...</span>
+                    <span className="text-[15px]">{t.search}</span>
                 </Link>
             </div>
 
             {/* Promo Banner */}
             <div className="px-6 py-4">
-                <div className="group relative h-[210px] rounded-[32px] overflow-hidden flex shadow-lg transition-all duration-700">
-                    <div className={cn("w-[55%] p-8 flex flex-col justify-between transition-colors duration-700 relative z-10", currentPromo.bg)}>
+                <div className="group relative h-[240px] rounded-[32px] overflow-hidden flex shadow-lg transition-all duration-700">
+                    <div className={cn("w-[60%] p-6 flex flex-col justify-between transition-colors duration-700 relative z-10", currentPromo.bg)}>
                         <div className="animate-in fade-in slide-in-from-left-6 duration-700">
-                            <span className="inline-block px-3 py-1.5 bg-[#121417]/10 backdrop-blur-md text-[#121417] text-[11px] font-bold rounded-full mb-4 uppercase tracking-[0.05em] border border-[#121417]/10">{currentPromo.badge}</span>
-                            <h2 className="text-[22px] font-black text-[#121417] leading-tight tracking-tight drop-shadow-sm">{currentPromo.title}</h2>
+                            <span className="inline-block px-3 py-1 bg-[#121417]/10 backdrop-blur-md text-[#121417] text-[10px] font-bold rounded-full mb-3 uppercase tracking-[0.05em] border border-[#121417]/10">
+                                {t.promo_badges?.[activePromo] || currentPromo.badge}
+                            </span>
+                            <h2 className="text-[20px] font-black text-[#121417] leading-tight tracking-tight drop-shadow-sm">
+                                {t.promos?.[activePromo] || currentPromo.title}
+                            </h2>
                         </div>
-                        <button className="w-fit flex items-center gap-2.5 bg-[#121417] text-white px-7 py-3.5 rounded-2xl text-[14px] font-bold active:scale-95 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5">
-                            Sotib olish
-                            <ChevronRight size={16} strokeWidth={3} className="opacity-80" />
+                        <button className="w-fit flex items-center gap-2 bg-[#121417] text-white px-6 py-3 rounded-2xl text-[13px] font-bold active:scale-95 transition-all shadow-xl hover:shadow-2xl">
+                            {t.buy}
+                            <ChevronRight size={14} strokeWidth={3} className="opacity-80" />
                         </button>
                     </div>
-                    <div className="w-[45%] bg-[#E6E8E6] relative overflow-hidden">
+                    <div className="w-[40%] bg-[#E6E8E6] relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-r from-black/5 to-transparent z-10" />
                         <img
                             key={activePromo}
@@ -136,23 +140,23 @@ export default function HomePage() {
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="absolute inset-y-0 left-2 right-2 flex items-center justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-y-0 left-2 right-2 flex items-center justify-between pointer-events-none z-30">
                         <button
                             onClick={(e) => { e.preventDefault(); prevPromo(); }}
-                            className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-md text-white rounded-full pointer-events-auto active:scale-90 transition-all border border-white/20 hover:bg-white/40"
+                            className="w-10 h-10 flex items-center justify-center bg-black/10 backdrop-blur-md text-[#121417] rounded-full pointer-events-auto active:scale-90 transition-all border border-black/5 hover:bg-black/20 z-40"
                         >
                             <ChevronLeft size={20} />
                         </button>
                         <button
                             onClick={(e) => { e.preventDefault(); nextPromo(); }}
-                            className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-md text-white rounded-full pointer-events-auto active:scale-90 transition-all border border-white/20 hover:bg-white/40"
+                            className="w-10 h-10 flex items-center justify-center bg-black/10 backdrop-blur-md text-[#121417] rounded-full pointer-events-auto active:scale-90 transition-all border border-black/5 hover:bg-black/20 z-40"
                         >
                             <ChevronRight size={20} />
                         </button>
                     </div>
 
                     {/* Dots indicator */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 backdrop-blur-sm bg-black/10 p-1.5 rounded-full">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 backdrop-blur-sm bg-black/10 p-1.5 rounded-full z-30">
                         {PROMOS.map((_, i) => (
                             <div
                                 key={i}
@@ -179,7 +183,7 @@ export default function HomePage() {
                                 : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"
                         )}
                     >
-                        {cat}
+                        {cat === 'All' ? t.all : cat}
                     </button>
                 ))}
             </div>
@@ -187,8 +191,8 @@ export default function HomePage() {
             {/* Product Feed */}
             <div className="px-6 py-4">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)]">Special for you</h2>
-                    <Link href="/search" className="text-[var(--color-primary)] text-[15px] font-bold">See All</Link>
+                    <h2 className="text-[20px] font-bold text-[var(--color-text)]">{t.special_for_you}</h2>
+                    <Link href="/search" className="text-[var(--color-primary)] text-[15px] font-bold">{t.see_all}</Link>
                 </div>
                 {loading ? (
                     <div className="grid grid-cols-2 gap-x-5 gap-y-8">
@@ -209,10 +213,28 @@ export default function HomePage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                         <Search size={40} className="mb-2 opacity-10" />
-                        <p className="text-[15px] font-medium">No products found</p>
+                        <p className="text-[15px] font-medium">{t.no_search_results}</p>
                     </div>
                 )}
             </div>
         </div>
+    );
+}
+
+export default function HomePage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col min-h-full pb-32">
+                <div className="p-6 space-y-6">
+                    <Skeleton className="h-12 w-full rounded-full" />
+                    <Skeleton className="h-[240px] w-full rounded-[32px]" />
+                    <div className="flex gap-3 overflow-hidden">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-24 shrink-0 rounded-full" />)}
+                    </div>
+                </div>
+            </div>
+        }>
+            <HomeContent />
+        </Suspense>
     );
 }

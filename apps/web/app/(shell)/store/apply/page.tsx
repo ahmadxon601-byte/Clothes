@@ -9,11 +9,13 @@ import { Button } from '../../../../src/shared/ui/Button';
 import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { validators } from '../../../../src/shared/lib/validators';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
 
 export default function StoreApplyPage() {
     const router = useRouter();
     const { user } = useTelegram();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const [formData, setFormData] = useState({
         storeName: '',
@@ -27,7 +29,7 @@ export default function StoreApplyPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validators.required(formData.storeName) || !validators.required(formData.addressText)) {
-            showToast({ message: 'Barcha maydonlarni to‘ldiring', type: 'error' });
+            showToast({ message: t.fill_all_fields, type: 'error' });
             return;
         }
         setLoading(true);
@@ -42,10 +44,10 @@ export default function StoreApplyPage() {
                 },
                 photoUrl: formData.photoUrl
             });
-            showToast({ message: 'Arizangiz qabul qilindi', type: 'success' });
+            showToast({ message: t.application_received, type: 'success' });
             router.replace(APP_ROUTES.STORE_STATUS);
         } catch (err) {
-            showToast({ message: 'Xatolik yuz berdi', type: 'error' });
+            showToast({ message: t.error_occurred, type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -57,14 +59,14 @@ export default function StoreApplyPage() {
                 <button onClick={() => router.back()} className="mr-3 text-[var(--color-text)]">
                     <ChevronLeft size={24} />
                 </button>
-                <h1 className="text-xl font-bold text-[var(--color-text)]">Do‘kon ochish</h1>
+                <h1 className="text-xl font-bold text-[var(--color-text)]">{t.store_apply}</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 space-y-5 flex-1 mt-2">
                 <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Do‘kon nomi</label>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.store_name}</label>
                     <Input
-                        placeholder="Do‘kon nomi"
+                        placeholder={t.store_name}
                         value={formData.storeName}
                         onChange={(e) => setFormData(p => ({ ...p, storeName: e.target.value }))}
                         disabled={loading}
@@ -72,7 +74,7 @@ export default function StoreApplyPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Manzil</label>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.address}</label>
                     <Input
                         placeholder="Toshkent sh., Yunusobod t."
                         value={formData.addressText}
@@ -103,7 +105,7 @@ export default function StoreApplyPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2.5 ml-1">Do‘kon rasmi</label>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2.5 ml-1">{t.store_image}</label>
                     <div
                         onClick={() => document.getElementById('file-upload')?.click()}
                         className="relative aspect-video w-full rounded-[24px] border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center overflow-hidden transition-all active:scale-[0.98] group cursor-pointer"
@@ -112,7 +114,7 @@ export default function StoreApplyPage() {
                             <>
                                 <img src={formData.photoUrl} alt="Preview" className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <span className="text-white text-sm font-bold bg-white/20 backdrop-blur-md px-4 py-2 rounded-full">O'zgartirish</span>
+                                    <span className="text-white text-sm font-bold bg-white/20 backdrop-blur-md px-4 py-2 rounded-full">{t.change}</span>
                                 </div>
                             </>
                         ) : (
@@ -120,7 +122,7 @@ export default function StoreApplyPage() {
                                 <div className="w-12 h-12 rounded-full bg-[var(--color-surface2)] flex items-center justify-center mb-3">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                                 </div>
-                                <span className="text-sm font-bold">Rasm yuklash</span>
+                                <span className="text-sm font-bold">{t.upload_image}</span>
                                 <span className="text-[11px] mt-1 opacity-60">PNG, JPG (max 5MB)</span>
                             </div>
                         )}
@@ -145,7 +147,7 @@ export default function StoreApplyPage() {
 
                 <div className="pt-6">
                     <Button type="submit" isLoading={loading} className="w-full">
-                        Arizani yuborish
+                        {t.submit_application}
                     </Button>
                 </div>
             </form>

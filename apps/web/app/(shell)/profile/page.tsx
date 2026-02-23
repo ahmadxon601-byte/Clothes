@@ -4,26 +4,23 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Bookmark, MessageCircleQuestion, Settings, Check, Store } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { mockApi } from '../../../src/services/mockServer';
-import type { StoreApplication } from '../../../src/shared/types';
 import { APP_ROUTES } from '../../../src/shared/config/constants';
-import { Skeleton } from '../../../src/shared/ui/Skeleton';
 import { useRouter } from 'next/navigation';
 import { cn } from '../../../src/shared/lib/utils';
+import { useTranslation } from '../../../src/shared/lib/i18n';
 
 export default function ProfilePage() {
     const router = useRouter();
     const { user } = useTelegram();
-    const [appStatus, setAppStatus] = useState<StoreApplication['status']>('NONE');
-    const [loading, setLoading] = useState(true);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const fetchStatus = async () => {
             const uid = user ? String(user.id) : 'mock_user_123';
             const application = await mockApi.getMyApplication(uid);
             if (application) {
-                setAppStatus(application.status);
+                // Application found
             }
-            setLoading(false);
         };
         fetchStatus();
     }, [user]);
@@ -32,9 +29,9 @@ export default function ProfilePage() {
     const username = user?.username || 'Telegram user name';
 
     const menuItems = [
-        { label: 'Sevimlilar', sub: 'Saqlangan mahsulotlar', icon: Bookmark, href: APP_ROUTES.FAVORITES, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
-        { label: 'Yordam / FAQ', sub: 'Savollarga javob', icon: MessageCircleQuestion, href: '#', iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
-        { label: 'Sozlamalar', sub: 'Til, tema, xavfsizlik', icon: Settings, href: APP_ROUTES.SETTINGS, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
+        { label: t.favorites, sub: t.saved_products, icon: Bookmark, href: APP_ROUTES.FAVORITES, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
+        { label: t.help_faq, sub: t.answers_to_questions, icon: MessageCircleQuestion, href: '#', iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
+        { label: t.settings, sub: t.language_theme_security, icon: Settings, href: APP_ROUTES.SETTINGS, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
     ];
 
     return (
@@ -47,7 +44,7 @@ export default function ProfilePage() {
                 >
                     <ChevronLeft size={24} />
                 </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">Profile</h1>
+                <h1 className="text-[20px] font-bold text-[var(--color-text)]">{t.profile}</h1>
                 <div className="w-12" />
             </header>
 
@@ -67,7 +64,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <h2 className="mt-4 text-[22px] font-bold text-[var(--color-text)] text-center leading-tight">{profileName}</h2>
-                    <p className="text-[14px] text-[var(--color-hint)] font-medium">User</p>
+                    <p className="text-[14px] text-[var(--color-hint)] font-medium">{t.user}</p>
 
                     <div className="mt-6 flex flex-wrap justify-center gap-3 w-full">
                         <div className="px-5 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full text-[14px] font-medium text-[var(--color-text)] shadow-sm">
@@ -103,10 +100,10 @@ export default function ProfilePage() {
 
                 {/* Store Section Card */}
                 <div className="bg-[var(--color-surface)] rounded-[32px] p-8 shadow-sm border border-[var(--color-border)]">
-                    <h3 className="text-[18px] font-bold text-[var(--color-text)]">Do‘kon egasimisiz?</h3>
+                    <h3 className="text-[18px] font-bold text-[var(--color-text)]">{t.is_store_owner}</h3>
                     <p className="mt-2 text-[14px] text-[var(--color-hint)] font-medium leading-relaxed">
-                        Mahsulotingizni joylang va stockni boshqaring!<br />
-                        <span className="text-[12px] opacity-70">Arizangiz qabul qilingandan so’ng faollashadi!</span>
+                        {t.list_products_manage_stock}<br />
+                        <span className="text-[12px] opacity-70">{t.activation_after_approval}</span>
                     </p>
 
                     <div className="mt-8 flex gap-3">
@@ -115,14 +112,14 @@ export default function ProfilePage() {
                             className="flex-1 h-14 flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-full text-[15px] font-bold shadow-[0_4px_12px_rgba(26,229,80,0.25)] active:scale-95 transition-all"
                         >
                             <Store size={18} className="mr-2" />
-                            Do'kon qo'shish
+                            {t.add_store}
                         </Link>
                         <Link
                             href={APP_ROUTES.STORE_STATUS}
                             className="flex-1 h-14 flex items-center justify-center bg-[var(--color-surface)] border-[1.5px] border-[var(--color-border)] text-[var(--color-text)] rounded-full text-[15px] font-bold active:scale-95 transition-all shadow-sm"
                         >
                             <Settings size={18} className="mr-2" />
-                            Sotuvchi paneli
+                            {t.seller_panel}
                         </Link>
                     </div>
                 </div>
