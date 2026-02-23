@@ -92,7 +92,7 @@ export default function ProductPage() {
 
     if (!product) {
       hideMainButton();
-      return () => {};
+      return () => { };
     }
 
     const disposeMainButton = setMainButton({
@@ -162,11 +162,11 @@ export default function ProductPage() {
               alt={product.name}
               width={390}
               height={280}
-              style={{ width: "100%", height: "auto", borderRadius: 16 }}
+              style={{ width: "100%", height: "auto", borderRadius: 20 }}
               priority
             />
             <div className={styles.sectionHeader}>
-              <h2 style={{ margin: 0, fontSize: 20 }}>{product.name}</h2>
+              <h2 className={styles.itemTitle}>{product.name}</h2>
               <span className={styles.price}>{formatMoney(product.price)}</span>
             </div>
             <p className={styles.tinyMuted}>
@@ -180,7 +180,7 @@ export default function ProductPage() {
           </Card>
 
           <Card>
-            <h3 style={{ margin: 0, fontSize: 18 }}>Customize</h3>
+            <h3 className={styles.itemTitle} style={{ marginBottom: 12 }}>Customize</h3>
 
             <div className={styles.inlineRow}>
               {["S", "M", "L", "XL", "Uni"].map((value) => (

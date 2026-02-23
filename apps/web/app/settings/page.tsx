@@ -64,7 +64,7 @@ export default function SettingsPage() {
       {!loading ? (
         <form onSubmit={submit}>
           <Card>
-            <h2 style={{ margin: 0, fontSize: 18 }}>App settings</h2>
+            <h2 className={styles.itemTitle} style={{ marginBottom: 12 }}>App settings</h2>
 
             <label className={styles.tinyMuted} htmlFor="language">
               Language

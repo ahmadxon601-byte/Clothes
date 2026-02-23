@@ -1,5 +1,4 @@
 import Link from "next/link";
-import styles from "./ui.module.css";
 
 type SectionHeaderProps = {
   title: string;
@@ -15,17 +14,17 @@ export function SectionHeader({
   onAction
 }: SectionHeaderProps) {
   return (
-    <div className={styles.sectionHeader}>
-      <h2>{title}</h2>
+    <div className="flex items-center justify-between mb-4 mt-6">
+      <h2 className="text-[20px] font-extrabold text-[#111827] tracking-tight">{title}</h2>
       {actionHref ? (
-        <Link className={styles.sectionHeaderAction} href={actionHref}>
+        <Link className="text-sm font-bold text-[#00C853] hover:text-[#00C853]/80 active:scale-95 transition-all" href={actionHref}>
           {actionLabel}
         </Link>
-      ) : (
-        <button type="button" className={styles.sectionHeaderAction} onClick={onAction}>
+      ) : onAction ? (
+        <button type="button" className="text-sm font-bold text-[#00C853] hover:text-[#00C853]/80 active:scale-95 transition-all" onClick={onAction}>
           {actionLabel}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

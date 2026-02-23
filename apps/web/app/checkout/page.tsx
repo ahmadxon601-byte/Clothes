@@ -138,7 +138,7 @@ export default function CheckoutPage() {
           {items.map((item) => (
             <Card key={`${item.id}-${item.size}-${item.color}`}>
               <div className={styles.sectionHeader}>
-                <h2 style={{ margin: 0, fontSize: 18 }}>{item.name}</h2>
+                <h2 className={styles.itemTitle}>{item.name}</h2>
                 <span className={styles.price}>{formatMoney(item.price)}</span>
               </div>
               <p className={styles.tinyMuted}>
@@ -162,7 +162,7 @@ export default function CheckoutPage() {
       ) : null}
 
       <Card>
-        <h2 style={{ margin: 0, fontSize: 20 }}>Summary</h2>
+        <h2 className={styles.itemTitle} style={{ marginBottom: 16 }}>Summary</h2>
         <div className={styles.sectionHeader}>
           <span className={styles.tinyMuted}>Subtotal</span>
           <span>{formatMoney(summary.subtotal)}</span>

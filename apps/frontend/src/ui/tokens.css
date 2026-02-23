@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --color-bg: #F5F5F5;
+        --color-surface: #ffffff;
+        --color-surface2: #f3f4f6;
+        --color-text: #111827;
+        --color-muted: #6b7280;
+        --color-border: #e5e7eb;
+        --color-shadow: rgba(0, 0, 0, 0.05);
+
+        /* Accent green */
+        --color-accent: #00C853;
+        --color-accent-text: #111827;
+
+        --radius-card: 24px;
+        --radius-pill: 9999px;
+    }
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+}
+
+/* Base utility for overriding Tailwind safely in specific places */
+.bg-surface {
+    background-color: var(--color-surface);
+}
+
+.text-muted {
+    color: var(--color-muted);
+}

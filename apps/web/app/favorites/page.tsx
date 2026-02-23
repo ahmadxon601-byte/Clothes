@@ -3,17 +3,16 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/Button";
-import { Card } from "@/src/components/ui/Card";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { IconButton } from "@/src/components/ui/IconButton";
 import { MarketplaceShell } from "@/src/components/ui/MarketplaceShell";
-import { SectionHeader } from "@/src/components/ui/SectionHeader";
 import { SkeletonCard } from "@/src/components/ui/Skeleton";
-import styles from "@/src/components/ui/ui.module.css";
-import { BackIcon, HeartIcon } from "@/src/components/ui/icons";
+import { ProductCard } from "@/src/components/ui/ProductCard";
+import { Chip } from "@/src/components/ui/Chip";
+import { BackIcon } from "@/src/components/ui/icons";
 import { favoritesService } from "@/src/services/favorites.service";
-import { listProducts } from "@/src/services/products.service";
 import type { Product } from "@/src/types/marketplace";
+import { Trash2 } from "lucide-react";
 
 export default function FavoritesPage() {
   const [items, setItems] = useState<Product[]>([]);
@@ -35,69 +34,51 @@ export default function FavoritesPage() {
     await loadFavorites();
   };
 
-  const addSampleFavorite = async () => {
-    const products = await listProducts();
-    if (!products.length) {
-      return;
-    }
-
-    favoritesService.set(products[0].id, true);
-    await loadFavorites();
-  };
-
   return (
     <MarketplaceShell
-      title="Favorites"
-      subtitle="Your saved products are synced with local fallback."
+      title="Sevimlilar"
       topLeft={
         <Link href="/" aria-label="Back home">
           <IconButton icon={<BackIcon />} />
         </Link>
       }
     >
-      <SectionHeader title="Saved Items" actionHref="/search" actionLabel="Find More" />
+      <div className="mb-4">
+        <div className="overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 flex gap-2.5">
+          {["Barchasi", "Pidjaklar", "Ko&apos;ylaklar", "Shimlar"].map(cat => (
+            <Chip key={cat} active={cat === "Barchasi"}>{cat.replace('&apos;', "'")}</Chip>
+          ))}
+        </div>
+      </div>
 
       {loading ? <SkeletonCard rows={3} /> : null}
 
       {!loading && !items.length ? (
         <EmptyState
-          title="Favorites are empty"
-          description="Save items from Search or Product pages."
+          title="Sevimlilar bo&apos;sh"
+          description="Siz hali hech narsa qo&apos;shmadingiz."
           action={
-            <>
-              <Button variant="secondary" onClick={() => void addSampleFavorite()}>
-                Add Sample
-              </Button>
-              <Link href="/search">
-                <Button variant="ghost">Open Search</Button>
-              </Link>
-            </>
+            <Link href="/search">
+              <Button variant="ghost">Qidiruvni ochish</Button>
+            </Link>
           }
         />
       ) : null}
 
       {!loading && items.length ? (
-        <div className={styles.listStack}>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {items.map((item) => (
-            <Card key={item.id} hoverable>
-              <div className={styles.sectionHeader}>
-                <h2 style={{ margin: 0, fontSize: 18 }}>{item.name}</h2>
-                <span className={styles.price}>${item.price}</span>
-              </div>
-              <p className={styles.tinyMuted}>{item.category ?? "General"}</p>
-              <div className={styles.inlineRow}>
-                <Link href={`/product/${item.id}`}>
-                  <Button variant="secondary">Open Product</Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  leftIcon={<HeartIcon filled />}
-                  onClick={() => void removeFavorite(item.id)}
-                >
-                  Remove
-                </Button>
-              </div>
-            </Card>
+            <ProductCard
+              key={item.id}
+              id={item.id}
+              name={item.name}
+              brand={item.category || "General"}
+              price={item.price}
+              image={item.image || "https://images.unsplash.com/photo-1542272604-787c3835535d?w=1000&q=80"}
+              badgeText="ONLY 2 LEFT"
+              actionIcon={<Trash2 className="w-[18px] h-[18px] text-red-500" strokeWidth={2.5} />}
+              onFavoriteClick={() => void removeFavorite(item.id)}
+            />
           ))}
         </div>
       ) : null}

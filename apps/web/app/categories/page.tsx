@@ -72,7 +72,7 @@ export default function CategoriesPage() {
           {categories.map((item) => (
             <Card key={item.id} hoverable>
               <div className={styles.sectionHeader}>
-                <h2 style={{ margin: 0, fontSize: 18 }}>{item.name}</h2>
+                <h2 className={styles.itemTitle}>{item.name}</h2>
                 <span className={styles.statusBadge}>{item.productCount} items</span>
               </div>
               <div className={styles.inlineRow}>
