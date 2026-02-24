@@ -5,15 +5,13 @@ import { mockApi } from '../../../src/services/mockServer';
 import type { Product } from '../../../src/shared/types';
 import { ProductCard } from '../../../src/features/products/ui/ProductCard';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
-import { ChevronLeft, Heart } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Heart } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 
 const CATEGORIES = ['All', 'Shirts', 'Shoes', 'Pants', 'Jackets', 'Accessories'];
 
 export default function FavoritesPage() {
-    const router = useRouter();
     const { favorites } = useFavoritesStore();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,19 +29,7 @@ export default function FavoritesPage() {
     }, [favorites, category]);
 
     return (
-        <div className="flex flex-col min-h-full pb-32 bg-[var(--color-bg)]">
-            {/* Header */}
-            <header className="flex items-center justify-between px-6 pt-6 pb-4">
-                <button
-                    onClick={() => router.back()}
-                    className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]"
-                >
-                    <ChevronLeft size={24} />
-                </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">{t.favorites}</h1>
-                <div className="w-12" /> {/* Spacer */}
-            </header>
-
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
             {/* Categories */}
             <div className="flex gap-3 px-6 py-3 overflow-x-auto no-scrollbar">
                 {CATEGORIES.map((cat) => (
@@ -51,7 +37,7 @@ export default function FavoritesPage() {
                         key={cat}
                         onClick={() => setCategory(cat)}
                         className={cn(
-                            "px-8 py-3 rounded-full text-[14px] font-bold transition-all whitespace-nowrap shadow-sm border",
+                            "inline-flex items-center justify-center h-9 px-5 rounded-full text-[12px] leading-none font-bold transition-all whitespace-nowrap shadow-sm border active:scale-95",
                             category === cat
                                 ? "bg-[var(--color-text)] text-[var(--color-bg)] border-transparent"
                                 : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"

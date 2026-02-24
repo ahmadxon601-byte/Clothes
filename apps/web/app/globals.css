@@ -11,6 +11,8 @@
     --color-muted: #909499;
     --color-hint: var(--tg-theme-hint-color, #b0b3b8);
     --color-border: rgba(0, 0, 0, 0.05);
+    --color-header-bg: rgba(248, 248, 248, 0.56);
+    --color-header-border: rgba(0, 0, 0, 0.06);
 
     --color-primary: #13EC37;
     --color-primary-contrast: #121417;
@@ -18,7 +20,7 @@
     --color-danger: #ff3b30;
 
     /* Navigation Tokens */
-    --color-nav-bg: rgba(255, 255, 255, 0.85);
+    --color-nav-bg: rgba(255, 255, 255, 0.56);
     --color-nav-icon: #909499;
     --color-nav-active-bg: #13EC37;
     --color-nav-active-icon: #121417;
@@ -42,20 +44,57 @@
     --color-muted: #a0a0a2;
     --color-hint: var(--tg-theme-hint-color, #606062);
     --color-border: rgba(255, 255, 255, 0.1);
+    --color-header-bg: rgba(10, 10, 10, 0.56);
+    --color-header-border: rgba(255, 255, 255, 0.12);
 
     --color-primary: #13EC37;
     --color-primary-contrast: #121417;
 
-    --color-nav-bg: var(--tg-theme-secondary-bg-color, #1a1a1c);
+    --color-nav-bg: rgba(26, 26, 28, 0.56);
     --color-nav-icon: #a0a0a2;
     --color-nav-border: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
+    :root {
+        --shell-header-height: 56px;
+        --shell-header-total: calc(env(safe-area-inset-top, 0px) + var(--shell-header-height));
+        --shell-nav-height: 60px;
+        --shell-nav-gap: 12px;
+        --shell-nav-total: calc(env(safe-area-inset-bottom, 0px) + var(--shell-nav-height) + var(--shell-nav-gap));
+    }
+
+    html,
+    body {
+        overflow-x: hidden;
+    }
+
     body {
         background-color: var(--color-tg-bg);
         color: var(--color-tg-text);
         font-family: var(--font-inter), sans-serif;
         -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@layer utilities {
+    .glass-blur {
+        backdrop-filter: blur(20px) saturate(150%);
+        -webkit-backdrop-filter: blur(20px) saturate(150%);
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 }

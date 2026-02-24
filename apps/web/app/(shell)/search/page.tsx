@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Search, ChevronLeft, SlidersHorizontal, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 import { mockApi } from '../../../src/services/mockServer';
@@ -14,7 +13,6 @@ const CATEGORIES = [
 ];
 
 export default function SearchPage() {
-    const router = useRouter();
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
@@ -43,21 +41,7 @@ export default function SearchPage() {
     }, [search, activeCategory]);
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-32">
-            {/* Header */}
-            <header className="flex items-center justify-between px-5 pt-5 pb-3">
-                <button
-                    onClick={() => router.back()}
-                    className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]"
-                >
-                    <ChevronLeft size={17} />
-                </button>
-                <h1 className="text-[18px] font-bold text-[var(--color-text)]">{t.search_results}</h1>
-                <button className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]">
-                    <SlidersHorizontal size={17} />
-                </button>
-            </header>
-
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
             {/* Search Input */}
             <div className="px-6 py-4">
                 <div className="relative">
@@ -91,7 +75,7 @@ export default function SearchPage() {
                                 key={cat}
                                 onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                                 className={cn(
-                                    "px-6 py-2.5 border rounded-full text-[13px] font-bold transition-all shadow-sm active:scale-95",
+                                    "inline-flex items-center justify-center h-9 px-5 border rounded-full text-[12px] leading-none font-bold transition-all shadow-sm active:scale-95",
                                     activeCategory === cat
                                         ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-[var(--color-primary-contrast)]"
                                         : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-hint)]/30"

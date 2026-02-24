@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { applyTelegramTheme } from '../src/telegram/theme';
 import { useTelegram } from '../src/telegram/useTelegram';
 import { BackButtonSync } from '../src/telegram/BackButtonSync';
+import { getTelegramWebApp, safeTelegramCall } from '../src/telegram/webApp';
 import { useSettingsStore } from '../src/features/settings/model';
 import { useFavoritesStore } from '../src/features/favorites/model';
 
@@ -15,37 +16,56 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            applyTelegramTheme();
             loadSettings();
             loadFavorites();
+            applyTelegramTheme(useSettingsStore.getState().settings.themeMode || 'auto');
 
             // Telegram mavzusi o'zgarganda yangilash
-            const handleEvent = () => applyTelegramTheme();
-            const webApp = (window as any).Telegram?.WebApp;
-            if (webApp) {
-                webApp.onEvent('themeChanged', handleEvent);
-                return () => webApp.offEvent('themeChanged', handleEvent);
+            const handleEvent = () => applyTelegramTheme(useSettingsStore.getState().settings.themeMode || 'auto');
+            let detach: (() => void) | null = null;
+
+            const attachThemeListener = () => {
+                const webApp = getTelegramWebApp();
+                const onEvent = webApp?.onEvent;
+                const offEvent = webApp?.offEvent;
+
+                if (!onEvent || !offEvent) return false;
+                const subscribed = safeTelegramCall(
+                    'onEvent(themeChanged)',
+                    () => {
+                        onEvent('themeChanged', handleEvent);
+                        return true;
+                    },
+                    false,
+                );
+                if (!subscribed) return false;
+
+                detach = () => {
+                    safeTelegramCall('offEvent(themeChanged)', () => offEvent('themeChanged', handleEvent));
+                };
+                return true;
+            };
+
+            if (attachThemeListener()) {
+                return () => detach?.();
             }
+
+            const waitTimer = window.setInterval(() => {
+                if (attachThemeListener()) {
+                    window.clearInterval(waitTimer);
+                }
+            }, 250);
+
+            return () => {
+                window.clearInterval(waitTimer);
+                detach?.();
+            };
         }
     }, [loadSettings, loadFavorites]);
 
     useEffect(() => {
-        const root = window.document.documentElement;
         const mode = settings.themeMode || 'auto';
-
-        if (mode === 'dark') {
-            root.classList.add('dark');
-        } else if (mode === 'light') {
-            root.classList.remove('dark');
-        } else {
-            // Auto: check system preference or Telegram's hint
-            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (isDark) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
-        }
+        applyTelegramTheme(mode);
     }, [settings.themeMode]);
 
     return (

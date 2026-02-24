@@ -50,8 +50,8 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     }
 
     return (
-        <div className="flex flex-col min-h-screen pb-safe bg-[var(--color-surface)] animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="fixed top-0 left-0 right-0 z-10 p-4 pointer-events-none">
+        <div className="relative flex flex-col min-h-screen pb-safe bg-[var(--color-surface2)] animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="absolute top-0 left-0 right-0 z-10 p-4 pointer-events-none">
                 <button
                     onClick={() => router.back()}
                     className="pointer-events-auto p-2.5 bg-black/20 text-white backdrop-blur-md rounded-full active:scale-95"
@@ -72,7 +72,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
                 </div>
             </div>
 
-            <div className="p-4 px-2 -mt-4 bg-[var(--color-bg)] rounded-t-[20px] relative z-20 shadow-[0_-4px_24px_rgba(0,0,0,0.05)]">
+            <div className="p-4 px-2 -mt-4 bg-[var(--color-bg)] rounded-t-[20px] relative z-20 border-t border-[var(--color-border)] shadow-[0_-4px_24px_rgba(0,0,0,0.05)]">
                 <div className="px-2 mb-6 mt-2">
                     <Button
                         onClick={() => openMapLink(store.location.lat, store.location.lng, store.name)}

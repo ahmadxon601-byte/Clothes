@@ -1,16 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Search, Moon, Sun } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ProductCard } from '../../src/features/products/ui/ProductCard';
 import { Skeleton } from '../../src/shared/ui/Skeleton';
 import { mockApi } from '../../src/services/mockServer';
-import { useSettingsStore } from '../../src/features/settings/model';
 import type { Product } from '../../src/shared/types';
 import { cn } from '../../src/shared/lib/utils';
 import Link from 'next/link';
 import { useTranslation } from '../../src/shared/lib/i18n';
-import { LanguageSelector } from '../../src/shared/ui/LanguageSelector';
 
 const CATEGORIES = ['All', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
@@ -40,9 +38,6 @@ function HomeContent() {
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
     const [activePromo, setActivePromo] = useState(0);
-
-    const settings = useSettingsStore(s => s.settings);
-    const updateSettings = useSettingsStore(s => s.updateSettings);
 
     const fetchProducts = useCallback(async (cat: string) => {
         setLoading(true);
@@ -83,29 +78,13 @@ function HomeContent() {
     const nextPromo = () => setActivePromo((prev) => (prev + 1) % PROMOS.length);
     const prevPromo = () => setActivePromo((prev) => (prev - 1 + PROMOS.length) % PROMOS.length);
 
-    const toggleTheme = () => {
-        updateSettings({ themeMode: settings.themeMode === 'dark' ? 'light' : 'dark' });
-    };
-
     const { t } = useTranslation();
     const currentPromo = PROMOS[activePromo];
 
     return (
-        <div className="flex flex-col min-h-full pb-32">
-            {/* Custom Header */}
-            <header className="flex items-center justify-between px-5 pt-4 pb-2">
-                <button
-                    onClick={toggleTheme}
-                    className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)] active:scale-95 transition-all"
-                >
-                    {settings.themeMode === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-                </button>
-                <h1 className="text-[17px] font-bold text-[var(--color-text)]">Clothes MP</h1>
-                <LanguageSelector />
-            </header>
-
+        <div className="flex flex-col min-h-full">
             {/* Search Bar Link */}
-            <div className="px-5 py-0.5">
+            <div className="px-5 pt-2.5 pb-0.5">
                 <Link href="/search" className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
                     <Search size={16} className="opacity-40" />
                     <span className="text-[13px]">{t.search}</span>
@@ -224,7 +203,7 @@ function HomeContent() {
 export default function HomePage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-col min-h-full pb-32">
+            <div className="flex flex-col min-h-full">
                 <div className="p-6 space-y-6">
                     <Skeleton className="h-12 w-full rounded-full" />
                     <Skeleton className="h-[240px] w-full rounded-[32px]" />

@@ -66,7 +66,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const isFav = favorites.includes(product.id);
 
     return (
-        <div className="flex flex-col min-h-screen pb-32 bg-[var(--color-bg)] animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="flex flex-col min-h-screen pb-safe bg-[var(--color-bg)] animate-in fade-in slide-in-from-right-4 duration-300">
             {/* Header controls layered over image */}
             <div className="absolute top-0 left-0 right-0 z-20 flex justify-between p-6 pointer-events-none">
                 <button
@@ -153,24 +153,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
-            {/* Bottom Actions Fixed */}
-            <div className="fixed bottom-0 left-0 right-0 p-3.5 bg-[var(--color-bg)]/80 backdrop-blur-xl border-t border-[var(--color-border)] z-30 flex justify-center">
-                <div className="w-full max-w-[400px] flex gap-2.5">
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        className="flex-1 h-11 shadow-lg shadow-[var(--color-primary)]/20"
-                    >
-                        {t.buy}
-                    </Button>
-                    <button
-                        onClick={() => toggleFavorite(product.id)}
-                        className="w-11 h-11 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] rounded-[14px] flex items-center justify-center active:scale-95 transition-all shadow-sm"
-                    >
-                        <Heart size={19} className={cn(isFav && "fill-[var(--color-danger)] text-[var(--color-danger)]")} />
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }

@@ -2,11 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-
-let WebApp: any;
-if (typeof window !== 'undefined') {
-    WebApp = require('@twa-dev/sdk').default;
-}
+import { getTelegramWebApp, safeTelegramCall } from './webApp';
 
 export function BackButtonSync() {
     const router = useRouter();
@@ -16,22 +12,26 @@ export function BackButtonSync() {
         if (typeof window === 'undefined') return;
 
         try {
+            const webApp = getTelegramWebApp();
+            const backButton = webApp?.BackButton;
+            if (!backButton) return;
+
             const isMainRoute = ['/', '/favorites', '/profile', '/settings'].includes(pathname);
 
             if (isMainRoute) {
-                WebApp.BackButton.hide();
+                safeTelegramCall('BackButton.hide', () => backButton.hide?.());
             } else {
-                WebApp.BackButton.show();
+                safeTelegramCall('BackButton.show', () => backButton.show?.());
             }
 
             const handleBack = () => {
                 router.back();
             };
 
-            WebApp.BackButton.onClick(handleBack);
+            safeTelegramCall('BackButton.onClick', () => backButton.onClick?.(handleBack));
 
             return () => {
-                WebApp.BackButton.offClick(handleBack);
+                safeTelegramCall('BackButton.offClick', () => backButton.offClick?.(handleBack));
             };
         } catch (e) {
             console.warn('Back button sync error:', e);

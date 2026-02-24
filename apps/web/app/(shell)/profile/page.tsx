@@ -1,16 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Bookmark, MessageCircleQuestion, Settings, Check, Store } from 'lucide-react';
+import { ChevronRight, Bookmark, MessageCircleQuestion, Settings, Check, Store } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { mockApi } from '../../../src/services/mockServer';
 import { APP_ROUTES } from '../../../src/shared/config/constants';
-import { useRouter } from 'next/navigation';
 import { cn } from '../../../src/shared/lib/utils';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 
 export default function ProfilePage() {
-    const router = useRouter();
     const { user } = useTelegram();
     const { t } = useTranslation();
 
@@ -35,19 +33,7 @@ export default function ProfilePage() {
     ];
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-32">
-            {/* Header */}
-            <header className="flex items-center justify-between px-5 pt-5 pb-3">
-                <button
-                    onClick={() => router.back()}
-                    className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]"
-                >
-                    <ChevronLeft size={17} />
-                </button>
-                <h1 className="text-[18px] font-bold text-[var(--color-text)]">{t.profile}</h1>
-                <div className="w-9" />
-            </header>
-
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
             <div className="px-6 space-y-4">
                 {/* User Card */}
                 <div className="bg-[var(--color-surface)] rounded-[28px] p-5 shadow-sm border border-[var(--color-border)] flex flex-col items-center">
