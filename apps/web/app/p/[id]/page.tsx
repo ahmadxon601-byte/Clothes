@@ -71,13 +71,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="absolute top-0 left-0 right-0 z-20 flex justify-between p-6 pointer-events-none">
                 <button
                     onClick={() => router.back()}
-                    className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm"
+                    className="pointer-events-auto w-9 h-9 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm"
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={17} />
                 </button>
                 <div className="flex gap-2 pointer-events-auto">
-                    <button className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm">
-                        <Share2 size={20} />
+                    <button className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm">
+                        <Share2 size={16} />
                     </button>
                     <button
                         onClick={async () => {
@@ -88,9 +88,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 showToast({ message: t.error_occurred, type: 'error' });
                             }
                         }}
-                        className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm"
+                        className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)]/80 backdrop-blur-md rounded-full text-[var(--color-text)] active:scale-95 shadow-sm"
                     >
-                        <Heart size={20} className={cn(isFav && "fill-[var(--color-danger)] text-[var(--color-danger)]")} />
+                        <Heart size={16} className={cn(isFav && "fill-[var(--color-danger)] text-[var(--color-danger)]")} />
                     </button>
                 </div>
             </div>
@@ -104,19 +104,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 />
             </div>
 
-            <div className="p-8 bg-[var(--color-surface)] -mt-8 rounded-t-[40px] z-10 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t border-[var(--color-border)]">
-                <div className="mb-2">
-                    <span className="text-[12px] font-bold text-[var(--color-hint)] uppercase tracking-widest">{product.brand || 'Luxury Wear'}</span>
+            <div className="p-5 bg-[var(--color-surface)] -mt-8 rounded-t-[28px] z-10 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t border-[var(--color-border)]">
+                <div className="mb-1.5">
+                    <span className="text-[9.5px] font-bold text-[var(--color-hint)] uppercase tracking-widest">{product.brand || 'Luxury Wear'}</span>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                    <h1 className="text-[26px] font-bold text-[var(--color-text)] leading-tight">{product.title}</h1>
+                    <h1 className="text-[19px] font-bold text-[var(--color-text)] leading-tight">{product.title}</h1>
                 </div>
 
-                <div className="mt-4 flex items-center gap-4">
-                    <p className="text-[24px] font-black text-[var(--color-primary)]">
+                <div className="mt-2.5 flex items-center gap-4">
+                    <p className="text-[19px] font-black text-[var(--color-primary)]">
                         {formatPrice(product.price, product.currency)}
                     </p>
-                    <div className="px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[12px] font-bold rounded-lg border border-[var(--color-primary)]/10">
+                    <div className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[9.5px] font-bold rounded-lg border border-[var(--color-primary)]/10">
                         {t.in_stock}
                     </div>
                 </div>
@@ -135,14 +135,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <img src={store.photoUrl} alt={store.name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-[var(--color-text)] truncate">{store.name}</h4>
-                                <div className="flex items-center text-xs text-[var(--color-hint)] mt-1">
-                                    <MapPin size={12} className="mr-1 shrink-0 px-[1px]" />
+                                <h4 className="font-bold text-[14px] text-[var(--color-text)] truncate">{store.name}</h4>
+                                <div className="flex items-center text-[11px] text-[var(--color-hint)] mt-0.5">
+                                    <MapPin size={11} className="mr-1 shrink-0 px-[1px]" />
                                     <span className="truncate">{store.addressText}</span>
                                 </div>
                             </div>
-                            <div className="w-10 h-10 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-hint)] group-hover:text-[var(--color-primary)]">
-                                <ChevronRight size={20} />
+                            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-hint)] group-hover:text-[var(--color-primary)]">
+                                <ChevronRight size={18} />
                             </div>
                         </div>
                     </Link>
@@ -154,20 +154,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Bottom Actions Fixed */}
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-[var(--color-bg)]/80 backdrop-blur-xl border-t border-[var(--color-border)] z-30 flex justify-center">
-                <div className="w-full max-w-[400px] flex gap-4">
+            <div className="fixed bottom-0 left-0 right-0 p-3.5 bg-[var(--color-bg)]/80 backdrop-blur-xl border-t border-[var(--color-border)] z-30 flex justify-center">
+                <div className="w-full max-w-[400px] flex gap-2.5">
                     <Button
                         variant="primary"
                         size="lg"
-                        className="flex-1 h-16 shadow-lg shadow-[var(--color-primary)]/20"
+                        className="flex-1 h-11 shadow-lg shadow-[var(--color-primary)]/20"
                     >
                         {t.buy}
                     </Button>
                     <button
                         onClick={() => toggleFavorite(product.id)}
-                        className="w-16 h-16 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] rounded-[20px] flex items-center justify-center active:scale-95 transition-all shadow-sm"
+                        className="w-11 h-11 bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] rounded-[14px] flex items-center justify-center active:scale-95 transition-all shadow-sm"
                     >
-                        <Heart size={24} className={cn(isFav && "fill-[var(--color-danger)] text-[var(--color-danger)]")} />
+                        <Heart size={19} className={cn(isFav && "fill-[var(--color-danger)] text-[var(--color-danger)]")} />
                     </button>
                 </div>
             </div>

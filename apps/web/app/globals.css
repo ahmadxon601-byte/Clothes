@@ -24,7 +24,7 @@
     --color-nav-active-icon: #121417;
     --color-nav-border: rgba(0, 0, 0, 0.08);
 
-    /* Legacy compatibility for components using variable names directly */
+    /* Legacy compatibility */
     --color-tg-bg: var(--color-bg);
     --color-tg-text: var(--color-text);
     --color-tg-hint: var(--color-hint);
@@ -41,12 +41,12 @@
     --color-text: var(--tg-theme-text-color, #ffffff);
     --color-muted: #a0a0a2;
     --color-hint: var(--tg-theme-hint-color, #606062);
-    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border: rgba(255, 255, 255, 0.1);
 
     --color-primary: #13EC37;
     --color-primary-contrast: #121417;
 
-    --color-nav-bg: #1a1a1c;
+    --color-nav-bg: var(--tg-theme-secondary-bg-color, #1a1a1c);
     --color-nav-icon: #a0a0a2;
     --color-nav-border: rgba(255, 255, 255, 0.1);
 }

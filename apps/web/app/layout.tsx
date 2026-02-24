@@ -28,8 +28,8 @@ export default function RootLayout({
             <head>
                 <script src="https://telegram.org/js/telegram-web-app.js" async />
             </head>
-            <body className="font-sans antialiased min-h-[100dvh] flex justify-center bg-zinc-100 dark:bg-zinc-950" suppressHydrationWarning>
-                <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col bg-[var(--color-tg-bg)] text-[var(--color-tg-text)] relative shadow-2xl overflow-x-hidden">
+            <body className="font-sans antialiased min-h-[100dvh] flex justify-center bg-[var(--color-bg)]" suppressHydrationWarning>
+                <div className="w-full max-w-[500px] min-h-[100dvh] flex flex-col bg-[var(--color-bg)] text-[var(--color-text)] relative shadow-2xl overflow-x-hidden md:border-x md:border-[var(--color-border)]">
                     <Providers>{children}</Providers>
                 </div>
             </body>

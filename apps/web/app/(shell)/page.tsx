@@ -93,40 +93,40 @@ function HomeContent() {
     return (
         <div className="flex flex-col min-h-full pb-32">
             {/* Custom Header */}
-            <header className="flex items-center justify-between px-6 pt-6 pb-4">
+            <header className="flex items-center justify-between px-5 pt-4 pb-2">
                 <button
                     onClick={toggleTheme}
-                    className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)] active:scale-95 transition-all"
+                    className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)] active:scale-95 transition-all"
                 >
-                    {settings.themeMode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    {settings.themeMode === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">Clothes MP</h1>
+                <h1 className="text-[17px] font-bold text-[var(--color-text)]">Clothes MP</h1>
                 <LanguageSelector />
             </header>
 
             {/* Search Bar Link */}
-            <div className="px-6 py-2">
-                <Link href="/search" className="flex items-center h-[56px] w-full bg-[var(--color-surface)] rounded-full px-5 gap-3 shadow-sm text-[var(--color-hint)]">
-                    <Search size={22} className="opacity-40" />
-                    <span className="text-[15px]">{t.search}</span>
+            <div className="px-5 py-0.5">
+                <Link href="/search" className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
+                    <Search size={16} className="opacity-40" />
+                    <span className="text-[13px]">{t.search}</span>
                 </Link>
             </div>
 
             {/* Promo Banner */}
-            <div className="px-6 py-4">
-                <div className="group relative h-[240px] rounded-[32px] overflow-hidden flex shadow-lg transition-all duration-700">
+            <div className="px-5 py-2.5">
+                <div className="group relative h-[180px] rounded-[24px] overflow-hidden flex shadow-lg transition-all duration-700">
                     <div className={cn("w-[60%] p-6 flex flex-col justify-between transition-colors duration-700 relative z-10", currentPromo.bg)}>
                         <div className="animate-in fade-in slide-in-from-left-6 duration-700">
-                            <span className="inline-block px-3 py-1 bg-[#121417]/10 backdrop-blur-md text-[#121417] text-[10px] font-bold rounded-full mb-3 uppercase tracking-[0.05em] border border-[#121417]/10">
+                            <span className="inline-block px-2.5 py-0.5 bg-[#121417]/10 backdrop-blur-md text-[#121417] text-[8.5px] font-bold rounded-full mb-1.5 uppercase tracking-[0.05em] border border-[#121417]/10">
                                 {t.promo_badges?.[activePromo] || currentPromo.badge}
                             </span>
-                            <h2 className="text-[20px] font-black text-[#121417] leading-tight tracking-tight drop-shadow-sm">
+                            <h2 className="text-[17px] font-black text-[#121417] leading-tight tracking-tight drop-shadow-sm">
                                 {t.promos?.[activePromo] || currentPromo.title}
                             </h2>
                         </div>
-                        <button className="w-fit flex items-center gap-2 bg-[#121417] text-white px-6 py-3 rounded-2xl text-[13px] font-bold active:scale-95 transition-all shadow-xl hover:shadow-2xl">
+                        <button className="w-fit flex items-center gap-2 bg-[#121417] text-white px-4 py-2 rounded-lg text-[11px] font-bold active:scale-95 transition-all shadow-xl hover:shadow-2xl">
                             {t.buy}
-                            <ChevronRight size={14} strokeWidth={3} className="opacity-80" />
+                            <ChevronRight size={11} strokeWidth={3} className="opacity-80" />
                         </button>
                     </div>
                     <div className="w-[40%] bg-[#E6E8E6] relative overflow-hidden">
@@ -171,13 +171,13 @@ function HomeContent() {
             </div>
 
             {/* Categories */}
-            <div className="flex gap-3 px-6 py-3 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2.5 px-5 py-2 overflow-x-auto no-scrollbar">
                 {CATEGORIES.map((cat) => (
                     <button
                         key={cat}
                         onClick={() => setCategory(cat)}
                         className={cn(
-                            "px-8 py-3.5 rounded-full text-[14px] font-bold transition-all whitespace-nowrap shadow-sm border",
+                            "px-5 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap shadow-sm border",
                             category === cat
                                 ? "bg-[var(--color-text)] text-[var(--color-bg)] border-transparent"
                                 : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"
@@ -189,10 +189,10 @@ function HomeContent() {
             </div>
 
             {/* Product Feed */}
-            <div className="px-6 py-4">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)]">{t.special_for_you}</h2>
-                    <Link href="/search" className="text-[var(--color-primary)] text-[15px] font-bold">{t.see_all}</Link>
+            <div className="px-5 py-3">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[17px] font-bold text-[var(--color-text)]">{t.special_for_you}</h2>
+                    <Link href="/search" className="text-[var(--color-primary)] text-[13px] font-bold">{t.see_all}</Link>
                 </div>
                 {loading ? (
                     <div className="grid grid-cols-2 gap-x-5 gap-y-8">

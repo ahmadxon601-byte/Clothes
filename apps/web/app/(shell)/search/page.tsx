@@ -45,29 +45,29 @@ export default function SearchPage() {
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-32">
             {/* Header */}
-            <header className="flex items-center justify-between px-6 pt-6 pb-4">
+            <header className="flex items-center justify-between px-5 pt-5 pb-3">
                 <button
                     onClick={() => router.back()}
-                    className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm border border-[var(--color-border)] text-[var(--color-text)]"
+                    className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]"
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={17} />
                 </button>
-                <h1 className="text-[20px] font-bold text-[var(--color-text)]">{t.search_results}</h1>
-                <button className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm border border-[var(--color-border)] text-[var(--color-text)]">
-                    <SlidersHorizontal size={20} />
+                <h1 className="text-[18px] font-bold text-[var(--color-text)]">{t.search_results}</h1>
+                <button className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)]">
+                    <SlidersHorizontal size={17} />
                 </button>
             </header>
 
             {/* Search Input */}
             <div className="px-6 py-4">
                 <div className="relative">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--color-hint)] opacity-50">
-                        <Search size={22} />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-hint)] opacity-50">
+                        <Search size={20} />
                     </div>
                     <input
                         autoFocus
                         placeholder={t.placeholder_search}
-                        className="h-[56px] w-full bg-[var(--color-surface2)] rounded-full pl-[56px] pr-12 outline-none font-medium text-[15px] text-[var(--color-text)] focus:ring-2 ring-[var(--color-primary)]/20 transition-all placeholder:text-[var(--color-hint)]/60"
+                        className="h-[48px] w-full bg-[var(--color-surface2)] rounded-full pl-[48px] pr-12 outline-none font-medium text-[14px] text-[var(--color-text)] focus:ring-2 ring-[var(--color-primary)]/20 transition-all placeholder:text-[var(--color-hint)]/60"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -91,7 +91,7 @@ export default function SearchPage() {
                                 key={cat}
                                 onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                                 className={cn(
-                                    "px-8 py-3.5 border rounded-full text-[14px] font-bold transition-all shadow-sm active:scale-95",
+                                    "px-6 py-2.5 border rounded-full text-[13px] font-bold transition-all shadow-sm active:scale-95",
                                     activeCategory === cat
                                         ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-[var(--color-primary-contrast)]"
                                         : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-hint)]/30"

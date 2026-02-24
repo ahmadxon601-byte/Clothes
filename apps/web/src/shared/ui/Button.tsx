@@ -22,9 +22,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                         'bg-[var(--color-text)] text-[var(--color-bg)] hover:brightness-110 shadow-sm': variant === 'secondary',
                         'border-[1.5px] border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-hint)] shadow-sm': variant === 'outline',
                         'text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5': variant === 'ghost',
-                        'h-10 px-6 text-sm': size === 'sm',
-                        'h-12 px-8 text-base': size === 'md',
-                        'h-16 px-10 text-lg': size === 'lg',
+                        'h-8 px-4 text-xs': size === 'sm',
+                        'h-9 px-5 text-sm': size === 'md',
+                        'h-11 px-7 text-base': size === 'lg',
                     },
                     className
                 )}

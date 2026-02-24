@@ -39,9 +39,9 @@ export function LanguageSelector() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={toggleDropdown}
-                className="w-12 h-12 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)] active:scale-95 transition-all border border-[var(--color-border)]"
+                className="w-9 h-9 flex items-center justify-center bg-[var(--color-surface)] rounded-full shadow-sm text-[var(--color-text)] active:scale-95 transition-all"
             >
-                <Globe size={20} />
+                <Globe size={17} />
             </button>
 
             {isOpen && (

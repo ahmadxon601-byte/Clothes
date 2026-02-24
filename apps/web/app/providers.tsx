@@ -18,6 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
             applyTelegramTheme();
             loadSettings();
             loadFavorites();
+
+            // Telegram mavzusi o'zgarganda yangilash
+            const handleEvent = () => applyTelegramTheme();
+            const webApp = (window as any).Telegram?.WebApp;
+            if (webApp) {
+                webApp.onEvent('themeChanged', handleEvent);
+                return () => webApp.offEvent('themeChanged', handleEvent);
+            }
         }
     }, [loadSettings, loadFavorites]);
 

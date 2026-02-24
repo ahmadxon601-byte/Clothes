@@ -20,7 +20,7 @@ export function ProductCard({ product, variant = 'default' }: { product: Product
 
     return (
         <Link href={APP_ROUTES.PRODUCT(product.id)} className="block group">
-            <div className="relative rounded-3xl overflow-hidden bg-[var(--color-surface2)] aspect-[3.5/4.5] isolate">
+            <div className="relative rounded-2xl overflow-hidden bg-[var(--color-surface2)] aspect-[1/1.2] isolate">
                 <img
                     src={!imgError && product.images[0] ? product.images[0] : 'https://placehold.co/400x500/png?text=No+Image'}
                     alt={product.title}
@@ -50,17 +50,17 @@ export function ProductCard({ product, variant = 'default' }: { product: Product
                     </div>
                 )}
             </div>
-            <div className="mt-3 px-1">
-                <p className="text-[11px] text-[var(--color-hint)] font-medium uppercase tracking-wider mb-0.5">{product.brand || 'Luxury Wear'}</p>
-                <h3 className="text-[14px] font-semibold text-[var(--color-text)] line-clamp-1">{product.title}</h3>
-                <div className="mt-1.5 flex items-center justify-between">
-                    <p className="font-bold text-[16px] text-[var(--color-text)] leading-tight">{formatPrice(product.price, product.currency)}</p>
-                    <div className="bg-[var(--color-surface2)] text-[10px] font-bold py-1 px-2.5 rounded-lg text-[var(--color-hint)]">
-                        My Size: L
+            <div className="mt-1.5 px-1">
+                <p className="text-[8.5px] text-[var(--color-hint)] font-medium uppercase tracking-wider mb-0.5">{product.brand || 'Luxury Wear'}</p>
+                <h3 className="text-[12px] font-semibold text-[var(--color-text)] line-clamp-1">{product.title}</h3>
+                <div className="mt-0.5 flex items-center justify-between">
+                    <p className="font-bold text-[13px] text-[var(--color-text)] leading-tight">{formatPrice(product.price, product.currency)}</p>
+                    <div className="bg-[var(--color-surface2)] text-[10.5px] font-bold py-0.5 px-2 rounded-lg text-[var(--color-hint)] shadow-sm">
+                        L
                     </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <p className="text-[9px] text-gray-400 mt-1 flex items-center gap-1">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                     Available in 2 stores
                 </p>
             </div>
