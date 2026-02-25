@@ -12,7 +12,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:3002',
+        target: 'http://localhost:3010',
         changeOrigin: true,
       },
       '/telegram': 'http://localhost:4000',
