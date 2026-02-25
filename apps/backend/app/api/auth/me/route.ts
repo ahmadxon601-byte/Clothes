@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       return fail("User not found", 404);
     }
 
-    return ok({ user: result.rows[0] });
+    return ok(result.rows[0]);
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[me]", e);

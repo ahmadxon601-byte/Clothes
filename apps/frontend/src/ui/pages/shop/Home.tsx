@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../../components/TopBar';
 import { BottomNav } from '../../components/BottomNav';
 import { BannerCard } from '../../components/BannerCard';
@@ -5,18 +7,46 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { ProductCard } from '../../components/ProductCard';
 import { SearchBar } from '../../components/SearchBar';
 import { Chips } from '../../components/Chips';
+import { SkeletonCard } from '../../components/SkeletonCard';
 import { Moon, Globe } from 'lucide-react';
+import { api } from '../../../lib/api';
 
-const FILTERS = ['All', 'Jackets', 'Shirts', 'Pants'];
+type ApiProduct = {
+    id: string;
+    name: string;
+    base_price: string;
+    store_name: string;
+    thumbnail: string | null;
+    category_name: string | null;
+};
 
-const PRODUCTS = [
-    { id: 1, title: 'Oversized Wool Coat', price: '$149', brand: 'Loro Piana', imageUrl: 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=400', isFavorite: true, badgeText: 'ONLY 3 LEFT' },
-    { id: 2, title: 'Cashmere Knit Sweater', price: '$89', brand: 'Theory', imageUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400' },
-    { id: 3, title: 'Classic Tailored Trousers', price: '$120', brand: 'Zegna', imageUrl: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=400' },
-    { id: 4, title: 'Leather Chelsea Boots', price: '$195', brand: 'Santoni', imageUrl: 'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=400' },
-];
+type ApiCategory = { id: string; name: string };
+
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=400';
 
 export function Home() {
+    const [products, setProducts]     = useState<ApiProduct[]>([]);
+    const [categories, setCategories] = useState<ApiCategory[]>([]);
+    const [activeFilter, setFilter]   = useState('All');
+    const [loading, setLoading]       = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        api.get<{ name: string; id: string }[]>('/api/categories').then(setCategories).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        setLoading(true);
+        const catId = categories.find(c => c.name === activeFilter)?.id;
+        const url = `/api/products?sort=newest${catId ? `&category=${catId}` : ''}`;
+        api.get<{ products: ApiProduct[] }>(url)
+            .then(d => setProducts(d.products))
+            .catch(() => setProducts([]))
+            .finally(() => setLoading(false));
+    }, [activeFilter, categories]);
+
+    const filterOptions = ['All', ...categories.map(c => c.name)];
+
     return (
         <div className="min-h-screen bg-[#F5F5F5] pb-32 font-sans selection:bg-[#00C853]/20">
             <TopBar
@@ -27,7 +57,7 @@ export function Home() {
 
             <main className="max-w-md mx-auto px-5 pt-3">
                 <div className="mb-5">
-                    <SearchBar placeholder="Search luxury menswear..." />
+                    <SearchBar placeholder="Search products..." />
                 </div>
 
                 <div className="mb-6">
@@ -41,17 +71,36 @@ export function Home() {
 
                 <div className="mb-8">
                     <div className="overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5">
-                        <Chips options={FILTERS} activeOption="All" />
+                        <Chips
+                            options={filterOptions}
+                            activeOption={activeFilter}
+                            onOptionSelect={setFilter}
+                        />
                     </div>
                 </div>
 
                 <div className="mb-4">
-                    <SectionHeader title="Special for you" onSeeAll={() => { }} />
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                        {PRODUCTS.map(product => (
-                            <ProductCard key={product.id} {...product} />
-                        ))}
-                    </div>
+                    <SectionHeader title="Special for you" onSeeAll={() => navigate('/search')} />
+                    {loading ? (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                            {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+                        </div>
+                    ) : products.length === 0 ? (
+                        <p className="text-center text-gray-400 py-10">No products found</p>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                            {products.map(p => (
+                                <ProductCard
+                                    key={p.id}
+                                    title={p.name}
+                                    price={`$${Number(p.base_price).toFixed(2)}`}
+                                    brand={p.store_name}
+                                    imageUrl={p.thumbnail ?? FALLBACK_IMG}
+                                    onClick={() => navigate(`/products/${p.id}`)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </main>
 

@@ -11,6 +11,10 @@ export default defineConfig({
       clientPort: 443
     },
     proxy: {
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
       '/telegram': 'http://localhost:4000',
       '/health': 'http://localhost:4000'
     }

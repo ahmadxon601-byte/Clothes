@@ -1,12 +1,26 @@
+import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../../components/TopBar';
 import { BottomNav } from '../../components/BottomNav';
-import { Settings, Bookmark, ChevronRight, HelpCircle, ArrowLeft, Check, Store, LayoutDashboard } from 'lucide-react';
+import {
+    Settings, Bookmark, ChevronRight, HelpCircle,
+    ArrowLeft, Check, Store, LayoutDashboard, LogOut, Package
+} from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 export function Profile() {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/signin');
+    };
+
     const menuItems = [
-        { icon: Bookmark, label: 'Sevimlilar', sublabel: 'Saqlangan mahsulotlar', badge: '', active: false },
-        { icon: HelpCircle, label: 'Yordam / FAQ', sublabel: 'Savollarga javob', badge: '', active: false },
-        { icon: Settings, label: 'Sozlamalar', sublabel: 'Til, tema, xavfsizlik', badge: '', active: false },
+        { icon: Bookmark,   label: 'Sevimlilar',    sublabel: 'Saqlangan mahsulotlar', to: '/favorites' },
+        { icon: Package,    label: 'Buyurtmalarim', sublabel: 'Barcha buyurtmalar',    to: '/orders' },
+        { icon: HelpCircle, label: 'Yordam / FAQ',  sublabel: 'Savollarga javob',      to: '#' },
+        { icon: Settings,   label: 'Sozlamalar',    sublabel: 'Til, tema, xavfsizlik', to: '#' },
     ];
 
     return (
@@ -14,35 +28,48 @@ export function Profile() {
             <TopBar
                 title="Profile"
                 leftIcon={<ArrowLeft className="w-[22px] h-[22px] flex-shrink-0" strokeWidth={2.5} />}
+                onMenuClick={() => navigate(-1)}
                 rightIcon={null}
             />
 
             <main className="max-w-md mx-auto px-5 pt-3">
+                {/* Avatar + Name */}
                 <div className="bg-white p-5 rounded-[32px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-5 mb-5 border border-gray-100/50">
                     <div className="relative">
                         <div className="w-[88px] h-[88px] rounded-full overflow-hidden bg-gray-200 ring-[3px] ring-[#00C853] ring-offset-2">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200" alt="Avatar" className="w-full h-full object-cover" />
+                            <div className="w-full h-full bg-gradient-to-br from-lime-300 to-green-500 flex items-center justify-center text-white text-3xl font-extrabold">
+                                {user?.name?.[0]?.toUpperCase() ?? '?'}
+                            </div>
                         </div>
                         <div className="absolute bottom-0 right-0 w-[24px] h-[24px] bg-[#00C853] border-[2.5px] border-white rounded-full flex items-center justify-center">
                             <Check className="w-3.5 h-3.5 text-white" strokeWidth={4} />
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-[22px] font-extrabold text-[#111827] mb-1 tracking-tight leading-none">Ahmad</h2>
-                        <p className="text-[14px] font-medium text-gray-400">User</p>
+                        <h2 className="text-[22px] font-extrabold text-[#111827] mb-1 tracking-tight leading-none">
+                            {user?.name ?? 'User'}
+                        </h2>
+                        <p className="text-[14px] font-medium text-gray-400 capitalize">{user?.role ?? 'user'}</p>
                     </div>
                 </div>
 
+                {/* Email */}
                 <div className="flex gap-[10px] mb-6">
-                    <div className="flex-1 bg-white rounded-full py-[14px] px-4 text-center text-[13px] font-bold text-[#111827] border border-[#f3f4f6] shadow-sm tracking-wide">+998-xxx-xx-xx</div>
-                    <div className="flex-1 bg-white rounded-full py-[14px] px-4 text-center text-[13px] font-bold text-[#111827] border border-[#f3f4f6] shadow-sm tracking-wide">Telegram user name</div>
+                    <div className="flex-1 bg-white rounded-full py-[14px] px-4 text-center text-[13px] font-bold text-[#111827] border border-[#f3f4f6] shadow-sm tracking-wide truncate">
+                        {user?.email ?? '—'}
+                    </div>
                 </div>
 
+                {/* Menu */}
                 <div className="space-y-[12px] mb-6">
                     {menuItems.map((item, index) => {
                         const Icon = item.icon;
                         return (
-                            <button key={index} className="w-full bg-white flex items-center p-[16px] pr-5 hover:bg-gray-50 active:scale-[0.98] transition-all rounded-[28px] shadow-[0_2px_12px_rgba(0,0,0,0.02)] border border-gray-100/50">
+                            <button
+                                key={index}
+                                onClick={() => navigate(item.to)}
+                                className="w-full bg-white flex items-center p-[16px] pr-5 hover:bg-gray-50 active:scale-[0.98] transition-all rounded-[28px] shadow-[0_2px_12px_rgba(0,0,0,0.02)] border border-gray-100/50"
+                            >
                                 <div className="w-[52px] h-[52px] rounded-full bg-[#f4faed] flex items-center justify-center shrink-0">
                                     <Icon className="w-6 h-6 text-[#00C853]" strokeWidth={2.2} />
                                 </div>
@@ -50,15 +77,15 @@ export function Profile() {
                                     <span className="font-extrabold text-[#111827] text-[16px] block mb-0.5">{item.label}</span>
                                     {item.sublabel && <span className="font-medium text-[#9CA3AF] text-[13px] block leading-none">{item.sublabel}</span>}
                                 </div>
-
-                                <div className="ml-auto flex items-center gap-3">
+                                <div className="ml-auto">
                                     <ChevronRight className="w-5 h-5 text-[#9CA3AF]" strokeWidth={2.5} />
                                 </div>
                             </button>
-                        )
+                        );
                     })}
                 </div>
 
+                {/* Seller section */}
                 <div className="bg-white p-6 rounded-[28px] shadow-[0_2px_12px_rgba(0,0,0,0.02)] border border-[#f3f4f6] mb-6 relative overflow-hidden">
                     <h3 className="text-[17px] font-extrabold text-[#111827] mb-1.5 tracking-tight">Do'kon egasimisiz?</h3>
                     <p className="text-[13px] font-medium text-[#9CA3AF] mb-6 leading-[1.4] relative z-10 w-[80%]">
@@ -74,6 +101,14 @@ export function Profile() {
                         </button>
                     </div>
                 </div>
+
+                {/* Logout */}
+                <button
+                    onClick={handleLogout}
+                    className="w-full bg-red-50 text-red-500 font-bold text-[15px] py-[16px] rounded-[28px] flex items-center justify-center gap-2 active:scale-95 transition-all border border-red-100"
+                >
+                    <LogOut className="w-5 h-5" strokeWidth={2.5} /> Chiqish
+                </button>
             </main>
 
             <BottomNav activeTab="profile" />
