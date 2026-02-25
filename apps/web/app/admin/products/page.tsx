@@ -50,16 +50,16 @@ export default function ProductsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
           <h2 style={s.pageTitle}>Mahsulotlar</h2>
-          {pagination && <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Jami {pagination.total} ta mahsulot</p>}
+          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta mahsulot</p>}
         </div>
-        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: '#f8fafc', border: '1px solid #f1f5f9', width: 36, height: 36, borderRadius: 10 }}>
+        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', width: 36, height: 36, borderRadius: 10 }}>
           <RefreshCw size={15} />
         </button>
       </div>
 
       <div style={{ marginBottom: 20 }}>
         <div style={{ position: 'relative', maxWidth: 380 }}>
-          <Search size={14} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={14} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-t4)' }} />
           <input placeholder="Nom yoki SKU qidirish..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ ...s.inp, paddingLeft: 38 }} />
@@ -81,7 +81,7 @@ export default function ProductsPage() {
             {loading ? (
               <tr><td colSpan={7} style={s.empty}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <div className="spin" style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%' }} />
+                  <div className="spin" style={{ width: 18, height: 18, border: '2px solid var(--adm-border)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
                   Yuklanmoqda...
                 </div>
               </td></tr>
@@ -91,30 +91,32 @@ export default function ProductsPage() {
                 Mahsulot topilmadi
               </td></tr>
             ) : products.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+              <tr key={p.id} style={{ borderBottom: '1px solid var(--adm-border)' }}>
                 <td style={s.td}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {p.thumbnail ? (
-                      <img src={p.thumbnail} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid #f1f5f9', flexShrink: 0 }} />
+                      <img src={p.thumbnail} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover', border: '1px solid var(--adm-border)', flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <ShoppingBag size={16} color="#94a3b8" />
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <ShoppingBag size={16} color="var(--adm-t4)" />
                       </div>
                     )}
                     <div>
-                      <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: 1 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>{p.sku}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--adm-t1)', marginBottom: 1 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--adm-t4)', fontFamily: 'monospace' }}>{p.sku}</div>
                     </div>
                   </div>
                 </td>
-                <td style={{ ...s.td, fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
-                  {Number(p.base_price).toLocaleString()} <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>so'm</span>
+                <td style={{ ...s.td, fontWeight: 600, color: 'var(--adm-t1)', whiteSpace: 'nowrap' }}>
+                  {Number(p.base_price).toLocaleString()} <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 400 }}>so'm</span>
                 </td>
-                <td style={{ ...s.td, color: '#64748b' }}>
-                  {p.category_name ? <span style={{ padding: '3px 8px', background: '#f8fafc', borderRadius: 6, fontSize: 12, border: '1px solid #f1f5f9' }}>{p.category_name}</span> : '—'}
+                <td style={{ ...s.td, color: 'var(--adm-t3)' }}>
+                  {p.category_name
+                    ? <span style={{ padding: '3px 8px', background: 'var(--adm-hover)', borderRadius: 6, fontSize: 12, border: '1px solid var(--adm-border)' }}>{p.category_name}</span>
+                    : '—'}
                 </td>
-                <td style={{ ...s.td, color: '#64748b' }}>{p.store_name || '—'}</td>
-                <td style={{ ...s.td, color: '#64748b', fontWeight: 500 }}>{p.views.toLocaleString()}</td>
+                <td style={{ ...s.td, color: 'var(--adm-t3)' }}>{p.store_name || '—'}</td>
+                <td style={{ ...s.td, color: 'var(--adm-t3)', fontWeight: 500 }}>{p.views.toLocaleString()}</td>
                 <td style={s.td}>
                   <button onClick={() => toggleActive(p)} style={{
                     padding: '4px 12px', borderRadius: 20, border: 'none', fontSize: 11, fontWeight: 600, cursor: 'pointer',
@@ -149,9 +151,9 @@ function PaginationBar({ pagination, page, setPage }: { pagination: Pagination |
       {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
         <button key={p} onClick={() => setPage(p)} style={{
           ...s.pageBtn,
-          background: p === page ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#fff',
-          color: p === page ? '#fff' : '#64748b',
-          border: p === page ? '1px solid transparent' : '1px solid #e2e8f0',
+          background: p === page ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'var(--adm-card)',
+          color: p === page ? '#fff' : 'var(--adm-t3)',
+          border: p === page ? '1px solid transparent' : '1px solid var(--adm-border2)',
         }}>{p}</button>
       ))}
     </div>

@@ -66,14 +66,13 @@ export default function SellerRequestsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
           <h2 style={s.pageTitle}>Seller So'rovlari</h2>
-          {pagination && <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Jami {pagination.total} ta so'rov</p>}
+          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta so'rov</p>}
         </div>
-        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: '#f8fafc', border: '1px solid #f1f5f9', width: 36, height: 36, borderRadius: 10 }}>
+        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', width: 36, height: 36, borderRadius: 10 }}>
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {/* Filter buttons */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {FILTERS.map(f => (
           <button key={f.val} onClick={() => { setStatusFilter(f.val); setPage(1); }} style={s.filterBtn(statusFilter === f.val)}>
@@ -85,55 +84,49 @@ export default function SellerRequestsPage() {
       {error && <div style={s.errBox}>⚠️ {error}</div>}
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 60, color: '#94a3b8' }}>
-          <div className="spin" style={{ width: 20, height: 20, border: '2px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 60, color: 'var(--adm-t4)' }}>
+          <div className="spin" style={{ width: 20, height: 20, border: '2px solid var(--adm-border)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
           Yuklanmoqda...
         </div>
       ) : requests.length === 0 ? (
-        <div style={{ ...s.tblWrap, padding: '48px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+        <div style={{ ...s.tblWrap, padding: '48px 20px', textAlign: 'center', color: 'var(--adm-t4)', fontSize: 14 }}>
           <ClipboardList size={40} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.2 }} />
           So'rovlar topilmadi
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {requests.map(r => (
-            <div key={r.id} style={{ background: '#fff', borderRadius: 16, padding: '20px 24px', boxShadow: '0 1px 8px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', transition: 'box-shadow 0.15s' }}>
+            <div key={r.id} style={{ background: 'var(--adm-card)', borderRadius: 16, padding: '20px 24px', boxShadow: 'var(--adm-shadow)', border: '1px solid var(--adm-border)', transition: 'box-shadow 0.15s' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  {/* Store name + badge */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #eff1ff, #e0e7ff)', border: '1px solid #c7d2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏪</div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{r.store_name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--adm-t1)' }}>{r.store_name}</div>
                       <StatusBadge status={r.status} />
                     </div>
                   </div>
 
-                  {/* Info rows */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '6px 20px' }}>
                     <InfoRow label="Arizakor" value={r.user_name} />
                     <InfoRow label="Email" value={r.user_email} />
-                    {r.store_phone    && <InfoRow label="Telefon" value={r.store_phone} />}
-                    {r.store_address  && <InfoRow label="Manzil"  value={r.store_address} />}
-                    {r.store_description && <InfoRow label="Tavsif" value={r.store_description} full />}
+                    {r.store_phone       && <InfoRow label="Telefon" value={r.store_phone} />}
+                    {r.store_address     && <InfoRow label="Manzil"  value={r.store_address} />}
+                    {r.store_description && <InfoRow label="Tavsif"  value={r.store_description} full />}
                   </div>
 
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 10 }}>
+                  <div style={{ fontSize: 11, color: 'var(--adm-t4)', marginTop: 10 }}>
                     {new Date(r.created_at).toLocaleString('uz-UZ')}
                   </div>
                 </div>
 
                 {r.status === 'pending' && (
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignSelf: 'flex-start', marginTop: 4 }}>
-                    <button
-                      onClick={() => action(r.id, 'approved')}
-                      disabled={processingId === r.id}
+                    <button onClick={() => action(r.id, 'approved')} disabled={processingId === r.id}
                       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', opacity: processingId === r.id ? 0.6 : 1 }}>
                       <CheckCircle size={14} /> Tasdiqlash
                     </button>
-                    <button
-                      onClick={() => action(r.id, 'rejected')}
-                      disabled={processingId === r.id}
+                    <button onClick={() => action(r.id, 'rejected')} disabled={processingId === r.id}
                       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(239,68,68,0.3)', opacity: processingId === r.id ? 0.6 : 1 }}>
                       <XCircle size={14} /> Rad etish
                     </button>
@@ -148,7 +141,7 @@ export default function SellerRequestsPage() {
       {pagination && pagination.pages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 20 }}>
           {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
-            <button key={p} onClick={() => setPage(p)} style={{ ...s.pageBtn, background: p === page ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#fff', color: p === page ? '#fff' : '#64748b', border: p === page ? '1px solid transparent' : '1px solid #e2e8f0' }}>{p}</button>
+            <button key={p} onClick={() => setPage(p)} style={{ ...s.pageBtn, background: p === page ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--adm-card)', color: p === page ? '#fff' : 'var(--adm-t3)', border: p === page ? '1px solid transparent' : '1px solid var(--adm-border2)' }}>{p}</button>
           ))}
         </div>
       )}
@@ -159,8 +152,8 @@ export default function SellerRequestsPage() {
 function InfoRow({ label, value, full }: { label: string; value: string; full?: boolean }) {
   return (
     <div style={{ gridColumn: full ? '1 / -1' : undefined }}>
-      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}: </span>
-      <span style={{ fontSize: 13, color: '#374151' }}>{value}</span>
+      <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}: </span>
+      <span style={{ fontSize: 13, color: 'var(--adm-t2)' }}>{value}</span>
     </div>
   );
 }

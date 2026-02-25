@@ -5,16 +5,18 @@ import Link from 'next/link';
 import {
   Menu, X, LogOut, BarChart2, Users,
   ShoppingBag, Store, FileCheck, Package, ChevronRight,
+  Sun, Moon, Settings,
 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const NAV = [
-  { path: '/admin/dashboard', label: 'Dashboard', icon: BarChart2 },
-  { path: '/admin/users', label: 'Foydalanuvchilar', icon: Users },
-  { path: '/admin/products', label: 'Mahsulotlar', icon: ShoppingBag },
-  { path: '/admin/stores', label: "Do'konlar", icon: Store },
-  { path: '/admin/seller-requests', label: "Seller so'rovlari", icon: FileCheck },
-  { path: '/admin/orders', label: 'Buyurtmalar', icon: Package },
+  { path: '/admin/dashboard',       label: 'Dashboard',        icon: BarChart2 },
+  { path: '/admin/users',           label: 'Foydalanuvchilar', icon: Users },
+  { path: '/admin/products',        label: 'Mahsulotlar',      icon: ShoppingBag },
+  { path: '/admin/stores',          label: "Do'konlar",        icon: Store },
+  { path: '/admin/seller-requests', label: "Seller so'rovlari",icon: FileCheck },
+  { path: '/admin/orders',          label: 'Buyurtmalar',      icon: Package },
 ];
 
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
@@ -34,6 +36,7 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAdminAuth();
+  const { isDark, toggle } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
@@ -43,10 +46,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, [user, loading, router]);
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f8fafc' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--adm-bg)' }}>
       <div style={{ textAlign: 'center' }}>
-        <div className="spin" style={{ width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', margin: '0 auto 12px' }} />
-        <div style={{ fontSize: 13, color: '#94a3b8' }}>Yuklanmoqda...</div>
+        <div className="spin" style={{ width: 36, height: 36, border: '3px solid var(--adm-border)', borderTopColor: '#6366f1', borderRadius: '50%', margin: '0 auto 12px' }} />
+        <div style={{ fontSize: 13, color: 'var(--adm-t4)' }}>Yuklanmoqda...</div>
       </div>
     </div>
   );
@@ -54,18 +57,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (!user) return null;
 
   const currentNav = NAV.find(n => n.path === pathname);
+  const isSettings = pathname === '/admin/settings';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--adm-bg)' }}>
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <aside style={{
         width: open ? 260 : 0, minWidth: open ? 260 : 0,
-        background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+        background: 'var(--adm-sidebar-bg)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden', transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
         position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
-        boxShadow: '4px 0 20px rgba(0,0,0,0.15)',
+        boxShadow: '4px 0 20px rgba(0,0,0,0.2)',
       }}>
         {/* Logo */}
         <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
@@ -104,15 +108,33 @@ export function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* User */}
+        {/* ── Bottom: Admin user → Settings ── */}
         <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, marginBottom: 4, background: 'rgba(255,255,255,0.04)' }}>
-            <Avatar name={user.name || user.email} size={32} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Admin'}</div>
-              <div style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+          {/* Clickable admin card → /admin/settings */}
+          <Link
+            href="/admin/settings"
+            style={{ textDecoration: 'none', display: 'block' }}
+          >
+            <div className={`admin-nav-link${isSettings ? ' active' : ''}`} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', borderRadius: 10, marginBottom: 4,
+              background: isSettings ? undefined : 'rgba(255,255,255,0.04)',
+              cursor: 'pointer',
+            }}>
+              <Avatar name={user.name || user.email} size={32} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.name || 'Admin'}
+                </div>
+                <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Settings →
+                </div>
+              </div>
+              <Settings size={13} style={{ color: '#64748b', flexShrink: 0 }} />
             </div>
-          </div>
+          </Link>
+
+          {/* Logout */}
           <button onClick={() => { logout(); router.push('/admin/login'); }} className="admin-nav-link" style={{
             display: 'flex', alignItems: 'center', gap: 10,
             width: '100%', padding: '9px 12px', borderRadius: 10,
@@ -127,46 +149,68 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* ── Main area ── */}
       <div style={{ flex: 1, marginLeft: open ? 260 : 0, transition: 'margin-left 0.25s cubic-bezier(0.4,0,0.2,1)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
-        {/* Topbar */}
+        {/* ── Topbar ── */}
         <header style={{
-          height: 64, background: '#fff',
-          borderBottom: '1px solid #f1f5f9',
+          height: 64, background: 'var(--adm-topbar)',
+          borderBottom: '1px solid var(--adm-border)',
           display: 'flex', alignItems: 'center', padding: '0 24px',
           position: 'sticky', top: 0, zIndex: 50,
-          boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
+          boxShadow: 'var(--adm-shadow)',
         }}>
+          {/* Sidebar toggle */}
           <button onClick={() => setOpen(!open)} style={{
             width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 8,
-            cursor: 'pointer', color: '#64748b', flexShrink: 0,
-            transition: 'all 0.15s',
+            background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', borderRadius: 8,
+            cursor: 'pointer', color: 'var(--adm-t3)', flexShrink: 0, transition: 'all 0.15s',
           }}>
             {open ? <X size={16} /> : <Menu size={16} />}
           </button>
 
+          {/* Page title */}
           <div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {currentNav && (
+            {(currentNav || isSettings) && (
               <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <currentNav.icon size={14} color="#fff" />
+                {isSettings
+                  ? <Settings size={14} color="#fff" />
+                  : currentNav && <currentNav.icon size={14} color="#fff" />
+                }
               </div>
             )}
-            <span style={{ fontWeight: 700, fontSize: 16, color: '#0f172a' }}>
-              {currentNav?.label ?? 'Admin Panel'}
+            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--adm-t1)' }}>
+              {isSettings ? 'Sozlamalar' : (currentNav?.label ?? 'Admin Panel')}
             </span>
           </div>
 
+          {/* Right side: date + theme toggle */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 12, color: '#94a3b8', background: '#f8fafc', padding: '5px 12px', borderRadius: 20, border: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: 12, color: 'var(--adm-t4)', background: 'var(--adm-hover)', padding: '5px 12px', borderRadius: 20, border: '1px solid var(--adm-border)' }}>
               {new Date().toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
-            <Avatar name={user.name || user.email} size={32} />
+
+            {/* Dark/Light toggle */}
+            <button
+              onClick={toggle}
+              title={isDark ? "Light rejimga o'tish" : "Dark rejimga o'tish"}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', borderRadius: 20,
+                border: '1px solid var(--adm-border)',
+                background: 'var(--adm-hover)',
+                color: 'var(--adm-t3)',
+                cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+            >
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
+              {isDark ? 'Light' : 'Dark'}
+            </button>
           </div>
         </header>
 
-        {/* Page content */}
+        {/* ── Page content ── */}
         <main className="admin-fade-in" style={{ flex: 1, padding: '28px 28px' }}>
           {children}
         </main>

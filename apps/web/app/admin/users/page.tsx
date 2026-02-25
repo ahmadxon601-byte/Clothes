@@ -70,17 +70,16 @@ export default function UsersPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
           <h2 style={s.pageTitle}>Foydalanuvchilar</h2>
-          {pagination && <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Jami {pagination.total} ta foydalanuvchi</p>}
+          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta foydalanuvchi</p>}
         </div>
-        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: '#f8fafc', border: '1px solid #f1f5f9', width: 36, height: 36, borderRadius: 10 }}>
+        <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', width: 36, height: 36, borderRadius: 10 }}>
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-          <Search size={14} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={14} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--adm-t4)' }} />
           <input placeholder="Ism yoki email qidirish..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ ...s.inp, paddingLeft: 38 }} />
@@ -99,7 +98,7 @@ export default function UsersPage() {
         <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Foydalanuvchi', 'Email', 'Rol', 'Qo\'shilgan', 'Amallar'].map(h => (
+              {['Foydalanuvchi', 'Email', 'Rol', "Qo'shilgan", 'Amallar'].map(h => (
                 <th key={h} style={s.th}>{h}</th>
               ))}
             </tr>
@@ -108,7 +107,7 @@ export default function UsersPage() {
             {loading ? (
               <tr><td colSpan={5} style={s.empty}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <div className="spin" style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%' }} />
+                  <div className="spin" style={{ width: 18, height: 18, border: '2px solid var(--adm-border)', borderTopColor: '#6366f1', borderRadius: '50%' }} />
                   Yuklanmoqda...
                 </div>
               </td></tr>
@@ -118,21 +117,21 @@ export default function UsersPage() {
                 Foydalanuvchi topilmadi
               </td></tr>
             ) : users.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+              <tr key={u.id} style={{ borderBottom: '1px solid var(--adm-border)' }}>
                 <td style={s.td}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <UserAvatar name={u.name || u.email} />
-                    <span style={{ fontWeight: 500, color: '#0f172a' }}>{u.name || '—'}</span>
+                    <span style={{ fontWeight: 500, color: 'var(--adm-t1)' }}>{u.name || '—'}</span>
                   </div>
                 </td>
-                <td style={{ ...s.td, color: '#64748b' }}>{u.email}</td>
+                <td style={{ ...s.td, color: 'var(--adm-t3)' }}>{u.email}</td>
                 <td style={s.td}><RoleBadge role={u.role} /></td>
-                <td style={{ ...s.td, color: '#94a3b8' }}>{new Date(u.created_at).toLocaleDateString('uz-UZ')}</td>
+                <td style={{ ...s.td, color: 'var(--adm-t4)' }}>{new Date(u.created_at).toLocaleDateString('uz-UZ')}</td>
                 <td style={s.td}>
                   <button onClick={() => del(u.id, u.name)} disabled={deletingId === u.id || u.role === 'admin'}
                     className="admin-btn-icon"
                     style={{ ...s.iconBtn, color: '#ef4444', opacity: u.role === 'admin' ? 0.25 : 1 }}
-                    title={u.role === 'admin' ? 'Admin o\'chirib bo\'lmaydi' : "O'chirish"}>
+                    title={u.role === 'admin' ? "Admin o'chirib bo'lmaydi" : "O'chirish"}>
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -154,10 +153,10 @@ function Pagination({ pagination, page, setPage }: { pagination: Pagination | nu
       {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
         <button key={p} onClick={() => setPage(p)} style={{
           ...s.pageBtn,
-          background: p === page ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#fff',
-          color: p === page ? '#fff' : '#64748b',
+          background: p === page ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'var(--adm-card)',
+          color: p === page ? '#fff' : 'var(--adm-t3)',
           boxShadow: p === page ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
-          border: p === page ? '1px solid transparent' : '1px solid #e2e8f0',
+          border: p === page ? '1px solid transparent' : '1px solid var(--adm-border2)',
         }}>{p}</button>
       ))}
     </div>
