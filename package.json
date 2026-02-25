@@ -8,11 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w web",
-    "lint": "npm run lint -w web",
-    "build": "npm run build -w web",
+    "dev": "npm run dev -w backend",
+    "lint": "npm run lint -w backend",
+    "build": "npm run build -w backend",
     "test": "npm run test --workspaces",
-    "dev:legacy:frontend": "npm run dev -w frontend",
-    "dev:legacy:backend": "npm run dev -w @clothes/backend"
+    "dev:legacy:frontend": "npm run dev -w frontend"
   }
 }
