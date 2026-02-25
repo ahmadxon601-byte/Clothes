@@ -10,7 +10,9 @@ interface ProductCardProps {
     actionIcon?: React.ReactNode;
     onFavoriteClick?: () => void;
     onClick?: () => void;
-}
+} 
+
+
 
 export function ProductCard({
     title,
