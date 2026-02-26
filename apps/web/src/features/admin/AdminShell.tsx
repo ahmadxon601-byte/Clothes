@@ -67,18 +67,20 @@ export function AdminShell({ children }: { children: ReactNode }) {
         width: open ? 260 : 0, minWidth: open ? 260 : 0,
         background: 'var(--adm-sidebar-bg)',
         display: 'flex', flexDirection: 'column',
-        overflow: 'hidden', transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
+        overflow: 'hidden',
+        transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
         position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
-        boxShadow: '4px 0 20px rgba(0,0,0,0.2)',
+        boxShadow: 'var(--adm-sidebar-shadow)',
+        borderRight: '1px solid var(--adm-sidebar-divider)',
       }}>
         {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--adm-sidebar-divider)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
               <span style={{ fontSize: 16 }}>⚙️</span>
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#f8fafc', letterSpacing: '-0.02em' }}>Admin Panel</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--adm-sidebar-text)', letterSpacing: '-0.02em' }}>Admin Panel</div>
               <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clothes Marketplace</div>
             </div>
           </div>
@@ -86,20 +88,25 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 8 }}>Menyu</div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--adm-sidebar-section)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 8 }}>Menyu</div>
           {NAV.map(({ path, label, icon: Icon }) => {
             const active = pathname === path;
             return (
               <Link key={path} href={path} className={`admin-nav-link${active ? ' active' : ''}`} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                color: active ? '#fff' : '#94a3b8',
+                color: active ? '#fff' : 'var(--adm-sidebar-nav-item)',
                 fontSize: 14, fontWeight: active ? 600 : 400,
                 marginBottom: 3, textDecoration: 'none',
                 whiteSpace: 'nowrap', position: 'relative',
               }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', flexShrink: 0 }}>
-                  <Icon size={15} />
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: active ? 'rgba(255,255,255,0.18)' : 'var(--adm-sidebar-icon-bg)',
+                  flexShrink: 0,
+                }}>
+                  <Icon size={15} color={active ? '#fff' : undefined} />
                 </div>
                 <span style={{ flex: 1 }}>{label}</span>
                 {active && <ChevronRight size={13} style={{ opacity: 0.7 }} />}
@@ -109,28 +116,25 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
 
         {/* ── Bottom: Admin user → Settings ── */}
-        <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <div style={{ padding: '12px', borderTop: '1px solid var(--adm-sidebar-divider)', flexShrink: 0 }}>
           {/* Clickable admin card → /admin/settings */}
-          <Link
-            href="/admin/settings"
-            style={{ textDecoration: 'none', display: 'block' }}
-          >
+          <Link href="/admin/settings" style={{ textDecoration: 'none', display: 'block' }}>
             <div className={`admin-nav-link${isSettings ? ' active' : ''}`} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px', borderRadius: 10, marginBottom: 4,
-              background: isSettings ? undefined : 'rgba(255,255,255,0.04)',
+              background: isSettings ? undefined : 'var(--adm-sidebar-user-bg)',
               cursor: 'pointer',
             }}>
               <Avatar name={user.name || user.email} size={32} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: isSettings ? '#fff' : 'var(--adm-sidebar-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.name || 'Admin'}
                 </div>
-                <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <div style={{ fontSize: 10, color: isSettings ? 'rgba(255,255,255,0.7)' : '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Settings →
                 </div>
               </div>
-              <Settings size={13} style={{ color: '#64748b', flexShrink: 0 }} />
+              <Settings size={13} style={{ color: isSettings ? 'rgba(255,255,255,0.6)' : 'var(--adm-sidebar-section)', flexShrink: 0 }} />
             </div>
           </Link>
 
@@ -139,9 +143,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
             display: 'flex', alignItems: 'center', gap: 10,
             width: '100%', padding: '9px 12px', borderRadius: 10,
             border: 'none', cursor: 'pointer', background: 'transparent',
-            color: '#f87171', fontSize: 13, fontWeight: 500, textAlign: 'left',
+            color: 'var(--adm-sidebar-logout)', fontSize: 13, fontWeight: 500, textAlign: 'left',
           }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(248,113,113,0.1)', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--adm-sidebar-logout-icon)', flexShrink: 0 }}>
               <LogOut size={14} />
             </div>
             Chiqish
@@ -198,7 +202,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 12px', borderRadius: 20,
                 border: '1px solid var(--adm-border)',
-                background: 'var(--adm-hover)',
+                background: isDark ? '#1c2333' : '#f1f5f9',
                 color: 'var(--adm-t3)',
                 cursor: 'pointer', fontSize: 12, fontWeight: 500,
                 transition: 'all 0.2s',

@@ -30,10 +30,10 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
         [data-theme="light"] {
           --adm-bg:      #f0f4f8;
           --adm-card:    #ffffff;
-          --adm-hover:   #f8fafc;
-          --adm-border:  #e8edf2;
-          --adm-border2: #dde3ea;
-          --adm-th:      #f4f7fa;
+          --adm-hover:   #f4f7fa;
+          --adm-border:  #e2e8f0;
+          --adm-border2: #d1d9e0;
+          --adm-th:      #f8fafc;
           --adm-inp:     #ffffff;
           --adm-topbar:  #ffffff;
           --adm-t1:      #0f172a;
@@ -41,7 +41,19 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
           --adm-t3:      #64748b;
           --adm-t4:      #94a3b8;
           --adm-shadow:  0 1px 8px rgba(0,0,0,0.06);
-          --adm-sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+
+          /* sidebar – light oq */
+          --adm-sidebar-bg:          #ffffff;
+          --adm-sidebar-shadow:      4px 0 20px rgba(0,0,0,0.06);
+          --adm-sidebar-divider:     rgba(0,0,0,0.07);
+          --adm-sidebar-text:        #0f172a;
+          --adm-sidebar-nav-item:    #374151;
+          --adm-sidebar-section:     #94a3b8;
+          --adm-sidebar-icon-bg:     rgba(99,102,241,0.08);
+          --adm-sidebar-user-bg:     rgba(0,0,0,0.03);
+          --adm-sidebar-nav-hover:   rgba(0,0,0,0.05);
+          --adm-sidebar-logout:      #ef4444;
+          --adm-sidebar-logout-icon: rgba(239,68,68,0.08);
         }
         [data-theme="dark"] {
           --adm-bg:      #0d1117;
@@ -57,7 +69,19 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
           --adm-t3:      #8b949e;
           --adm-t4:      #6e7681;
           --adm-shadow:  0 1px 8px rgba(0,0,0,0.4);
-          --adm-sidebar-bg: linear-gradient(180deg, #010409 0%, #0d1117 100%);
+
+          /* sidebar – dark qora */
+          --adm-sidebar-bg:          linear-gradient(180deg, #010409 0%, #0d1117 100%);
+          --adm-sidebar-shadow:      4px 0 20px rgba(0,0,0,0.4);
+          --adm-sidebar-divider:     rgba(255,255,255,0.06);
+          --adm-sidebar-text:        #f8fafc;
+          --adm-sidebar-nav-item:    #94a3b8;
+          --adm-sidebar-section:     #475569;
+          --adm-sidebar-icon-bg:     rgba(255,255,255,0.05);
+          --adm-sidebar-user-bg:     rgba(255,255,255,0.04);
+          --adm-sidebar-nav-hover:   rgba(255,255,255,0.08);
+          --adm-sidebar-logout:      #f87171;
+          --adm-sidebar-logout-icon: rgba(248,113,113,0.10);
         }
 
         /* ── Scrollbar ── */
@@ -70,8 +94,7 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
 
         /* ── Nav links ── */
         .admin-nav-link { transition: all 0.15s ease; }
-        [data-theme="light"] .admin-nav-link:hover { background: rgba(255,255,255,0.08) !important; }
-        [data-theme="dark"]  .admin-nav-link:hover { background: rgba(255,255,255,0.06) !important; }
+        .admin-nav-link:hover { background: var(--adm-sidebar-nav-hover) !important; }
         .admin-nav-link.active {
           background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
           color: #fff !important;
