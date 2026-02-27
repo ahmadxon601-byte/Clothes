@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3010",
+    "dev": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.dev ni qayta yoqing.'); process.exit(1)\"",
+    "dev:real": "next dev --port 3010",
     "build": "next build",
-    "start": "next start",
+    "start": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.start ni qayta yoqing.'); process.exit(1)\"",
+    "start:real": "next start",
     "lint": "next lint",
     "bot:dev": "tsx scripts/telegram-polling.ts"
   },
