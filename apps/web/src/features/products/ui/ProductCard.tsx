@@ -1,5 +1,4 @@
 'use client';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import type { Product } from '../../../shared/types';
@@ -9,7 +8,15 @@ import { useFavoritesStore } from '../../favorites/model';
 import { cn } from '../../../shared/lib/utils';
 import { useState } from 'react';
 
-export function ProductCard({ product, variant = 'default' }: { product: Product, variant?: 'default' | 'favorite' }) {
+export function ProductCard({
+    product,
+    variant = 'default',
+    storeName,
+}: {
+    product: Product;
+    variant?: 'default' | 'favorite';
+    storeName?: string;
+}) {
     const { favorites, toggleFavorite } = useFavoritesStore();
     const isFav = favorites.includes(product.id);
     const [imgError, setImgError] = useState(false);
@@ -17,6 +24,12 @@ export function ProductCard({ product, variant = 'default' }: { product: Product
     // Hardcoded logic for "ONLY X LEFT" badge to match screenshot look
     const showBadge = product.price > 100; // Just as an example differentiator
     const stockStatus = showBadge ? `ONLY ${Math.floor(Math.random() * 3) + 1} LEFT` : null;
+    const seed = product.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const discountPercent = 12 + (seed % 19); // 12%..30% oralig'ida
+    const discountedPrice = Math.max(
+        1000,
+        Math.round((product.price * (100 - discountPercent)) / 100 / 1000) * 1000
+    );
 
     return (
         <Link href={APP_ROUTES.PRODUCT(product.id)} className="block group">
@@ -54,14 +67,21 @@ export function ProductCard({ product, variant = 'default' }: { product: Product
                 <p className="text-[8.5px] text-[var(--color-hint)] font-medium uppercase tracking-wider mb-0.5">{product.brand || 'Luxury Wear'}</p>
                 <h3 className="text-[12px] font-semibold text-[var(--color-text)] line-clamp-1">{product.title}</h3>
                 <div className="mt-0.5 flex items-center justify-between">
-                    <p className="font-bold text-[13px] text-[var(--color-text)] leading-tight">{formatPrice(product.price, product.currency)}</p>
+                    <div className="flex flex-col leading-tight">
+                        <p className="text-[10px] text-[var(--color-hint)] line-through opacity-80">
+                            {formatPrice(product.price, product.currency)}
+                        </p>
+                        <p className="font-bold text-[13px] text-[var(--color-text)]">
+                            {formatPrice(discountedPrice, product.currency)}
+                        </p>
+                    </div>
                     <div className="bg-[var(--color-surface2)] text-[10.5px] font-bold py-0.5 px-2 rounded-lg text-[var(--color-hint)] shadow-sm">
                         L
                     </div>
                 </div>
                 <p className="text-[9px] text-gray-400 mt-1 flex items-center gap-1">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    Available in 2 stores
+                    {storeName || 'Available in 2 stores'}
                 </p>
             </div>
         </Link>

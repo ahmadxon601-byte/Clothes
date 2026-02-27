@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Heart, User } from 'lucide-react';
+import { Heart, User, Home, Store } from 'lucide-react';
 import { APP_ROUTES } from '../config/constants';
 import { cn } from '../lib/utils';
 
@@ -9,18 +9,21 @@ export function BottomNav() {
     const pathname = usePathname();
 
     const links = [
-        { href: APP_ROUTES.HOME, icon: Home, label: 'Home' },
-        { href: '/search', icon: Search, label: 'Search' },
+        { href: APP_ROUTES.HOME, icon: Home, label: 'Products' },
+        { href: APP_ROUTES.PRODUCTS, icon: Store, label: 'Stores' },
         { href: APP_ROUTES.FAVORITES, icon: Heart, label: 'Favorites' },
         { href: APP_ROUTES.PROFILE, icon: User, label: 'Profile' },
     ];
 
     return (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-0 w-full max-w-[500px] z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] pointer-events-none">
+        <div className="fixed inset-x-0 mx-auto bottom-0 w-full max-w-[500px] z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] pointer-events-none">
             <div className="mx-auto w-[92%] max-w-[372px] h-[60px] bg-[var(--color-nav-bg)] rounded-[30px] shadow-[0_6px_25px_rgba(0,0,0,0.12)] border border-[var(--color-nav-border)] glass-blur pointer-events-auto">
                 <div className="flex items-center justify-between h-full px-2.5 relative">
                     {links.map((link) => {
-                        const isActive = pathname === link.href;
+                        const isActive =
+                            link.href === APP_ROUTES.HOME
+                                ? pathname === APP_ROUTES.HOME || pathname === APP_ROUTES.STORES
+                                : pathname === link.href;
                         const Icon = link.icon;
                         return (
                             <Link

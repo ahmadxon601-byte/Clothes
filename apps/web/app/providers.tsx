@@ -16,6 +16,29 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            const handleWindowError = (event: ErrorEvent) => {
+                const message = String(event?.message ?? '');
+                const eventAsString = String((event as unknown as { error?: unknown })?.error ?? '');
+                if (message === '[object Event]' || eventAsString === '[object Event]') {
+                    event.preventDefault();
+                }
+            };
+            const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+                const reason = event?.reason;
+                const message = String(reason ?? '');
+                const isDomEventObject =
+                    typeof reason === 'object' &&
+                    reason !== null &&
+                    typeof (reason as Event).type === 'string' &&
+                    typeof (reason as Event).target !== 'undefined';
+
+                if (message === '[object Event]' || isDomEventObject) {
+                    event.preventDefault();
+                }
+            };
+
+            window.addEventListener('error', handleWindowError);
+            window.addEventListener('unhandledrejection', handleUnhandledRejection);
             loadSettings();
             loadFavorites();
             applyTelegramTheme(useSettingsStore.getState().settings.themeMode || 'auto');
@@ -47,7 +70,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             };
 
             if (attachThemeListener()) {
-                return () => detach?.();
+                return () => {
+                    window.removeEventListener('error', handleWindowError);
+                    window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+                    detach?.();
+                };
             }
 
             const waitTimer = window.setInterval(() => {
@@ -57,6 +84,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }, 250);
 
             return () => {
+                window.removeEventListener('error', handleWindowError);
+                window.removeEventListener('unhandledrejection', handleUnhandledRejection);
                 window.clearInterval(waitTimer);
                 detach?.();
             };

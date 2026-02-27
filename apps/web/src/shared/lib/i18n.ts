@@ -22,6 +22,13 @@ export const translations = {
         // Home
         special_for_you: "Siz uchun maxsus",
         see_all: "Barchasi",
+        cat_jackets: "Kurtkalar",
+        cat_shirts: "Ko'ylaklar",
+        cat_pants: "Shimlar",
+        cat_shoes: "Oyoq kiyimlar",
+        cat_accessories: "Aksessuarlar",
+        cat_hoodies: "Hudilar",
+        cat_tshirts: "Futbolkalar",
         promos: [
             "Birinchi xarid uchun maxsus chegirma!",
             "Yozgi kolleksiya: 50% gacha keshbek",
@@ -128,6 +135,13 @@ export const translations = {
         // Home
         special_for_you: "Специально для вас",
         see_all: "Все",
+        cat_jackets: "Куртки",
+        cat_shirts: "Рубашки",
+        cat_pants: "Брюки",
+        cat_shoes: "Обувь",
+        cat_accessories: "Аксессуары",
+        cat_hoodies: "Худи",
+        cat_tshirts: "Футболки",
         promos: [
             "Специальная скидка на первую покупку!",
             "Летняя коллекция: кэшбэк до 50%",
@@ -234,6 +248,13 @@ export const translations = {
         // Home
         special_for_you: "Special for you",
         see_all: "See All",
+        cat_jackets: "Jackets",
+        cat_shirts: "Shirts",
+        cat_pants: "Pants",
+        cat_shoes: "Shoes",
+        cat_accessories: "Accessories",
+        cat_hoodies: "Hoodies",
+        cat_tshirts: "T-Shirts",
         promos: [
             "Special discount for your first purchase!",
             "Summer collection: up to 50% cashback",

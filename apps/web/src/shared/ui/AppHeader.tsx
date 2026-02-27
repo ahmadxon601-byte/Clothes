@@ -6,7 +6,7 @@ import { useSettingsStore } from '../../features/settings/model';
 import { useTranslation } from '../lib/i18n';
 import { LanguageSelector } from './LanguageSelector';
 
-const HEADER_ROUTES = new Set(['/', '/search', '/favorites', '/profile']);
+const HEADER_ROUTES = new Set(['/', '/stores', '/products', '/search', '/favorites', '/profile']);
 
 export function hasUnifiedHeader(pathname: string | null): boolean {
     if (!pathname) return false;
@@ -33,7 +33,7 @@ export function AppHeader() {
     let left = <div className="w-9 h-9" />;
     let right = <div className="w-9 h-9" />;
 
-    if (pathname === '/') {
+    if (pathname === '/' || pathname === '/stores') {
         title = 'Clothes MP';
         titleClass = 'text-[17px] font-bold text-[var(--color-text)] text-center';
         left = (
@@ -42,6 +42,14 @@ export function AppHeader() {
             </button>
         );
         right = <LanguageSelector />;
+    } else if (pathname === '/products') {
+        title = "Do'konlar";
+        titleClass = 'text-[20px] font-bold text-[var(--color-text)] text-center';
+        left = (
+            <button onClick={() => router.back()} className={iconButtonClass}>
+                <ChevronLeft size={17} />
+            </button>
+        );
     } else if (pathname === '/search') {
         title = t.search_results;
         left = (
@@ -72,7 +80,7 @@ export function AppHeader() {
     }
 
     return (
-        <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] z-[70] pt-[env(safe-area-inset-top)] bg-[var(--color-header-bg)] glass-blur border-b border-[var(--color-header-border)]">
+        <header className="fixed top-0 inset-x-0 mx-auto w-full max-w-[500px] z-[70] pt-[env(safe-area-inset-top)] bg-[var(--color-header-bg)] glass-blur border-b border-[var(--color-header-border)]">
             <div className="h-[56px] px-5 grid grid-cols-[36px_1fr_36px] items-center">
                 {left}
                 <h1 className={titleClass}>{title}</h1>
