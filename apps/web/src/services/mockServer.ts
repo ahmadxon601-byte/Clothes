@@ -10,15 +10,38 @@ const STORAGE_KEYS = {
     SETTINGS: 'app_settings',
 };
 
+const parseArray = <T>(value: string | null): T[] => {
+    if (!value) return [];
+    try {
+        const parsed = JSON.parse(value) as unknown;
+        return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+        return [];
+    }
+};
+
+const mergeById = <T extends { id: string }>(current: T[], seed: T[]): T[] => {
+    if (!current.length) return seed;
+    const seen = new Set(current.map((item) => item.id));
+    const missing = seed.filter((item) => !seen.has(item.id));
+    return missing.length ? [...current, ...missing] : current;
+};
+
 // Initialize seed data
 const initData = () => {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) {
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(initialProducts));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.STORES)) {
-        localStorage.setItem(STORAGE_KEYS.STORES, JSON.stringify(initialStores));
-    }
+    const storedProducts = parseArray<Product>(localStorage.getItem(STORAGE_KEYS.PRODUCTS));
+    const storedStores = parseArray<Store>(localStorage.getItem(STORAGE_KEYS.STORES));
+
+    localStorage.setItem(
+        STORAGE_KEYS.PRODUCTS,
+        JSON.stringify(mergeById(storedProducts, initialProducts)),
+    );
+    localStorage.setItem(
+        STORAGE_KEYS.STORES,
+        JSON.stringify(mergeById(storedStores, initialStores)),
+    );
+
     if (!localStorage.getItem(STORAGE_KEYS.COMMENTS)) {
         localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify([]));
     }
@@ -46,6 +69,14 @@ const saveToStorage = <T>(key: string, data: T) => {
 };
 
 export const mockApi = {
+    // Stores list
+    async listStores(): Promise<Store[]> {
+        return new Promise(resolve => setTimeout(() => {
+            const stores = getFromStorage<Store>(STORAGE_KEYS.STORES);
+            resolve(stores.filter(s => s.status === 'ACTIVE'));
+        }, 250));
+    },
+
     // Products
     async listProducts(params?: { q?: string; category?: string }): Promise<Product[]> {
         return new Promise(resolve => setTimeout(() => {

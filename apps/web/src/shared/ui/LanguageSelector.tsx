@@ -45,14 +45,14 @@ export function LanguageSelector() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-[var(--color-surface)] rounded-[24px] shadow-2xl border border-[var(--color-border)] overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 mt-2 w-40 bg-[var(--color-surface)] rounded-[20px] shadow-2xl border border-[var(--color-border)] overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200">
                     <div className="flex flex-col">
                         {LANGUAGES.map((lang) => (
                             <button
                                 key={lang.code}
                                 onClick={() => selectLanguage(lang.code)}
                                 className={cn(
-                                    "flex items-center px-6 py-4 text-[15px] font-bold transition-colors text-left",
+                                    "flex items-center px-5 py-3 text-[14px] font-bold transition-colors text-left",
                                     settings.language === lang.code
                                         ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
                                         : "text-[var(--color-text)] hover:bg-[var(--color-surface2)]"

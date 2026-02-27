@@ -1,5 +1,7 @@
 export const APP_ROUTES = {
     HOME: '/',
+    STORES: '/stores',
+    PRODUCTS: '/products',
     FAVORITES: '/favorites',
     PROFILE: '/profile',
     SEARCH: '/search',

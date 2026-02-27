@@ -9,7 +9,7 @@ import { Heart } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 
-const CATEGORIES = ['All', 'Shirts', 'Shoes', 'Pants', 'Jackets', 'Accessories'];
+const CATEGORIES = ['All', 'Shirts', 'Shoes', 'Pants', 'Jackets', 'Accessories'] as const;
 
 export default function FavoritesPage() {
     const { favorites } = useFavoritesStore();
@@ -17,6 +17,14 @@ export default function FavoritesPage() {
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('All');
     const { t } = useTranslation();
+    const categoryLabels: Record<(typeof CATEGORIES)[number], string> = {
+        All: t.all,
+        Shirts: t.cat_shirts,
+        Shoes: t.cat_shoes,
+        Pants: t.cat_pants,
+        Jackets: t.cat_jackets,
+        Accessories: t.cat_accessories,
+    };
 
     useEffect(() => {
         mockApi.listFavorites().then(data => {
@@ -43,7 +51,7 @@ export default function FavoritesPage() {
                                 : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"
                         )}
                     >
-                        {cat === 'All' ? t.all : cat}
+                        {categoryLabels[cat] || cat}
                     </button>
                 ))}
             </div>

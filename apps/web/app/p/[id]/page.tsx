@@ -64,6 +64,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
 
     const isFav = favorites.includes(product.id);
+    const seed = product.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const discountPercent = 12 + (seed % 19);
+    const discountedPrice = Math.max(
+        1000,
+        Math.round((product.price * (100 - discountPercent)) / 100 / 1000) * 1000
+    );
 
     return (
         <div className="flex flex-col min-h-screen pb-safe bg-[var(--color-bg)] animate-in fade-in slide-in-from-right-4 duration-300">
@@ -113,9 +119,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="mt-2.5 flex items-center gap-4">
-                    <p className="text-[19px] font-black text-[var(--color-primary)]">
-                        {formatPrice(product.price, product.currency)}
-                    </p>
+                    <div className="flex flex-col leading-tight">
+                        <p className="text-[13px] text-[var(--color-hint)] line-through opacity-80">
+                            {formatPrice(product.price, product.currency)}
+                        </p>
+                        <p className="text-[19px] font-black text-[var(--color-primary)]">
+                            {formatPrice(discountedPrice, product.currency)}
+                        </p>
+                    </div>
                     <div className="px-2 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[9.5px] font-bold rounded-lg border border-[var(--color-primary)]/10">
                         {t.in_stock}
                     </div>

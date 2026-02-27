@@ -68,7 +68,7 @@ export function CommentList({ productId }: { productId: string }) {
 
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
-                    placeholder={t.placeholder_search}
+                    placeholder={t.add_comment}
                     value={text}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setText(e.target.value)}
                     disabled={isSubmitting}

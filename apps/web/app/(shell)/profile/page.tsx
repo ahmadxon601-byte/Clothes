@@ -24,7 +24,16 @@ export default function ProfilePage() {
     }, [user]);
 
     const profileName = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Ahmad';
-    const username = user?.username || 'Telegram user name';
+    const username = user?.username ? `@${user.username}` : (user?.id ? `ID: ${user.id}` : 'Telegram user');
+    const phone = (() => {
+        if (typeof window === 'undefined') return '+998-xxx-xx-xx';
+        const keys = ['tg_phone', 'clothes_phone', 'user_phone', 'phone'];
+        for (const key of keys) {
+            const value = localStorage.getItem(key);
+            if (value && value.trim()) return value.trim();
+        }
+        return user ? 'Telefon yuborilmagan' : '+998-xxx-xx-xx';
+    })();
 
     const menuItems = [
         { label: t.favorites, sub: t.saved_products, icon: Bookmark, href: APP_ROUTES.FAVORITES, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
@@ -54,7 +63,7 @@ export default function ProfilePage() {
 
                     <div className="mt-5 flex flex-wrap justify-center gap-2 w-full">
                         <div className="px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)] shadow-sm">
-                            +998-xxx-xx-xx
+                            {phone}
                         </div>
                         <div className="px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)] shadow-sm">
                             {username}
