@@ -38,7 +38,7 @@ export default function AdminLogin() {
     }}>
       {/* Left decorative panel */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: 60, display: 'none',
       }} className="admin-left-panel">
       </div>

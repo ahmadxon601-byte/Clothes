@@ -72,7 +72,7 @@ export default function ProductsPage() {
         <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Mahsulot', 'Narx', 'Kategoriya', "Do'kon", <span key="v" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Eye size={11} />Ko'rish</span>, 'Status', ''].map((h, i) => (
+              {['Mahsulot', 'Narx', 'Kategoriya', "Do'kon", <span key="v" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Eye size={11} />Ko&apos;rish</span>, 'Status', ''].map((h, i) => (
                 <th key={i} style={s.th}>{h}</th>
               ))}
             </tr>
@@ -108,7 +108,7 @@ export default function ProductsPage() {
                   </div>
                 </td>
                 <td style={{ ...s.td, fontWeight: 600, color: 'var(--adm-t1)', whiteSpace: 'nowrap' }}>
-                  {Number(p.base_price).toLocaleString()} <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 400 }}>so'm</span>
+                  {Number(p.base_price).toLocaleString()} <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 400 }}>so&apos;m</span>
                 </td>
                 <td style={{ ...s.td, color: 'var(--adm-t3)' }}>
                   {p.category_name

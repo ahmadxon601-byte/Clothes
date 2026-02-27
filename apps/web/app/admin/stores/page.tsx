@@ -49,8 +49,8 @@ export default function StoresPage() {
     <AdminShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
-          <h2 style={s.pageTitle}>Do'konlar</h2>
-          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta do'kon</p>}
+          <h2 style={s.pageTitle}>Do&apos;konlar</h2>
+          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta do&apos;kon</p>}
         </div>
         <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', width: 36, height: 36, borderRadius: 10 }}>
           <RefreshCw size={15} />
@@ -84,7 +84,7 @@ export default function StoresPage() {
             ) : stores.length === 0 ? (
               <tr><td colSpan={6} style={s.empty}>
                 <Store size={40} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.2 }} />
-                Do'kon topilmadi
+                Do&apos;kon topilmadi
               </td></tr>
             ) : stores.map(st => (
               <tr key={st.id} style={{ borderBottom: '1px solid var(--adm-border)' }}>

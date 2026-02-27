@@ -65,8 +65,8 @@ export default function SellerRequestsPage() {
     <AdminShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
-          <h2 style={s.pageTitle}>Seller So'rovlari</h2>
-          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta so'rov</p>}
+          <h2 style={s.pageTitle}>Seller So&apos;rovlari</h2>
+          {pagination && <p style={{ fontSize: 13, color: 'var(--adm-t3)', marginTop: 2 }}>Jami {pagination.total} ta so&apos;rov</p>}
         </div>
         <button onClick={fetchData} className="admin-btn-icon" style={{ ...s.iconBtn, background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', width: 36, height: 36, borderRadius: 10 }}>
           <RefreshCw size={15} />
@@ -91,7 +91,7 @@ export default function SellerRequestsPage() {
       ) : requests.length === 0 ? (
         <div style={{ ...s.tblWrap, padding: '48px 20px', textAlign: 'center', color: 'var(--adm-t4)', fontSize: 14 }}>
           <ClipboardList size={40} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.2 }} />
-          So'rovlar topilmadi
+          So&apos;rovlar topilmadi
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

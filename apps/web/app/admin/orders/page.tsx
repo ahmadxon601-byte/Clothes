@@ -117,7 +117,7 @@ export default function OrdersPage() {
                     <div style={{ fontSize: 11, color: 'var(--adm-t4)' }}>{o.user_email}</div>
                   </td>
                   <td style={{ ...s.td, fontWeight: 600, color: 'var(--adm-t1)', whiteSpace: 'nowrap' }}>
-                    {Number(o.total_price).toLocaleString()} <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 400 }}>so'm</span>
+                    {Number(o.total_price).toLocaleString()} <span style={{ fontSize: 11, color: 'var(--adm-t4)', fontWeight: 400 }}>so&apos;m</span>
                   </td>
                   <td style={s.td}>
                     <span style={{ fontWeight: 600, color: '#6366f1', background: '#eff1ff', padding: '3px 10px', borderRadius: 20, fontSize: 12 }}>

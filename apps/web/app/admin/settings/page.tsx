@@ -152,7 +152,7 @@ export default function SettingsPage() {
           )}
           {pwSuccess && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', color: '#16a34a', marginBottom: 16, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CheckCircle size={15} /> Parol muvaffaqiyatli o'zgartirildi
+              <CheckCircle size={15} /> Parol muvaffaqiyatli o&apos;zgartirildi
             </div>
           )}
 
