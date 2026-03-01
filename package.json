@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "dev": "npm run dev -w web",
-    "dev:backend": "node -e \"console.error('Backend vaqtincha bloklangan. Yangi backend tayyor bo`lganda bu scriptni qayta yoqing.'); process.exit(1)\"",
+    "dev:admin": "npm run dev -w adminpanel",
+    "dev:backend": "npm run dev:real -w backend",
     "dev:backend:real": "npm run dev:real -w backend",
     "lint": "npm run lint -w backend",
     "build": "npm run build -w backend",

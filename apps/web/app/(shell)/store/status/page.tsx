@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Info, CheckCircle2, Clock } from 'lucide-react';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
-import { mockApi } from '../../../../src/services/mockServer';
+import { ensureMarketplaceToken, getMarketplaceMe, markCachedStoreApproved, readCachedStoreApplication } from '../../../../src/lib/marketplaceAuth';
 import type { StoreApplication } from '../../../../src/shared/types';
 import { Button } from '../../../../src/shared/ui/Button';
 import { Skeleton } from '../../../../src/shared/ui/Skeleton';
@@ -19,10 +19,23 @@ export default function StoreStatusPage() {
 
     useEffect(() => {
         const fetchStatus = async () => {
-            const uid = user ? String(user.id) : 'mock_user_123';
-            const app = await mockApi.getMyApplication(uid);
-            setApplication(app || null);
-            setLoading(false);
+            try {
+                const token = await ensureMarketplaceToken(user);
+                const me = await getMarketplaceMe(token);
+                const cached = readCachedStoreApplication();
+                if (!cached) {
+                    setApplication(null);
+                } else if (me.role === 'seller') {
+                    markCachedStoreApproved();
+                    setApplication({ ...cached, status: 'APPROVED' });
+                } else {
+                    setApplication(cached);
+                }
+            } catch {
+                setApplication(readCachedStoreApplication());
+            } finally {
+                setLoading(false);
+            }
         };
         fetchStatus();
     }, [user]);

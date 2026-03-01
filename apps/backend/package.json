@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.dev ni qayta yoqing.'); process.exit(1)\"",
-    "dev:real": "next dev --port 3010",
+    "dev:real": "next dev --port 3001",
     "build": "next build",
     "start": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.start ni qayta yoqing.'); process.exit(1)\"",
     "start:real": "next start",

@@ -1,13 +1,7 @@
 'use client';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { adminApi } from '../lib/adminApi';
 
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { adminApi, TOKEN_STORAGE_KEY, type AdminUser } from '../lib/adminApi';
 
 interface AdminAuthCtx {
   user: AdminUser | null;
@@ -23,45 +17,49 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) { setLoading(false); return; }
+    async function bootstrap() {
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
 
-    adminApi.get<AdminUser>('/api/auth/me')
-      .then((u) => {
-        if (u.role !== 'admin') {
-          localStorage.removeItem('admin_token');
+      try {
+        const admin = (await adminApi.getMe()) as AdminUser;
+        if (admin.role !== 'admin') {
+          localStorage.removeItem(TOKEN_STORAGE_KEY);
           setUser(null);
-        } else {
-          setUser(u);
+          return;
         }
-      })
-      .catch(() => {
-        localStorage.removeItem('admin_token');
+        setUser({ ...admin, name: admin.name ?? '' });
+      } catch {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void bootstrap();
   }, []);
 
   async function login(email: string, password: string) {
-    const res = await adminApi.post<{ token: string; user: AdminUser }>(
-      '/api/auth/login',
-      { email, password }
-    );
-    if (res.user.role !== 'admin') throw new Error("Admin huquqi yo'q");
-    localStorage.setItem('admin_token', res.token);
-    setUser(res.user);
+    const result = (await adminApi.login(email, password)) as { token: string; user: AdminUser };
+    if (result.user.role !== 'admin') {
+      throw new Error('Admin access required');
+    }
+
+    localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
+    setUser({ ...result.user, name: result.user.name ?? '' });
   }
 
   function logout() {
-    localStorage.removeItem('admin_token');
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     setUser(null);
   }
 
-  return (
-    <AdminAuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
-    </AdminAuthContext.Provider>
-  );
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+  return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }
 
 export function useAdminAuth() {

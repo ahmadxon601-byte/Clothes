@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
-import { mockApi } from '../../../../src/services/mockServer';
+import { cachePendingStoreApplication, ensureMarketplaceToken } from '../../../../src/lib/marketplaceAuth';
 import { APP_ROUTES } from '../../../../src/shared/config/constants';
 import { Button } from '../../../../src/shared/ui/Button';
 import { Input } from '../../../../src/shared/ui/Input';
@@ -34,20 +34,42 @@ export default function StoreApplyPage() {
         }
         setLoading(true);
         try {
-            const uid = user ? String(user.id) : 'mock_user_123';
-            await mockApi.submitStoreApplication(uid, {
+            const token = await ensureMarketplaceToken(user);
+            const body = {
+                store_name: formData.storeName,
+                store_description: '',
+                owner_name: user ? `${user.first_name} ${user.last_name ?? ''}`.trim() : 'Marketplace User',
+                phone: '',
+                address: formData.addressText,
+            };
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/api/stores/request`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body),
+            });
+            const result = await res.json().catch(() => ({}));
+            if (!res.ok && res.status !== 409) {
+                throw new Error(result?.error ?? result?.message ?? 'Request failed');
+            }
+
+            cachePendingStoreApplication({
+                id: crypto.randomUUID(),
+                userId: user ? String(user.id) : 'local-user',
                 storeName: formData.storeName,
                 addressText: formData.addressText,
                 location: {
                     lat: parseFloat(formData.lat) || 41.2995,
-                    lng: parseFloat(formData.lng) || 69.2401
+                    lng: parseFloat(formData.lng) || 69.2401,
                 },
-                photoUrl: formData.photoUrl
+                photoUrl: formData.photoUrl,
             });
             showToast({ message: t.application_received, type: 'success' });
             router.replace(APP_ROUTES.STORE_STATUS);
-        } catch (err) {
-            showToast({ message: t.error_occurred, type: 'error' });
+        } catch (err: any) {
+            showToast({ message: err?.message || t.error_occurred, type: 'error' });
         } finally {
             setLoading(false);
         }

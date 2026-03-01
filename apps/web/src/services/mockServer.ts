@@ -30,17 +30,9 @@ const mergeById = <T extends { id: string }>(current: T[], seed: T[]): T[] => {
 // Initialize seed data
 const initData = () => {
     if (typeof window === 'undefined') return;
-    const storedProducts = parseArray<Product>(localStorage.getItem(STORAGE_KEYS.PRODUCTS));
-    const storedStores = parseArray<Store>(localStorage.getItem(STORAGE_KEYS.STORES));
-
-    localStorage.setItem(
-        STORAGE_KEYS.PRODUCTS,
-        JSON.stringify(mergeById(storedProducts, initialProducts)),
-    );
-    localStorage.setItem(
-        STORAGE_KEYS.STORES,
-        JSON.stringify(mergeById(storedStores, initialStores)),
-    );
+    // Keep products/stores exactly as current seed to guarantee test consistency.
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(initialProducts));
+    localStorage.setItem(STORAGE_KEYS.STORES, JSON.stringify(initialStores));
 
     if (!localStorage.getItem(STORAGE_KEYS.COMMENTS)) {
         localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify([]));

@@ -1,224 +1,281 @@
 'use client';
-import { useState, ReactNode, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import {
-  Menu, X, LogOut, BarChart2, Users,
-  ShoppingBag, Store, FileCheck, Package, ChevronRight,
-  Sun, Moon, Settings,
-} from 'lucide-react';
-import { useAdminAuth } from '../../context/AdminAuthContext';
-import { useTheme } from '../../context/ThemeContext';
 
-const NAV = [
-  { path: '/admin/dashboard',       label: 'Dashboard',        icon: BarChart2 },
-  { path: '/admin/users',           label: 'Foydalanuvchilar', icon: Users },
-  { path: '/admin/products',        label: 'Mahsulotlar',      icon: ShoppingBag },
-  { path: '/admin/stores',          label: "Do'konlar",        icon: Store },
-  { path: '/admin/seller-requests', label: "Seller so'rovlari",icon: FileCheck },
-  { path: '/admin/orders',          label: 'Buyurtmalar',      icon: Package },
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  BadgeAlert,
+  Bell,
+  Boxes,
+  ChartLine,
+  FileClock,
+  Files,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Package,
+  Settings,
+  Shield,
+  ShoppingBag,
+  Store,
+  Users,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTheme } from 'next-themes';
+import { useAdminAuth } from '../../context/AdminAuthContext';
+import { cn } from '../../shared/lib/utils';
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  mobile?: boolean;
+};
+
+const primaryNav: NavItem[] = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, mobile: true },
+  { href: '/admin/applications', label: 'Applications', icon: Files, mobile: true },
+  { href: '/admin/products', label: 'Products', icon: ShoppingBag, mobile: true },
+  { href: '/admin/shops', label: 'Shops', icon: Store, mobile: true },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
-  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+const moreNav: NavItem[] = [
+  { href: '/admin/categories', label: 'Categories', icon: Boxes },
+  { href: '/admin/banners', label: 'Banners', icon: Bell },
+  { href: '/admin/comments', label: 'Comments', icon: MessageSquare },
+  { href: '/admin/reports', label: 'Reports', icon: BadgeAlert },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/roles', label: 'Roles', icon: Shield },
+  { href: '/admin/audit-logs', label: 'Audit Logs', icon: FileClock },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
+];
+
+function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
+  const pathname = usePathname();
+  const active = pathname === item.href;
+  const Icon = item.icon;
+
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.36, fontWeight: 700, color: '#fff',
-      boxShadow: '0 2px 8px rgba(99,102,241,0.35)',
-    }}>
-      {initials || 'A'}
-    </div>
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={cn(
+        'group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200',
+        active ? 'bg-[var(--admin-pill)] text-[var(--admin-text)] shadow-[var(--admin-shadow)]' : 'text-[var(--admin-muted)] hover:bg-[var(--admin-pill)]'
+      )}
+    >
+      <span
+        className={cn(
+          'grid size-9 place-items-center rounded-xl border border-[var(--admin-border)] transition-colors',
+          active ? 'bg-[var(--admin-accent)]/20 text-[var(--admin-accent)]' : 'bg-[var(--admin-card)]'
+        )}
+      >
+        <Icon className='size-4' />
+      </span>
+      <span className='text-sm font-medium'>{item.label}</span>
+    </Link>
   );
 }
 
-export function AdminShell({ children }: { children: ReactNode }) {
-  const { user, loading, logout } = useAdminAuth();
-  const { isDark, toggle } = useTheme();
-  const router = useRouter();
+function MoreMenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {open ? (
+        <>
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className='fixed inset-0 z-[70] bg-black/50'
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className='fixed inset-x-0 bottom-0 z-[71] rounded-t-[24px] border border-[var(--admin-border)] bg-[var(--admin-card)] p-4 pb-8 shadow-[var(--admin-shadow)]'
+          >
+            <div className='mx-auto mb-4 h-1.5 w-12 rounded-full bg-[var(--admin-border)]' />
+            <p className='mb-3 text-sm font-semibold text-[var(--admin-text)]'>More</p>
+            <div className='grid grid-cols-2 gap-2'>
+              {moreNav.map((item) => (
+                <NavLink key={item.href} item={item} onClick={onClose} />
+              ))}
+            </div>
+          </motion.div>
+        </>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function MobileBottomNav({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  const mobileItems = primaryNav.filter((item) => item.mobile);
+
+  return (
+    <nav className='fixed inset-x-0 bottom-0 z-50 border-t border-[var(--admin-border)] bg-[var(--admin-card)]/95 px-2 py-2 backdrop-blur xl:hidden'>
+      <div className='grid grid-cols-5 gap-1'>
+        {mobileItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors',
+                active ? 'bg-[var(--admin-pill)] text-[var(--admin-text)]' : 'text-[var(--admin-muted)]'
+              )}
+            >
+              <Icon className='size-4' />
+              {item.label}
+            </Link>
+          );
+        })}
+        <button onClick={onMore} className='flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium text-[var(--admin-muted)]'>
+          <Menu className='size-4' />
+          More
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+export function AdminShell({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAdminAuth();
+  const { theme, setTheme } = useTheme();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/admin/login');
-  }, [user, loading, router]);
+    if (!loading && !user) {
+      router.replace('/admin/login');
+    }
+  }, [loading, router, user]);
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--adm-bg)' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div className="spin" style={{ width: 36, height: 36, border: '3px solid var(--adm-border)', borderTopColor: '#6366f1', borderRadius: '50%', margin: '0 auto 12px' }} />
-        <div style={{ fontSize: 13, color: 'var(--adm-t4)' }}>Yuklanmoqda...</div>
-      </div>
-    </div>
-  );
+  const subtitle = useMemo(() => {
+    if (pathname.includes('/products')) return 'Product moderation and publishing flow';
+    if (pathname.includes('/applications')) return 'Review incoming shop applications';
+    if (pathname.includes('/shops')) return 'Manage shops, activation and suspension';
+    return 'Clothes MP admin workspace';
+  }, [pathname]);
+
+  if (loading) {
+    return <div className='grid min-h-screen place-items-center bg-[var(--admin-bg)] text-[var(--admin-muted)]'>Loading...</div>;
+  }
 
   if (!user) return null;
 
-  const currentNav = NAV.find(n => n.path === pathname);
-  const isSettings = pathname === '/admin/settings';
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--adm-bg)' }}>
-
-      {/* ── Sidebar ── */}
-      <aside style={{
-        width: open ? 260 : 0, minWidth: open ? 260 : 0,
-        background: 'var(--adm-sidebar-bg)',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-        transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
-        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
-        boxShadow: 'var(--adm-sidebar-shadow)',
-        borderRight: '1px solid var(--adm-sidebar-divider)',
-      }}>
-        {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--adm-sidebar-divider)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
-              <span style={{ fontSize: 16 }}>⚙️</span>
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--adm-sidebar-text)', letterSpacing: '-0.02em' }}>Admin Panel</div>
-              <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clothes Marketplace</div>
-            </div>
-          </div>
+    <div className='min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]'>
+      <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 xl:flex xl:flex-col'>
+        <div className='mb-4 rounded-2xl bg-[var(--admin-pill)] p-3'>
+          <p className='text-xl font-extrabold'>Clothes MP</p>
+          <p className='text-xs text-[var(--admin-muted)]'>Admin Panel</p>
         </div>
-
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--adm-sidebar-section)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 8 }}>Menyu</div>
-          {NAV.map(({ path, label, icon: Icon }) => {
-            const active = pathname === path;
-            return (
-              <Link key={path} href={path} className={`admin-nav-link${active ? ' active' : ''}`} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                color: active ? '#fff' : 'var(--adm-sidebar-nav-item)',
-                fontSize: 14, fontWeight: active ? 600 : 400,
-                marginBottom: 3, textDecoration: 'none',
-                whiteSpace: 'nowrap', position: 'relative',
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: active ? 'rgba(255,255,255,0.18)' : 'var(--adm-sidebar-icon-bg)',
-                  flexShrink: 0,
-                }}>
-                  <Icon size={15} color={active ? '#fff' : undefined} />
-                </div>
-                <span style={{ flex: 1 }}>{label}</span>
-                {active && <ChevronRight size={13} style={{ opacity: 0.7 }} />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* ── Bottom: Admin user → Settings ── */}
-        <div style={{ padding: '12px', borderTop: '1px solid var(--adm-sidebar-divider)', flexShrink: 0 }}>
-          {/* Clickable admin card → /admin/settings */}
-          <Link href="/admin/settings" style={{ textDecoration: 'none', display: 'block' }}>
-            <div className={`admin-nav-link${isSettings ? ' active' : ''}`} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px', borderRadius: 10, marginBottom: 4,
-              background: isSettings ? undefined : 'var(--adm-sidebar-user-bg)',
-              cursor: 'pointer',
-            }}>
-              <Avatar name={user.name || user.email} size={32} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: isSettings ? '#fff' : 'var(--adm-sidebar-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.name || 'Admin'}
-                </div>
-                <div style={{ fontSize: 10, color: isSettings ? 'rgba(255,255,255,0.7)' : '#6366f1', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Settings →
-                </div>
-              </div>
-              <Settings size={13} style={{ color: isSettings ? 'rgba(255,255,255,0.6)' : 'var(--adm-sidebar-section)', flexShrink: 0 }} />
-            </div>
-          </Link>
-
-          {/* Logout */}
-          <button onClick={() => { logout(); router.push('/admin/login'); }} className="admin-nav-link" style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            width: '100%', padding: '9px 12px', borderRadius: 10,
-            border: 'none', cursor: 'pointer', background: 'transparent',
-            color: 'var(--adm-sidebar-logout)', fontSize: 13, fontWeight: 500, textAlign: 'left',
-          }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--adm-sidebar-logout-icon)', flexShrink: 0 }}>
-              <LogOut size={14} />
-            </div>
-            Chiqish
-          </button>
+        <div className='space-y-1 overflow-y-auto pr-1'>
+          {primaryNav.map((item) => (
+            <NavLink key={item.href} item={item} />
+          ))}
+          <div className='my-2 h-px bg-[var(--admin-border)]' />
+          {moreNav.filter((item) => !primaryNav.some((base) => base.href === item.href)).map((item) => (
+            <NavLink key={item.href} item={item} />
+          ))}
         </div>
+        <button
+          onClick={() => {
+            logout();
+            router.replace('/admin/login');
+          }}
+          className='mt-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3 text-left text-sm text-[var(--admin-muted)] transition hover:-translate-y-0.5'
+        >
+          Sign out
+        </button>
       </aside>
 
-      {/* ── Main area ── */}
-      <div style={{ flex: 1, marginLeft: open ? 260 : 0, transition: 'margin-left 0.25s cubic-bezier(0.4,0,0.2,1)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-
-        {/* ── Topbar ── */}
-        <header style={{
-          height: 64, background: 'var(--adm-topbar)',
-          borderBottom: '1px solid var(--adm-border)',
-          display: 'flex', alignItems: 'center', padding: '0 24px',
-          position: 'sticky', top: 0, zIndex: 50,
-          boxShadow: 'var(--adm-shadow)',
-        }}>
-          {/* Sidebar toggle */}
-          <button onClick={() => setOpen(!open)} style={{
-            width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--adm-hover)', border: '1px solid var(--adm-border)', borderRadius: 8,
-            cursor: 'pointer', color: 'var(--adm-t3)', flexShrink: 0, transition: 'all 0.15s',
-          }}>
-            {open ? <X size={16} /> : <Menu size={16} />}
-          </button>
-
-          {/* Page title */}
-          <div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {(currentNav || isSettings) && (
-              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {isSettings
-                  ? <Settings size={14} color="#fff" />
-                  : currentNav && <currentNav.icon size={14} color="#fff" />
-                }
-              </div>
-            )}
-            <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--adm-t1)' }}>
-              {isSettings ? 'Sozlamalar' : (currentNav?.label ?? 'Admin Panel')}
-            </span>
-          </div>
-
-          {/* Right side: date + theme toggle */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 12, color: 'var(--adm-t4)', background: 'var(--adm-hover)', padding: '5px 12px', borderRadius: 20, border: '1px solid var(--adm-border)' }}>
-              {new Date().toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-
-            {/* Dark/Light toggle */}
-            <button
-              onClick={toggle}
-              title={isDark ? "Light rejimga o'tish" : "Dark rejimga o'tish"}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', borderRadius: 20,
-                border: '1px solid var(--adm-border)',
-                background: isDark ? '#1c2333' : '#f1f5f9',
-                color: 'var(--adm-t3)',
-                cursor: 'pointer', fontSize: 12, fontWeight: 500,
-                transition: 'all 0.2s',
-              }}
+      <AnimatePresence>
+        {drawerOpen ? (
+          <>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 z-[60] bg-black/50 xl:hidden'
+              onClick={() => setDrawerOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ duration: 0.2 }}
+              className='fixed inset-y-0 left-0 z-[61] w-[260px] border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 xl:hidden'
             >
-              {isDark ? <Sun size={14} /> : <Moon size={14} />}
-              {isDark ? 'Light' : 'Dark'}
+              <div className='mb-4 flex items-center justify-between'>
+                <p className='text-lg font-bold'>Clothes MP</p>
+                <button onClick={() => setDrawerOpen(false)} className='rounded-xl border border-[var(--admin-border)] p-2'>
+                  <X className='size-4' />
+                </button>
+              </div>
+              <div className='space-y-1'>
+                {[...primaryNav, ...moreNav].map((item) => (
+                  <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
+                ))}
+              </div>
+            </motion.aside>
+          </>
+        ) : null}
+      </AnimatePresence>
+
+      <div className='xl:pl-[260px]'>
+        <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur md:px-6'>
+          <button onClick={() => setDrawerOpen(true)} className='rounded-xl border border-[var(--admin-border)] p-2 xl:hidden'>
+            <Menu className='size-4' />
+          </button>
+          <div className='min-w-0'>
+            <h1 className='truncate text-lg font-bold'>{title}</h1>
+            <p className='hidden text-xs text-[var(--admin-muted)] md:block'>{subtitle}</p>
+          </div>
+          <div className='ml-auto flex items-center gap-2'>
+            {actions}
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-2 text-xs font-semibold transition hover:-translate-y-0.5'
+            >
+              {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
           </div>
         </header>
 
-        {/* ── Page content ── */}
-        <main className="admin-fade-in" style={{ flex: 1, padding: '28px 28px' }}>
+        <motion.main
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className='px-4 pb-24 pt-4 md:px-6 xl:pb-6'
+        >
           {children}
-        </main>
+        </motion.main>
       </div>
+
+      <MobileBottomNav onMore={() => setMoreOpen(true)} />
+      <MoreMenuSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
     </div>
   );
 }
+
+export const adminNavigation = { primaryNav, moreNav };
+export const adminOverviewCards = [
+  { title: 'Users', value: '2.4k', icon: Users },
+  { title: 'Products', value: '9.8k', icon: ShoppingBag },
+  { title: 'Shops', value: '438', icon: Store },
+  { title: 'Moderation', value: '112', icon: Activity },
+  { title: 'Reports', value: '37', icon: ChartLine },
+  { title: 'Orders', value: '1.9k', icon: Package },
+];

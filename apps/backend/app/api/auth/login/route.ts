@@ -45,6 +45,24 @@ export async function POST(req: NextRequest) {
     return ok({ user: safeUser, token });
   } catch (e) {
     console.error("[login]", e);
+    const errCode =
+      typeof e === "object" && e !== null && "code" in e
+        ? String((e as { code?: unknown }).code ?? "")
+        : "";
+    const msg = e instanceof Error ? e.message : "";
+    if (
+      msg.includes("password must be a string") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("connect ECONN") ||
+      msg.includes("authentication failed") ||
+      msg.includes("password authentication failed") ||
+      msg.includes("getaddrinfo ENOTFOUND") ||
+      msg.includes('database "pos" does not exist') ||
+      msg.includes("no pg_hba.conf entry") ||
+      ["ECONNREFUSED", "28P01", "3D000", "ENOTFOUND"].includes(errCode)
+    ) {
+      return fail("Database connection error. Backend DB sozlamalarini tekshiring.", 503);
+    }
     return fail("Internal server error", 500);
   }
 }
