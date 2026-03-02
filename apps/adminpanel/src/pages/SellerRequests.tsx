@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { CheckCircle, XCircle, RefreshCw, Clock } from 'lucide-react';
 import { api } from '../lib/api';
+import { useI18n } from '../context/I18nContext';
 import { IconButton } from '../components/ui/IconButton';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { AppCard } from '../components/ui/AppCard';
@@ -28,6 +29,7 @@ interface Pagination {
 }
 
 export default function SellerRequests() {
+  const { t } = useI18n();
   const [requests, setRequests] = useState<SellerRequest[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -68,8 +70,7 @@ export default function SellerRequests() {
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   async function handleAction(id: string, action: 'approved' | 'rejected') {
-    const label = action === 'approved' ? 'tasdiqlaysizmi' : 'rad etasizmi';
-    if (!confirm(`Bu so'rovni ${label}?`)) return;
+    if (!confirm(action === 'approved' ? t('applications.confirmApprove') : t('applications.confirmReject'))) return;
     setProcessingId(id);
     try {
       await api.put(`/api/admin/seller-requests/${id}`, {
@@ -80,24 +81,24 @@ export default function SellerRequests() {
         setRequests(prev => prev.filter(r => r.id !== id));
       }
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Xatolik');
+      alert(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setProcessingId(null);
     }
   }
 
   const getStatusBadge = (s: string) => {
-    if (s === 'approved') return <StatusBadge status="active" label="Tasdiqlangan" />;
-    if (s === 'rejected') return <StatusBadge status="rejected" label="Rad etilgan" />;
-    return <StatusBadge status="pending" label="Kutilmoqda" />;
+    if (s === 'approved') return <StatusBadge status="active" label={t('applications.approved')} />;
+    if (s === 'rejected') return <StatusBadge status="rejected" label={t('applications.rejected')} />;
+    return <StatusBadge status="pending" label={t('applications.pending')} />;
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl md:text-3xl font-bold text-main tracking-tight">Seller So'rovlari</h2>
-          <p className="text-sm text-muted font-medium">Do'kon ochish uchun yuborilgan arizalarni boshqaring.</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-main tracking-tight">{t('applications.title')}</h2>
+          <p className="text-sm text-muted font-medium">{t('applications.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <IconButton onClick={fetchRequests} variant="soft" disabled={loading}>
@@ -108,18 +109,18 @@ export default function SellerRequests() {
 
       <div className="bg-card rounded-2xl border border-border shadow-sm p-4 md:p-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-          <div className="text-xs uppercase tracking-wider font-semibold text-muted">Filtr</div>
+          <div className="text-xs uppercase tracking-wider font-semibold text-muted">{t('applications.filter')}</div>
           <div className="text-xs font-semibold text-muted bg-pill border border-border/60 rounded-full px-3 py-1.5 w-fit">
-            Jami: {pagination?.total ?? 0}
+            {t('common.total')}: {pagination?.total ?? 0}
           </div>
         </div>
         <div className="overflow-x-auto pb-1">
           <SegmentedControl
             options={[
-              { label: 'Kutilmoqda', value: 'pending' },
-              { label: 'Tasdiqlangan', value: 'approved' },
-              { label: 'Rad etilgan', value: 'rejected' },
-              { label: 'Barchasi', value: 'all' },
+              { label: t('applications.pending'), value: 'pending' },
+              { label: t('applications.approved'), value: 'approved' },
+              { label: t('applications.rejected'), value: 'rejected' },
+              { label: t('applications.all'), value: 'all' },
             ]}
             value={statusFilter}
             onChange={val => { setStatusFilter(val); setPage(1); }}
@@ -137,15 +138,15 @@ export default function SellerRequests() {
       {loading ? (
         <div className="text-center p-12 text-muted font-medium flex flex-col items-center gap-3">
           <RefreshCw className="animate-spin text-accent" size={24} />
-          Yuklanmoqda...
+          {t('common.loading')}
         </div>
       ) : requests.length === 0 ? (
         <div className="text-center p-12 bg-card rounded-2xl border border-border text-muted font-medium bg-stripes flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-pill border border-border/70 flex items-center justify-center">
             <Clock size={20} className="text-muted" />
           </div>
-          <div className="text-base text-main font-semibold">So'rovlar topilmadi</div>
-          <div className="text-sm text-muted">Filterlarni o'zgartirib qayta tekshirib ko'ring.</div>
+          <div className="text-base text-main font-semibold">{t('applications.empty')}</div>
+          <div className="text-sm text-muted">{t('applications.emptyHint')}</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -167,13 +168,13 @@ export default function SellerRequests() {
               <div className="flex-1 space-y-4 mb-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">Arizakor</div>
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.requester')}</div>
                     <div className="text-sm font-medium text-main">{r.user_name}</div>
                     <div className="text-xs text-muted break-all">{r.user_email}</div>
                   </div>
 
                   <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">Aloqa</div>
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.contact')}</div>
                     <div className="text-sm font-medium text-main">{r.phone || '-'}</div>
                     <div className="text-xs text-muted line-clamp-1" title={r.address}>{r.address || '-'}</div>
                   </div>
@@ -181,7 +182,7 @@ export default function SellerRequests() {
 
                 {r.store_description && (
                   <div className="space-y-1.5 border-t border-border/50 pt-4">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">Tavsif</div>
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.description')}</div>
                     <p className="text-sm text-main/90 leading-relaxed bg-pill p-3 rounded-xl">
                       {r.store_description}
                     </p>
@@ -199,7 +200,7 @@ export default function SellerRequests() {
                     disabled={processingId !== null}
                     leftIcon={<CheckCircle size={18} />}
                   >
-                    Tasdiqlash
+                    {t('applications.approve')}
                   </AppButton>
                   <AppButton
                     variant="danger"
@@ -209,7 +210,7 @@ export default function SellerRequests() {
                     disabled={processingId !== null}
                     leftIcon={<XCircle size={18} />}
                   >
-                    Rad etish
+                    {t('applications.reject')}
                   </AppButton>
                 </div>
               )}

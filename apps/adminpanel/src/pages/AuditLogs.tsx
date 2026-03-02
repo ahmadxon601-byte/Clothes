@@ -3,6 +3,7 @@ import { History, Trash2 } from 'lucide-react';
 import { AppCard } from '../components/ui/AppCard';
 import { AppButton } from '../components/ui/AppButton';
 import { SearchPill } from '../components/ui/SearchPill';
+import { useI18n } from '../context/I18nContext';
 
 type AuditLog = {
   id: string;
@@ -14,6 +15,7 @@ type AuditLog = {
 const STORAGE_KEY = 'adminpanel_audit_logs_v1';
 
 export default function AuditLogs() {
+  const { t } = useI18n();
   const [items, setItems] = useState<AuditLog[]>([]);
   const [q, setQ] = useState('');
 
@@ -41,19 +43,19 @@ export default function AuditLogs() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-main tracking-tight">Audit Logs</h2>
-          <p className="text-sm text-muted font-medium mt-1">Admin harakatlari tarixini kuzatish.</p>
+          <h2 className="text-2xl font-bold text-main tracking-tight">{t('audit.title')}</h2>
+          <p className="text-sm text-muted font-medium mt-1">{t('audit.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <AppButton variant="secondary" onClick={() => setItems((prev) => [{ id: crypto.randomUUID(), actor: 'admin@clothes.uz', action: 'Qo`lda log yaratildi', at: new Date().toISOString() }, ...prev])}>
-            Log qo'shish
+          <AppButton variant="secondary" onClick={() => setItems((prev) => [{ id: crypto.randomUUID(), actor: 'admin@clothes.uz', action: 'Manual log created', at: new Date().toISOString() }, ...prev])}>
+            {t('audit.add')}
           </AppButton>
-          <AppButton variant="danger" onClick={() => setItems([])} leftIcon={<Trash2 size={16} />}>Tozalash</AppButton>
+          <AppButton variant="danger" onClick={() => setItems([])} leftIcon={<Trash2 size={16} />}>{t('audit.clear')}</AppButton>
         </div>
       </div>
 
       <AppCard className="p-4">
-        <SearchPill placeholder="Actor yoki action..." value={q} onChange={(e) => setQ(e.target.value)} containerClassName="w-full md:max-w-md" />
+        <SearchPill placeholder={t('audit.search')} value={q} onChange={(e) => setQ(e.target.value)} containerClassName="w-full md:max-w-md" />
       </AppCard>
 
       <div className="space-y-3">

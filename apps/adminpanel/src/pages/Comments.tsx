@@ -3,6 +3,7 @@ import { MessageSquareWarning, Trash2 } from 'lucide-react';
 import { AppCard } from '../components/ui/AppCard';
 import { AppButton } from '../components/ui/AppButton';
 import { SearchPill } from '../components/ui/SearchPill';
+import { useI18n } from '../context/I18nContext';
 
 type CommentItem = {
   id: string;
@@ -21,6 +22,7 @@ const SEED: CommentItem[] = [
 ];
 
 export default function Comments() {
+  const { t } = useI18n();
   const [items, setItems] = useState<CommentItem[]>([]);
   const [q, setQ] = useState('');
 
@@ -50,12 +52,12 @@ export default function Comments() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-main tracking-tight">Comments</h2>
-        <p className="text-sm text-muted font-medium mt-1">Izohlarni moderatsiya qiling.</p>
+        <h2 className="text-2xl font-bold text-main tracking-tight">{t('comments.title')}</h2>
+        <p className="text-sm text-muted font-medium mt-1">{t('comments.subtitle')}</p>
       </div>
 
       <AppCard className="p-4">
-        <SearchPill value={q} onChange={(e) => setQ(e.target.value)} placeholder="Muallif, mahsulot yoki matn..." containerClassName="w-full md:max-w-lg" />
+        <SearchPill value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('comments.search')} containerClassName="w-full md:max-w-lg" />
       </AppCard>
 
       <div className="space-y-3">
@@ -69,10 +71,10 @@ export default function Comments() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <AppButton size="sm" variant={c.status === 'approved' ? 'primary' : 'secondary'} onClick={() => setItems((prev) => prev.map((x) => x.id === c.id ? { ...x, status: 'approved' } : x))}>
-                  Tasdiqlash
+                  {t('comments.approve')}
                 </AppButton>
                 <AppButton size="sm" variant={c.status === 'rejected' ? 'danger' : 'secondary'} onClick={() => setItems((prev) => prev.map((x) => x.id === c.id ? { ...x, status: 'rejected' } : x))}>
-                  Rad etish
+                  {t('comments.reject')}
                 </AppButton>
                 <button className="p-2 rounded-xl text-red-500 hover:bg-red-500/10" onClick={() => setItems((prev) => prev.filter((x) => x.id !== c.id))}>
                   <Trash2 size={16} />
@@ -86,7 +88,7 @@ export default function Comments() {
       {!filtered.length && (
         <AppCard className="p-8 text-center">
           <MessageSquareWarning size={20} className="mx-auto text-muted mb-2" />
-          <p className="text-muted">Izoh topilmadi.</p>
+          <p className="text-muted">{t('comments.empty')}</p>
         </AppCard>
       )}
     </div>

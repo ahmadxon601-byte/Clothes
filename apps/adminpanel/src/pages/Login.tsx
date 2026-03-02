@@ -1,12 +1,14 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import { AppButton } from '../components/ui/AppButton';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +23,7 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login xatosi');
+      setError(err instanceof Error ? err.message : t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -46,10 +48,10 @@ export default function Login() {
             <Lock className="text-accent" size={28} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-main tracking-tight mb-2">
-            Xush kelibsiz
+            {t('login.welcome')}
           </h1>
           <p className="text-sm font-medium text-muted">
-            Clothes Marketplace boshqaruvi
+            {t('login.subtitle')}
           </p>
         </div>
 
@@ -57,7 +59,7 @@ export default function Login() {
           <div className="space-y-1.5 border border-border/60 bg-body rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-accent/50 focus-within:border-accent/50 transition-all duration-200">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
               <Mail size={12} />
-              Email
+              {t('login.email')}
             </label>
             <input
               type="email"
@@ -72,7 +74,7 @@ export default function Login() {
           <div className="space-y-1.5 border border-border/60 bg-body rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-accent/50 focus-within:border-accent/50 transition-all duration-200">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
               <Lock size={12} />
-              Parol
+              {t('login.password')}
             </label>
             <input
               type="password"
@@ -102,7 +104,7 @@ export default function Login() {
             isLoading={loading}
             className="mt-6 font-semibold"
           >
-            Tizimga kirish
+            {t('login.submit')}
           </AppButton>
         </form>
       </motion.div>
