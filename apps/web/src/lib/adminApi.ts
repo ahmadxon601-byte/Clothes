@@ -82,6 +82,12 @@ export const adminApi = {
       { method: 'POST', body: JSON.stringify({ email, password }) },
       z.object({ token: z.string(), user: adminUserSchema })
     ),
+  adminLogin: (login: string, password: string) =>
+    request(
+      '/api/auth/admin-login',
+      { method: 'POST', body: JSON.stringify({ login, password }) },
+      z.object({ token: z.string(), user: adminUserSchema })
+    ),
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/auth/change-password', { method: 'PATCH', body: JSON.stringify({ currentPassword, newPassword }) }),
 

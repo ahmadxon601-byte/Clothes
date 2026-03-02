@@ -106,7 +106,7 @@ export default function ProductsPage() {
     }, [activeCategory, products, search, storeMap]);
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3">
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3 md:px-8 lg:px-10">
             <div className="pb-3">
                 <div className="relative">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-hint)] opacity-50">
@@ -194,7 +194,7 @@ export default function ProductsPage() {
             </div>
 
             {loading ? (
-                <div className="grid grid-cols-2 gap-x-5 gap-y-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                         <div key={i}>
                             <Skeleton className="aspect-[3.5/4.5] w-full rounded-3xl" />
@@ -204,7 +204,7 @@ export default function ProductsPage() {
                     ))}
                 </div>
             ) : filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 gap-x-5 gap-y-8 pb-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8 pb-4">
                     {filteredProducts.map((product) => (
                         <ProductCard
                             key={product.id}

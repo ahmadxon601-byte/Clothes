@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api } from '../lib/api';
 
@@ -11,7 +13,7 @@ interface AdminUser {
 interface AuthCtx {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (loginValue: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -41,12 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
+  async function login(loginValue: string, password: string) {
     const res = await api.post<{ token: string; user: AdminUser }>(
-      '/api/auth/login',
-      { email, password }
+      '/api/auth/admin-login',
+      { login: loginValue, password }
     );
-    if (res.user.role !== 'admin') throw new Error('Admin huquqi yo\'q');
+    if (res.user.role !== 'admin') throw new Error("Admin huquqi yo'q");
     localStorage.setItem('admin_token', res.token);
     setUser(res.user);
   }

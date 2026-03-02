@@ -26,8 +26,8 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning className={inter.variable}>
             <head />
-            <body className="font-sans antialiased min-h-[100dvh] flex justify-center bg-[var(--color-bg)]" suppressHydrationWarning>
-                <div className="w-full max-w-[500px] min-h-[100dvh] flex flex-col bg-[var(--color-bg)] text-[var(--color-text)] relative shadow-2xl overflow-x-hidden md:border-x md:border-[var(--color-border)]">
+            <body className="font-sans antialiased min-h-[100dvh] bg-[var(--color-bg)]" suppressHydrationWarning>
+                <div className="w-full min-h-[100dvh] flex flex-col bg-[var(--color-bg)] text-[var(--color-text)] relative overflow-x-hidden">
                     <Providers>{children}</Providers>
                 </div>
             </body>

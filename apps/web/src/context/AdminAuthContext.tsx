@@ -6,7 +6,7 @@ import { adminApi, TOKEN_STORAGE_KEY, type AdminUser } from '../lib/adminApi';
 interface AdminAuthCtx {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -43,8 +43,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     void bootstrap();
   }, []);
 
-  async function login(email: string, password: string) {
-    const result = (await adminApi.login(email, password)) as { token: string; user: AdminUser };
+  async function login(login: string, password: string) {
+    const result = (await adminApi.adminLogin(login, password)) as { token: string; user: AdminUser };
     if (result.user.role !== 'admin') {
       throw new Error('Admin access required');
     }

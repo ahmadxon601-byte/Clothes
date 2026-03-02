@@ -56,9 +56,9 @@ export default function FavoritesPage() {
                 ))}
             </div>
 
-            <div className="px-6 py-4 flex-1">
+            <div className="px-6 py-4 flex-1 md:px-8">
                 {loading ? (
-                    <div className="grid grid-cols-2 gap-x-5 gap-y-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
                         {[1, 2].map((i) => (
                             <div key={i}>
                                 <Skeleton className="aspect-[3.5/4.5] w-full rounded-2xl" />
@@ -67,7 +67,7 @@ export default function FavoritesPage() {
                         ))}
                     </div>
                 ) : products.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-x-5 gap-y-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
                         {products.map((p) => (
                             <ProductCard key={p.id} product={p} variant="favorite" />
                         ))}

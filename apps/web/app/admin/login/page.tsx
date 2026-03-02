@@ -2,13 +2,13 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 import { useAdminAuth } from '../../../src/context/AdminAuthContext';
 
 export default function AdminLoginPage() {
   const { login, user, loading } = useAdminAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
     setSubmitting(true);
     setError('');
     try {
-      await login(email, password);
+      await login(loginValue, password);
       router.replace('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -43,10 +43,10 @@ export default function AdminLoginPage() {
 
         <form onSubmit={onSubmit} className='space-y-3'>
           <label className='block text-sm'>
-            <span className='mb-1 inline-block text-[var(--admin-muted)]'>Email</span>
+            <span className='mb-1 inline-block text-[var(--admin-muted)]'>Login</span>
             <div className='relative'>
-              <Mail className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-              <input className='admin-input pl-10' value={email} onChange={(e) => setEmail(e.target.value)} type='email' required />
+              <User className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
+              <input className='admin-input pl-10' value={loginValue} onChange={(e) => setLoginValue(e.target.value)} type='text' required />
             </div>
           </label>
 

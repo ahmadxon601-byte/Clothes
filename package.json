@@ -9,12 +9,12 @@
   ],
   "scripts": {
     "dev": "npm run dev -w web",
-    "dev:admin": "npm run dev -w adminpanel",
-    "dev:backend": "npm run dev:real -w backend",
+"dev:backend": "npm run dev:real -w backend",
     "dev:backend:real": "npm run dev:real -w backend",
     "lint": "npm run lint -w backend",
     "build": "npm run build -w backend",
     "test": "npm run test --workspaces",
+    "dev:admin": "npm run dev -w adminpanel",
     "dev:legacy:frontend": "npm run dev -w frontend"
   }
 }

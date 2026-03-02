@@ -55,6 +55,70 @@
     --color-nav-border: rgba(255, 255, 255, 0.1);
 }
 
+/* ─── Admin Panel CSS Variables ─── */
+:root {
+    --admin-bg: #F6F7F9;
+    --admin-card: #FFFFFF;
+    --admin-pill: #F1F3F5;
+    --admin-text: #0F172A;
+    --admin-muted: #64748B;
+    --admin-border: rgba(15, 23, 42, 0.08);
+    --admin-accent: #22C55E;
+    --admin-accent-hover: #16A34A;
+    --admin-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.dark {
+    --admin-bg: #0B1220;
+    --admin-card: #0F1A2B;
+    --admin-pill: #12213A;
+    --admin-text: #E5E7EB;
+    --admin-muted: #94A3B8;
+    --admin-border: rgba(148, 163, 184, 0.14);
+    --admin-accent: #22C55E;
+    --admin-accent-hover: #34D399;
+    --admin-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+@layer components {
+    .admin-card {
+        background-color: var(--admin-card);
+        border-radius: 16px;
+        border: 1px solid var(--admin-border);
+        box-shadow: var(--admin-shadow);
+    }
+
+    .admin-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--admin-border);
+        border-radius: 12px;
+        font-size: 14px;
+        outline: none;
+        background: var(--admin-pill);
+        color: var(--admin-text);
+        transition: all 0.15s;
+    }
+
+    .admin-input:focus {
+        border-color: var(--admin-accent);
+        background: var(--admin-card);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--admin-accent) 15%, transparent);
+    }
+
+    .admin-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--admin-pill);
+        color: var(--admin-muted);
+        border: 1px solid var(--admin-border);
+    }
+}
+
 @layer base {
     :root {
         --shell-header-height: 56px;
