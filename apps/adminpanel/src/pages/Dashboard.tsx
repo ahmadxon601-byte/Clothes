@@ -3,6 +3,7 @@ import { Users, ShoppingBag, Store, FileCheck, Loader2, AlertCircle } from 'luci
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api';
 import { useTheme } from '../context/ThemeContext';
+import { useI18n } from '../context/I18nContext';
 import { AppCard } from '../components/ui/AppCard';
 import { cn } from '../lib/utils';
 
@@ -52,6 +53,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState('');
   const { theme } = useTheme();
+  const { t } = useI18n();
 
   useEffect(() => {
     api.get<Stats>('/api/admin/stats')
@@ -62,48 +64,48 @@ export default function Dashboard() {
   if (error) return (
     <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-2xl max-w-xl">
       <AlertCircle size={20} />
-      <span className="font-medium text-sm">Xatolik: {error}</span>
+      <span className="font-medium text-sm">{t('common.error')}: {error}</span>
     </div>
   );
 
   if (!stats) return (
     <div className="flex flex-col items-center justify-center p-20 gap-4 text-muted">
       <Loader2 size={32} className="animate-spin text-accent" />
-      <span className="text-sm font-medium">Loading statistics...</span>
+      <span className="text-sm font-medium">{t('dashboard.loading')}</span>
     </div>
   );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold text-main mb-2 tracking-tight">Dashboard Overview</h2>
-        <p className="text-muted text-sm md:text-base font-medium">Realtime metrics and reports for Clothes MP.</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-main mb-2 tracking-tight">{t('dashboard.title')}</h2>
+        <p className="text-muted text-sm md:text-base font-medium">{t('dashboard.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard
-          label="Users"
+          label={t('dashboard.users')}
           value={stats.users_count}
           icon={Users}
           iconBgColor="bg-blue-500/15"
           iconColorClass="text-blue-600 dark:text-blue-500"
         />
         <StatCard
-          label="Products"
+          label={t('dashboard.products')}
           value={stats.products_count}
           icon={ShoppingBag}
           iconBgColor="bg-violet-500/15"
           iconColorClass="text-violet-600 dark:text-violet-500"
         />
         <StatCard
-          label="Stores"
+          label={t('dashboard.stores')}
           value={stats.stores_count}
           icon={Store}
           iconBgColor="bg-amber-500/15"
           iconColorClass="text-amber-600 dark:text-amber-500"
         />
         <StatCard
-          label="Applications"
+          label={t('dashboard.applications')}
           value={stats.pending_seller_requests}
           icon={FileCheck}
           iconBgColor="bg-emerald-500/15"
@@ -112,7 +114,7 @@ export default function Dashboard() {
       </div>
 
       <AppCard className="p-6 md:p-8">
-        <h3 className="text-lg font-bold text-main mb-6">Platform Growth</h3>
+        <h3 className="text-lg font-bold text-main mb-6">{t('dashboard.growth')}</h3>
         <div className="w-full h-[320px] md:h-[400px] min-w-0 min-h-[320px] md:min-h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>

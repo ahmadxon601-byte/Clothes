@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
+import { useI18n } from '../context/I18nContext';
 import { AppCard } from '../components/ui/AppCard';
 import { IconButton } from '../components/ui/IconButton';
 
@@ -22,6 +23,7 @@ interface Pagination {
 const ROLE_OPTIONS: Array<User['role']> = ['user', 'seller', 'admin'];
 
 export default function Roles() {
+  const { t } = useI18n();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function Roles() {
       const res = await api.get<{ users: User[]; pagination: Pagination }>('/api/admin/users?page=1&limit=100');
       setUsers(res.users ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik yuz berdi');
+      setError(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,7 @@ export default function Roles() {
       await api.put(`/api/admin/users/${user.id}`, { role });
       setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, role } : u));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Role yangilanmadi');
+      alert(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setSavingId(null);
     }
@@ -59,8 +61,8 @@ export default function Roles() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-main tracking-tight">Roles</h2>
-          <p className="text-sm text-muted font-medium mt-1">Foydalanuvchilar rollarini boshqarish.</p>
+          <h2 className="text-2xl font-bold text-main tracking-tight">{t('roles.title')}</h2>
+          <p className="text-sm text-muted font-medium mt-1">{t('roles.subtitle')}</p>
         </div>
         <IconButton onClick={load} variant="soft" disabled={loading}>
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -74,9 +76,9 @@ export default function Roles() {
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-pill border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-xs uppercase tracking-wider text-muted">Foydalanuvchi</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-wider text-muted">{t('roles.user')}</th>
                 <th className="px-6 py-4 text-xs uppercase tracking-wider text-muted">Email</th>
-                <th className="px-6 py-4 text-xs uppercase tracking-wider text-muted">Role</th>
+                <th className="px-6 py-4 text-xs uppercase tracking-wider text-muted">{t('roles.role')}</th>
               </tr>
             </thead>
             <tbody>
