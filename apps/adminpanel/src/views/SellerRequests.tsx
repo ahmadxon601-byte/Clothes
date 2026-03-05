@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { CheckCircle, XCircle, RefreshCw, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { IconButton } from '../components/ui/IconButton';
@@ -39,6 +39,8 @@ export default function SellerRequests() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  // Tracks which card has the inline confirm prompt open
+  const [confirmingId, setConfirmingId] = useState<{ id: string; action: 'approved' | 'rejected' } | null>(null);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -72,7 +74,7 @@ export default function SellerRequests() {
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   async function handleAction(id: string, action: 'approved' | 'rejected') {
-    if (!confirm(action === 'approved' ? t('applications.confirmApprove') : t('applications.confirmReject'))) return;
+    setConfirmingId(null);
     setProcessingId(id);
     try {
       await api.put(`/api/admin/seller-requests/${id}`, {
@@ -125,7 +127,7 @@ export default function SellerRequests() {
               { label: t('applications.all'), value: 'all' },
             ]}
             value={statusFilter}
-            onChange={val => { setStatusFilter(val); setPage(1); }}
+            onChange={val => { setStatusFilter(val); setPage(1); setConfirmingId(null); }}
             className="w-full sm:w-auto min-w-[360px]"
           />
         </div>
@@ -152,72 +154,118 @@ export default function SellerRequests() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-          {requests.map(r => (
-            <AppCard key={r.id} className="p-5 md:p-6 flex flex-col h-full hover:border-accent/40 transition-colors">
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-main">{r.store_name}</h3>
-                  <div className="flex items-center gap-1.5 text-xs text-muted font-medium">
-                    <Clock size={14} />
-                    {new Date(r.created_at).toLocaleString('uz-UZ', {
-                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-                {getStatusBadge(r.status)}
-              </div>
+          {requests.map(r => {
+            const isConfirming = confirmingId?.id === r.id;
+            const isProcessing = processingId === r.id;
 
-              <div className="flex-1 space-y-4 mb-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.requester')}</div>
-                    <div className="text-sm font-medium text-main">{r.user_name}</div>
-                    <div className="text-xs text-muted break-all">{r.user_email}</div>
+            return (
+              <AppCard key={r.id} className="p-5 md:p-6 flex flex-col h-full hover:border-accent/40 transition-colors">
+                <div className="flex justify-between items-start gap-4 mb-4">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-main">{r.store_name}</h3>
+                    <div className="flex items-center gap-1.5 text-xs text-muted font-medium">
+                      <Clock size={14} />
+                      {new Date(r.created_at).toLocaleString('uz-UZ', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </div>
                   </div>
-
-                  <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.contact')}</div>
-                    <div className="text-sm font-medium text-main">{r.phone || '-'}</div>
-                    <div className="text-xs text-muted line-clamp-1" title={r.address}>{r.address || '-'}</div>
-                  </div>
+                  {getStatusBadge(r.status)}
                 </div>
 
-                {r.store_description && (
-                  <div className="space-y-1.5 border-t border-border/50 pt-4">
-                    <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.description')}</div>
-                    <p className="text-sm text-main/90 leading-relaxed bg-pill p-3 rounded-xl">
-                      {r.store_description}
-                    </p>
+                <div className="flex-1 space-y-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
+                      <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.requester')}</div>
+                      <div className="text-sm font-medium text-main">{r.user_name}</div>
+                      <div className="text-xs text-muted break-all">{r.user_email}</div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-pill border border-border/50">
+                      <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.contact')}</div>
+                      <div className="text-sm font-medium text-main">{r.phone || '-'}</div>
+                      <div className="text-xs text-muted line-clamp-1" title={r.address}>{r.address || '-'}</div>
+                    </div>
+                  </div>
+
+                  {r.store_description && (
+                    <div className="space-y-1.5 border-t border-border/50 pt-4">
+                      <div className="text-xs font-semibold text-muted uppercase tracking-wider">{t('applications.description')}</div>
+                      <p className="text-sm text-main/90 leading-relaxed bg-pill p-3 rounded-xl">
+                        {r.store_description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {r.status === 'pending' && (
+                  <div className="pt-4 border-t border-border mt-auto">
+                    {isConfirming ? (
+                      // ── Inline confirmation ───────────────────────────────
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+                          <AlertCircle size={16} />
+                          {confirmingId.action === 'approved'
+                            ? t('applications.confirmApprove')
+                            : t('applications.confirmReject')}
+                        </div>
+                        <div className="flex gap-3">
+                          <AppButton
+                            variant="primary"
+                            className={`flex-1 ${confirmingId.action === 'approved'
+                              ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
+                              : 'bg-red-500 hover:bg-red-600 text-white'}`}
+                            onClick={() => handleAction(r.id, confirmingId.action)}
+                            isLoading={isProcessing}
+                            disabled={processingId !== null}
+                            leftIcon={confirmingId.action === 'approved'
+                              ? <CheckCircle size={16} />
+                              : <XCircle size={16} />}
+                          >
+                            {confirmingId.action === 'approved'
+                              ? t('applications.approve')
+                              : t('applications.reject')}
+                          </AppButton>
+                          <AppButton
+                            variant="secondary"
+                            className="flex-1"
+                            onClick={() => setConfirmingId(null)}
+                            disabled={processingId !== null}
+                          >
+                            Bekor
+                          </AppButton>
+                        </div>
+                      </div>
+                    ) : (
+                      // ── Primary approve / reject buttons ─────────────────
+                      <div className="flex gap-3">
+                        <AppButton
+                          variant="primary"
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                          onClick={() => setConfirmingId({ id: r.id, action: 'approved' })}
+                          isLoading={isProcessing}
+                          disabled={processingId !== null}
+                          leftIcon={<CheckCircle size={18} />}
+                        >
+                          {t('applications.approve')}
+                        </AppButton>
+                        <AppButton
+                          variant="danger"
+                          className="flex-1"
+                          onClick={() => setConfirmingId({ id: r.id, action: 'rejected' })}
+                          isLoading={isProcessing}
+                          disabled={processingId !== null}
+                          leftIcon={<XCircle size={18} />}
+                        >
+                          {t('applications.reject')}
+                        </AppButton>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-
-              {r.status === 'pending' && (
-                <div className="flex gap-3 pt-4 border-t border-border mt-auto">
-                  <AppButton
-                    variant="primary"
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-                    onClick={() => handleAction(r.id, 'approved')}
-                    isLoading={processingId === r.id}
-                    disabled={processingId !== null}
-                    leftIcon={<CheckCircle size={18} />}
-                  >
-                    {t('applications.approve')}
-                  </AppButton>
-                  <AppButton
-                    variant="danger"
-                    className="flex-1"
-                    onClick={() => handleAction(r.id, 'rejected')}
-                    isLoading={processingId === r.id}
-                    disabled={processingId !== null}
-                    leftIcon={<XCircle size={18} />}
-                  >
-                    {t('applications.reject')}
-                  </AppButton>
-                </div>
-              )}
-            </AppCard>
-          ))}
+              </AppCard>
+            );
+          })}
         </div>
       )}
 

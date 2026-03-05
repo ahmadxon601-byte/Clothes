@@ -32,6 +32,103 @@ const SECONDARY_NAV = [
   { path: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
+// ── Module-level components (must NOT be defined inside Layout) ───────────────
+
+interface NavItemProps {
+  path: string;
+  labelKey: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  onClick?: () => void;
+  isBottomNav?: boolean;
+  pathname: string;
+  t: (key: string) => string;
+  onNavigate: (path: string) => void;
+}
+
+const NavItem = ({ path, labelKey, icon: Icon, onClick, isBottomNav = false, pathname, t, onNavigate }: NavItemProps) => {
+  const active = pathname === path || (path !== '/dashboard' && pathname.startsWith(path));
+  const label = t(labelKey);
+  if (isBottomNav) {
+    return (
+      <button
+        onClick={() => { if (onClick) onClick(); else onNavigate(path); }}
+        className='flex flex-col items-center justify-center gap-1 w-full p-2 outline-none'
+      >
+        <Icon size={20} className={cn('transition-colors duration-200', active ? 'text-accent' : 'text-muted')} />
+        <span className={cn('text-[10px] font-medium transition-colors duration-200', active ? 'text-accent' : 'text-muted')}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+  return (
+    <Link
+      href={path}
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 outline-none group',
+        active ? 'bg-accent/10 text-accent' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-main'
+      )}
+    >
+      <Icon size={20} className={cn('transition-colors', active ? 'text-accent' : 'text-muted group-hover:text-main')} />
+      <span className='font-medium text-sm'>{label}</span>
+    </Link>
+  );
+};
+
+interface SidebarContentProps {
+  user: { email: string } | null;
+  t: (key: string) => string;
+  pathname: string;
+  onLogout: () => void;
+  onNavigate: (path: string) => void;
+}
+
+const SidebarContent = ({ user, t, pathname, onLogout, onNavigate }: SidebarContentProps) => (
+  <div className='app-scrollbar flex flex-col h-full bg-sidebar border-r border-border overflow-y-auto'>
+    <div className='p-6 bg-sidebar hidden xl:flex md:flex flex-col gap-1 border-b border-border/50'>
+      <div className='flex items-center gap-2'>
+        <div className='w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold'>
+          <Navigation size={18} />
+        </div>
+        <span className='font-bold text-lg text-main'>Clothes MP</span>
+      </div>
+      <p className='text-xs text-muted mt-2 ml-1 hidden lg:block'>{user?.email}</p>
+    </div>
+
+    <div className='flex-1 py-6 px-4 flex flex-col gap-8'>
+      <div>
+        <p className='text-xs font-bold text-muted uppercase tracking-wider mb-3 ml-4'>{t('layout.main')}</p>
+        <div className='flex flex-col gap-1'>
+          {PRIMARY_NAV.map((item) => (
+            <NavItem key={item.path} {...item} pathname={pathname} t={t} onNavigate={onNavigate} />
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className='text-xs font-bold text-muted uppercase tracking-wider mb-3 ml-4'>{t('layout.management')}</p>
+        <div className='flex flex-col gap-1'>
+          {SECONDARY_NAV.map((item) => (
+            <NavItem key={item.path} {...item} pathname={pathname} t={t} onNavigate={onNavigate} />
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div className='p-4 border-t border-border mt-auto'>
+      <button
+        onClick={onLogout}
+        className='flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors outline-none font-medium text-sm'
+      >
+        <LogOut size={20} />
+        {t('layout.logout')}
+      </button>
+    </div>
+  </div>
+);
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -69,78 +166,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router]);
 
-  const NavItem = ({ path, labelKey, icon: Icon, onClick, isBottomNav = false }: {
-    path: string; labelKey: string; icon: React.ComponentType<{ size?: number; className?: string }>;
-    onClick?: () => void; isBottomNav?: boolean;
-  }) => {
-    const active = pathname === path || (path !== '/dashboard' && pathname.startsWith(path));
-    const label = t(labelKey);
-    if (isBottomNav) {
-      return (
-        <button
-          onClick={() => { if (onClick) onClick(); else router.push(path); }}
-          className='flex flex-col items-center justify-center gap-1 w-full p-2 outline-none'
-        >
-          <Icon size={20} className={cn('transition-colors duration-200', active ? 'text-accent' : 'text-muted')} />
-          <span className={cn('text-[10px] font-medium transition-colors duration-200', active ? 'text-accent' : 'text-muted')}>
-            {label}
-          </span>
-        </button>
-      );
-    }
-    return (
-      <Link
-        href={path}
-        onClick={onClick}
-        className={cn(
-          'flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 outline-none group',
-          active ? 'bg-accent/10 text-accent' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-main'
-        )}
-      >
-        <Icon size={20} className={cn('transition-colors', active ? 'text-accent' : 'text-muted group-hover:text-main')} />
-        <span className='font-medium text-sm'>{label}</span>
-      </Link>
-    );
-  };
-
-  const SidebarContent = () => (
-    <div className='app-scrollbar flex flex-col h-full bg-sidebar border-r border-border overflow-y-auto'>
-      <div className='p-6 bg-sidebar hidden xl:flex md:flex flex-col gap-1 border-b border-border/50'>
-        <div className='flex items-center gap-2'>
-          <div className='w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold'>
-            <Navigation size={18} />
-          </div>
-          <span className='font-bold text-lg text-main'>Clothes MP</span>
-        </div>
-        <p className='text-xs text-muted mt-2 ml-1 hidden lg:block'>{user?.email}</p>
-      </div>
-
-      <div className='flex-1 py-6 px-4 flex flex-col gap-8'>
-        <div>
-          <p className='text-xs font-bold text-muted uppercase tracking-wider mb-3 ml-4'>{t('layout.main')}</p>
-          <div className='flex flex-col gap-1'>
-            {PRIMARY_NAV.map((item) => <NavItem key={item.path} {...item} />)}
-          </div>
-        </div>
-        <div>
-          <p className='text-xs font-bold text-muted uppercase tracking-wider mb-3 ml-4'>{t('layout.management')}</p>
-          <div className='flex flex-col gap-1'>
-            {SECONDARY_NAV.map((item) => <NavItem key={item.path} {...item} />)}
-          </div>
-        </div>
-      </div>
-
-      <div className='p-4 border-t border-border mt-auto'>
-        <button
-          onClick={() => { logout(); router.push('/login'); }}
-          className='flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors outline-none font-medium text-sm'
-        >
-          <LogOut size={20} />
-          {t('layout.logout')}
-        </button>
-      </div>
-    </div>
-  );
+  const handleLogout = () => { logout(); router.push('/login'); };
+  const handleNavigate = (path: string) => router.push(path);
 
   if (loading || !user) return null;
 
@@ -148,7 +175,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className='flex h-screen w-full bg-background text-main overflow-hidden'>
       {!isMobile && !isTablet && (
         <aside className='w-[260px] flex-shrink-0 h-full'>
-          <SidebarContent />
+          <SidebarContent
+            user={user}
+            t={t}
+            pathname={pathname}
+            onLogout={handleLogout}
+            onNavigate={handleNavigate}
+          />
         </aside>
       )}
 
@@ -157,7 +190,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDrawerOpen(false)} className='fixed inset-0 bg-black/40 z-40 backdrop-blur-sm' />
             <motion.aside initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }} className='fixed top-0 left-0 bottom-0 w-[260px] z-50 shadow-premium'>
-              <SidebarContent />
+              <SidebarContent
+                user={user}
+                t={t}
+                pathname={pathname}
+                onLogout={handleLogout}
+                onNavigate={handleNavigate}
+              />
             </motion.aside>
           </>
         )}
@@ -220,11 +259,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {isMobile && (
           <nav className='fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around px-2 pb-safe z-40'>
-            <NavItem path='/dashboard' labelKey='nav.dashboard' icon={BarChart2} isBottomNav />
-            <NavItem path='/applications' labelKey='nav.applications' icon={FileCheck} isBottomNav />
-            <NavItem path='/products' labelKey='nav.products' icon={ShoppingBag} isBottomNav />
-            <NavItem path='/shops' labelKey='nav.shops' icon={Store} isBottomNav />
-            <NavItem path='#' labelKey='layout.more' icon={MoreHorizontal} isBottomNav onClick={() => setMoreSheetOpen(true)} />
+            <NavItem path='/dashboard' labelKey='nav.dashboard' icon={BarChart2} isBottomNav pathname={pathname} t={t} onNavigate={handleNavigate} />
+            <NavItem path='/applications' labelKey='nav.applications' icon={FileCheck} isBottomNav pathname={pathname} t={t} onNavigate={handleNavigate} />
+            <NavItem path='/products' labelKey='nav.products' icon={ShoppingBag} isBottomNav pathname={pathname} t={t} onNavigate={handleNavigate} />
+            <NavItem path='/shops' labelKey='nav.shops' icon={Store} isBottomNav pathname={pathname} t={t} onNavigate={handleNavigate} />
+            <NavItem path='#' labelKey='layout.more' icon={MoreHorizontal} isBottomNav pathname={pathname} t={t} onNavigate={handleNavigate} onClick={() => setMoreSheetOpen(true)} />
           </nav>
         )}
 
@@ -243,7 +282,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       <button onClick={toggleTheme} className='p-2 rounded-xl border border-border'>
                         {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
                       </button>
-                      <button onClick={() => { logout(); router.push('/login'); }} className='p-2 rounded-xl border border-border text-red-500'>
+                      <button onClick={handleLogout} className='p-2 rounded-xl border border-border text-red-500'>
                         <LogOut size={16} />
                       </button>
                     </div>

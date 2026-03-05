@@ -10,6 +10,10 @@ import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { validators } from '../../../../src/shared/lib/validators';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { MapPicker, type LatLng } from '../../../../src/shared/ui/MapPicker';
+
+// Namangan city center default
+const NAMANGAN: LatLng = { lat: 41.0011, lng: 71.6681 };
 
 export default function StoreApplyPage() {
     const router = useRouter();
@@ -20,10 +24,9 @@ export default function StoreApplyPage() {
     const [formData, setFormData] = useState({
         storeName: '',
         addressText: '',
-        lat: '',
-        lng: '',
-        photoUrl: '', // Start empty for upload
+        photoUrl: '',
     });
+    const [location, setLocation] = useState<LatLng>(NAMANGAN);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -60,10 +63,7 @@ export default function StoreApplyPage() {
                 userId: user ? String(user.id) : 'local-user',
                 storeName: formData.storeName,
                 addressText: formData.addressText,
-                location: {
-                    lat: parseFloat(formData.lat) || 41.2995,
-                    lng: parseFloat(formData.lng) || 69.2401,
-                },
+                location: { lat: location.lat, lng: location.lng },
                 photoUrl: formData.photoUrl,
             });
             showToast({ message: t.application_received, type: 'success' });
@@ -105,25 +105,16 @@ export default function StoreApplyPage() {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Latitude</label>
-                        <Input
-                            placeholder="41.2995"
-                            value={formData.lat}
-                            onChange={(e) => setFormData(p => ({ ...p, lat: e.target.value }))}
-                            disabled={loading}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Longitude</label>
-                        <Input
-                            placeholder="69.2401"
-                            value={formData.lng}
-                            onChange={(e) => setFormData(p => ({ ...p, lng: e.target.value }))}
-                            disabled={loading}
-                        />
-                    </div>
+                {/* Map location picker */}
+                <div>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">
+                        Joylashuv (xaritadan tanlang)
+                    </label>
+                    <MapPicker
+                        value={location}
+                        onChange={setLocation}
+                        height="240px"
+                    />
                 </div>
 
                 <div>
