@@ -1,14 +1,18 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
-
-import { Inter } from 'next/font/google';
+import { Inter, Playfair_Display } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' });
+const playfair = Playfair_Display({
+    subsets: ['latin'],
+    variable: '--font-playfair',
+    weight: ['400', '700', '800', '900'],
+});
 
 export const metadata: Metadata = {
-    title: 'Telegram Mini App Store',
-    description: 'Premium Marketplace',
+    title: 'Clothes — Premium Fashion Marketplace',
+    description: 'Modern luxury fashion. Premium silhouettes, curated essentials and clean lines.',
 };
 
 export const viewport = {
@@ -24,12 +28,10 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" suppressHydrationWarning className={inter.variable}>
+        <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
             <head />
-            <body className="font-sans antialiased min-h-[100dvh] flex justify-center bg-[var(--color-bg)]" suppressHydrationWarning>
-                <div className="w-full max-w-[500px] min-h-[100dvh] flex flex-col bg-[var(--color-bg)] text-[var(--color-text)] relative shadow-2xl overflow-x-hidden md:border-x md:border-[var(--color-border)]">
-                    <Providers>{children}</Providers>
-                </div>
+            <body className="font-sans antialiased min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-text)]" suppressHydrationWarning>
+                <Providers>{children}</Providers>
             </body>
         </html>
     );

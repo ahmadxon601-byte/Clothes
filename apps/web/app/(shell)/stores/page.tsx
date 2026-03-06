@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ProductCard } from '../../../src/features/products/ui/ProductCard';
 import { cn } from '../../../src/shared/lib/utils';
 import { useTranslation } from '../../../src/shared/lib/i18n';
-import { APP_ROUTES } from '../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../src/shared/config/useAppRoutes';
 import { mockApi } from '../../../src/services/mockServer';
 import type { Product, Store } from '../../../src/shared/types';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
@@ -21,6 +21,7 @@ export default function ProductsPage() {
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [loading, setLoading] = useState(true);
     const { t, language } = useTranslation();
+    const routes = useAppRoutes();
     const categoryLabels: Record<Category, string> = {
         All: t.all,
         Jackets: t.cat_jackets,
@@ -142,7 +143,7 @@ export default function ProductsPage() {
                                 {currentPromo.title}
                             </h2>
                             <Link
-                                href={APP_ROUTES.PRODUCTS}
+                                href={routes.PRODUCTS}
                                 className="inline-flex items-center gap-2 mt-3 px-4 h-10 rounded-xl bg-[#121417] text-white text-[14px] font-bold shadow-md active:scale-95 transition-transform"
                             >
                                 {promoCtaLabel}

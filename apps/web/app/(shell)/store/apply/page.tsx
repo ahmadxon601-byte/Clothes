@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
 import { cachePendingStoreApplication, ensureMarketplaceToken } from '../../../../src/lib/marketplaceAuth';
-import { APP_ROUTES } from '../../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../../src/shared/config/useAppRoutes';
 import { Button } from '../../../../src/shared/ui/Button';
 import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
@@ -16,6 +16,7 @@ export default function StoreApplyPage() {
     const { user } = useTelegram();
     const { showToast } = useToast();
     const { t } = useTranslation();
+    const routes = useAppRoutes();
 
     const [formData, setFormData] = useState({
         storeName: '',
@@ -25,6 +26,19 @@ export default function StoreApplyPage() {
         photoUrl: '', // Start empty for upload
     });
     const [loading, setLoading] = useState(false);
+    const saveApplicationLocally = () => {
+        cachePendingStoreApplication({
+            id: crypto.randomUUID(),
+            userId: user ? String(user.id) : 'local-user',
+            storeName: formData.storeName,
+            addressText: formData.addressText,
+            location: {
+                lat: parseFloat(formData.lat) || 41.2995,
+                lng: parseFloat(formData.lng) || 69.2401,
+            },
+            photoUrl: formData.photoUrl,
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,19 +69,9 @@ export default function StoreApplyPage() {
                 throw new Error(result?.error ?? result?.message ?? 'Request failed');
             }
 
-            cachePendingStoreApplication({
-                id: crypto.randomUUID(),
-                userId: user ? String(user.id) : 'local-user',
-                storeName: formData.storeName,
-                addressText: formData.addressText,
-                location: {
-                    lat: parseFloat(formData.lat) || 41.2995,
-                    lng: parseFloat(formData.lng) || 69.2401,
-                },
-                photoUrl: formData.photoUrl,
-            });
+            saveApplicationLocally();
             showToast({ message: t.application_received, type: 'success' });
-            router.replace(APP_ROUTES.STORE_STATUS);
+            router.replace(routes.STORE_STATUS);
         } catch (err: any) {
             showToast({ message: err?.message || t.error_occurred, type: 'error' });
         } finally {

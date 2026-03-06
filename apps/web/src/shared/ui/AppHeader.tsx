@@ -5,8 +5,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSettingsStore } from '../../features/settings/model';
 import { useTranslation } from '../lib/i18n';
 import { LanguageSelector } from './LanguageSelector';
+import { TELEGRAM_ROUTES } from '../config/constants';
 
-const HEADER_ROUTES = new Set(['/', '/stores', '/products', '/search', '/favorites', '/profile']);
+const HEADER_ROUTES = new Set([
+    TELEGRAM_ROUTES.HOME,
+    TELEGRAM_ROUTES.STORES,
+    TELEGRAM_ROUTES.PRODUCTS,
+    TELEGRAM_ROUTES.SEARCH,
+    TELEGRAM_ROUTES.FAVORITES,
+    TELEGRAM_ROUTES.PROFILE,
+]);
 
 export function hasUnifiedHeader(pathname: string | null): boolean {
     if (!pathname) return false;
@@ -33,7 +41,7 @@ export function AppHeader() {
     let left = <div className="w-9 h-9" />;
     let right = <div className="w-9 h-9" />;
 
-    if (pathname === '/' || pathname === '/stores') {
+    if (pathname === TELEGRAM_ROUTES.HOME || pathname === TELEGRAM_ROUTES.STORES) {
         title = 'Clothes MP';
         titleClass = 'text-[17px] font-bold text-[var(--color-text)] text-center';
         left = (
@@ -42,7 +50,7 @@ export function AppHeader() {
             </button>
         );
         right = <LanguageSelector />;
-    } else if (pathname === '/products') {
+    } else if (pathname === TELEGRAM_ROUTES.PRODUCTS) {
         title = "Do'konlar";
         titleClass = 'text-[20px] font-bold text-[var(--color-text)] text-center';
         left = (
@@ -50,7 +58,7 @@ export function AppHeader() {
                 <ChevronLeft size={17} />
             </button>
         );
-    } else if (pathname === '/search') {
+    } else if (pathname === TELEGRAM_ROUTES.SEARCH) {
         title = t.search_results;
         left = (
             <button onClick={() => router.back()} className={iconButtonClass}>
@@ -62,7 +70,7 @@ export function AppHeader() {
                 <SlidersHorizontal size={17} />
             </button>
         );
-    } else if (pathname === '/favorites') {
+    } else if (pathname === TELEGRAM_ROUTES.FAVORITES) {
         title = t.favorites;
         titleClass = 'text-[20px] font-bold text-[var(--color-text)] text-center';
         left = (
@@ -70,7 +78,7 @@ export function AppHeader() {
                 <ChevronLeft size={17} />
             </button>
         );
-    } else if (pathname === '/profile') {
+    } else if (pathname === TELEGRAM_ROUTES.PROFILE) {
         title = t.profile;
         left = (
             <button onClick={() => router.back()} className={iconButtonClass}>

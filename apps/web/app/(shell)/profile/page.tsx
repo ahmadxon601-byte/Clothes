@@ -1,124 +1,155 @@
 'use client';
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { ChevronRight, Bookmark, MessageCircleQuestion, Settings, Check, Store } from 'lucide-react';
-import { useTelegram } from '../../../src/telegram/useTelegram';
-import { mockApi } from '../../../src/services/mockServer';
-import { APP_ROUTES } from '../../../src/shared/config/constants';
-import { cn } from '../../../src/shared/lib/utils';
-import { useTranslation } from '../../../src/shared/lib/i18n';
 
-export default function ProfilePage() {
-    const { user } = useTelegram();
-    const { t } = useTranslation();
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronRight, Heart, LifeBuoy, LogOut, Mail, MapPin, Settings, UserRound } from 'lucide-react';
+
+type ProfileData = {
+    name: string;
+    email: string;
+    phone: string;
+    city: string;
+};
+
+const DEFAULT_PROFILE: ProfileData = {
+    name: 'Ahmad',
+    email: 'ahmad@example.com',
+    phone: '+998-xx-xxx-xx-xx',
+    city: 'Tashkent, Uzbekistan',
+};
+
+export default function SiteProfilePage() {
+    const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
 
     useEffect(() => {
-        const fetchStatus = async () => {
-            const uid = user ? String(user.id) : 'mock_user_123';
-            const application = await mockApi.getMyApplication(uid);
-            if (application) {
-                // Application found
-            }
-        };
-        fetchStatus();
-    }, [user]);
+        if (typeof window === 'undefined') return;
 
-    const profileName = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Ahmad';
-    const username = user?.username ? `@${user.username}` : (user?.id ? `ID: ${user.id}` : 'Telegram user');
-    const phone = (() => {
-        if (typeof window === 'undefined') return '+998-xxx-xx-xx';
-        const keys = ['tg_phone', 'clothes_phone', 'user_phone', 'phone'];
-        for (const key of keys) {
-            const value = localStorage.getItem(key);
-            if (value && value.trim()) return value.trim();
-        }
-        return user ? 'Telefon yuborilmagan' : '+998-xxx-xx-xx';
-    })();
+        const name = localStorage.getItem('web_name') || localStorage.getItem('name') || DEFAULT_PROFILE.name;
+        const email = localStorage.getItem('web_email') || localStorage.getItem('email') || DEFAULT_PROFILE.email;
+        const phone = localStorage.getItem('web_phone') || localStorage.getItem('phone') || DEFAULT_PROFILE.phone;
+        const city = localStorage.getItem('web_city') || localStorage.getItem('city') || DEFAULT_PROFILE.city;
 
-    const menuItems = [
-        { label: t.favorites, sub: t.saved_products, icon: Bookmark, href: APP_ROUTES.FAVORITES, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
-        { label: t.help_faq, sub: t.answers_to_questions, icon: MessageCircleQuestion, href: '#', iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
-        { label: t.settings, sub: t.language_theme_security, icon: Settings, href: APP_ROUTES.SETTINGS, iconBg: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' },
+        setProfile({
+            name: name.trim() || DEFAULT_PROFILE.name,
+            email: email.trim() || DEFAULT_PROFILE.email,
+            phone: phone.trim() || DEFAULT_PROFILE.phone,
+            city: city.trim() || DEFAULT_PROFILE.city,
+        });
+    }, []);
+
+    const initials = useMemo(() => {
+        const parts = profile.name.trim().split(/\s+/).slice(0, 2);
+        return parts.map((p) => p[0]?.toUpperCase() || '').join('') || 'A';
+    }, [profile.name]);
+
+    const menu = [
+        {
+            href: '/favorites',
+            label: 'Favorites',
+            sub: 'Saved products and quick access',
+            icon: Heart,
+        },
+        {
+            href: '/settings',
+            label: 'Settings',
+            sub: 'Language, theme and account options',
+            icon: Settings,
+        },
     ];
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
-            <div className="px-6 space-y-4">
-                {/* User Card */}
-                <div className="bg-[var(--color-surface)] rounded-[28px] p-5 shadow-sm border border-[var(--color-border)] flex flex-col items-center">
-                    <div className="relative">
-                        <div className="w-20 h-20 rounded-full border-[2px] border-[var(--color-primary)] p-0.5 overflow-hidden bg-[var(--color-surface2)]">
-                            {user?.photo_url ? (
-                                <img src={user.photo_url} alt="Profile" className="w-full h-full object-cover rounded-full" />
-                            ) : (
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmad" alt="Ahmad" className="w-full h-full object-cover rounded-full" />
-                            )}
-                        </div>
-                        <div className="absolute bottom-0 right-0 w-5 h-5 bg-[var(--color-primary)] border-2 border-[var(--color-surface)] rounded-full flex items-center justify-center text-[var(--color-primary-contrast)]">
-                            <Check size={12} strokeWidth={4} />
-                        </div>
-                    </div>
-                    <h2 className="mt-3 text-[19px] font-bold text-[var(--color-text)] text-center leading-tight">{profileName}</h2>
-                    <p className="text-[13px] text-[var(--color-hint)] font-medium">{t.user}</p>
+        <section className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-12">
+            <div className="relative overflow-hidden rounded-[34px] border border-black/10 bg-[linear-gradient(135deg,#f9fffb_0%,#eef8ff_45%,#f5f7ff_100%)] p-6 shadow-[0_26px_65px_-45px_rgba(0,0,0,0.55)] md:p-8">
+                <div className="absolute -left-16 -top-20 h-48 w-48 rounded-full bg-[#00c853]/18 blur-3xl" />
+                <div className="absolute -right-16 -bottom-24 h-56 w-56 rounded-full bg-[#6ea8ff]/20 blur-3xl" />
 
-                    <div className="mt-5 flex flex-wrap justify-center gap-2 w-full">
-                        <div className="px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)] shadow-sm">
-                            {phone}
-                        </div>
-                        <div className="px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)] shadow-sm">
-                            {username}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Menu List */}
-                <div className="space-y-2">
-                    {menuItems.map((item) => (
-                        <Link
-                            key={item.label}
-                            href={item.href}
-                            className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"
-                        >
-                            <div className="flex items-center gap-3.5">
-                                <div className={cn("w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]")}>
-                                    <item.icon size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{item.label}</p>
-                                    <p className="text-[11px] text-[var(--color-hint)] font-medium">{item.sub}</p>
-                                </div>
+                <div className="relative grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+                    <div className="rounded-3xl border border-black/10 bg-white/88 p-6 backdrop-blur md:p-7">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Profile</p>
+                        <div className="mt-4 flex items-center gap-4">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#111111] text-[22px] font-black text-white">
+                                {initials}
                             </div>
-                            <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
-                        </Link>
-                    ))}
-                </div>
+                            <div>
+                                <h1 className="font-[family-name:var(--font-playfair)] text-[38px] font-black leading-none text-[#111111] md:text-[50px]">
+                                    {profile.name}
+                                </h1>
+                                <p className="mt-1 text-[13px] text-[#647184]">Customer account</p>
+                            </div>
+                        </div>
+                        <div className="mt-6 h-[1px] w-full bg-gradient-to-r from-[#00c853]/35 to-transparent" />
+                        <p className="mt-4 text-[14px] font-medium text-[#374151]">Your profile is ready for shopping and saved favorites.</p>
+                    </div>
 
-                {/* Store Section Card */}
-                <div className="bg-[var(--color-surface)] rounded-[28px] p-6 shadow-sm border border-[var(--color-border)]">
-                    <h3 className="text-[17px] font-bold text-[var(--color-text)]">{t.is_store_owner}</h3>
-                    <p className="mt-1.5 text-[13px] text-[var(--color-hint)] font-medium leading-relaxed">
-                        {t.list_products_manage_stock}<br />
-                        <span className="text-[11px] opacity-70">{t.activation_after_approval}</span>
-                    </p>
-
-                    <div className="mt-6 flex gap-2.5">
-                        <Link
-                            href={APP_ROUTES.STORE_APPLY}
-                            className="flex-1 h-12 flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-full text-[14px] font-bold shadow-[0_4px_12px_rgba(26,229,80,0.25)] active:scale-95 transition-all"
-                        >
-                            <Store size={16} className="mr-2" />
-                            {t.add_store}
-                        </Link>
-                        <Link
-                            href={APP_ROUTES.STORE_STATUS}
-                            className="flex-1 h-12 flex items-center justify-center bg-[var(--color-surface)] border-[1.5px] border-[var(--color-border)] text-[var(--color-text)] rounded-full text-[14px] font-bold active:scale-95 transition-all shadow-sm"
-                        >
-                            <Settings size={16} className="mr-2" />
-                            {t.seller_panel}
-                        </Link>
+                    <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                        <div className="rounded-2xl border border-black/10 bg-white p-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Email</p>
+                            <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#111111]">
+                                <Mail size={14} />
+                                {profile.email}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-black/10 bg-white p-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Phone</p>
+                            <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#111111]">
+                                <UserRound size={14} />
+                                {profile.phone}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-black/10 bg-white p-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Location</p>
+                            <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#111111]">
+                                <MapPin size={14} />
+                                {profile.city}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+                {menu.map((item) => (
+                    <Link
+                        key={item.label}
+                        href={item.href}
+                        className="group rounded-3xl border border-black/10 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-24px_rgba(0,0,0,0.24)]"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00c853]/12 text-[#008d3a]">
+                                    <item.icon size={18} />
+                                </div>
+                                <div>
+                                    <h2 className="text-[17px] font-extrabold text-[#111111]">{item.label}</h2>
+                                    <p className="text-[12px] text-[#6b7280]">{item.sub}</p>
+                                </div>
+                            </div>
+                            <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
+                        </div>
+                    </Link>
+                ))}
+
+                <div className="group rounded-3xl border border-black/10 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-24px_rgba(0,0,0,0.24)]">
+                    <h3 className="text-[20px] font-extrabold text-[#111111]">Need help?</h3>
+                    <p className="mt-1 text-[13px] text-[#6b7280]">Contact support or review frequently asked questions.</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <a
+                            href="mailto:support@clothes.uz"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 text-[13px] font-bold text-[#111111] transition-all duration-300 hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_14px_25px_-18px_rgba(0,0,0,0.6)]"
+                        >
+                            <LifeBuoy size={16} />
+                            Support
+                        </a>
+                        <button
+                            type="button"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#111111] px-5 text-[13px] font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_16px_28px_-16px_rgba(0,0,0,0.65)]"
+                        >
+                            <LogOut size={16} />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 }

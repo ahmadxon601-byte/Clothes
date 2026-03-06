@@ -100,4 +100,18 @@
     .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
+
+    .font-playfair {
+        font-family: var(--font-playfair), Georgia, serif;
+    }
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
 }
