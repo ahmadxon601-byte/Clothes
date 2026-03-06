@@ -11,51 +11,54 @@ import {
   ChartLine,
   FileClock,
   Files,
+  Globe,
   LayoutDashboard,
   Menu,
   MessageSquare,
+  Moon,
   Package,
   Settings,
   Shield,
   ShoppingBag,
   Store,
+  Sun,
   Users,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useAdminI18n } from '../../context/AdminI18nContext';
 import { cn } from '../../shared/lib/utils';
 
 export type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   mobile?: boolean;
 };
 
 const primaryNav: NavItem[] = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, mobile: true },
-  { href: '/admin/applications', label: 'Applications', icon: Files, mobile: true },
-  { href: '/admin/products', label: 'Products', icon: ShoppingBag, mobile: true },
-  { href: '/admin/shops', label: 'Shops', icon: Store, mobile: true },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, mobile: true },
+  { href: '/admin/applications', labelKey: 'nav.applications', icon: Files, mobile: true },
+  { href: '/admin/products', labelKey: 'nav.products', icon: ShoppingBag, mobile: true },
+  { href: '/admin/shops', labelKey: 'nav.shops', icon: Store, mobile: true },
+  { href: '/admin/users', labelKey: 'nav.users', icon: Users },
+  { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 const moreNav: NavItem[] = [
-  { href: '/admin/categories', label: 'Categories', icon: Boxes },
-  { href: '/admin/banners', label: 'Banners', icon: Bell },
-  { href: '/admin/comments', label: 'Comments', icon: MessageSquare },
-  { href: '/admin/reports', label: 'Reports', icon: BadgeAlert },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/roles', label: 'Roles', icon: Shield },
-  { href: '/admin/audit-logs', label: 'Audit Logs', icon: FileClock },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/categories', labelKey: 'nav.categories', icon: Boxes },
+  { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
+  { href: '/admin/comments', labelKey: 'nav.comments', icon: MessageSquare },
+  { href: '/admin/reports', labelKey: 'nav.reports', icon: BadgeAlert },
+  { href: '/admin/roles', labelKey: 'nav.roles', icon: Shield },
+  { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
 ];
 
 function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   const pathname = usePathname();
+  const { t } = useAdminI18n();
   const active = pathname === item.href;
   const Icon = item.icon;
 
@@ -65,23 +68,26 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
       onClick={onClick}
       className={cn(
         'group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200',
-        active ? 'bg-[var(--admin-pill)] text-[var(--admin-text)] shadow-[var(--admin-shadow)]' : 'text-[var(--admin-muted)] hover:bg-[var(--admin-pill)]'
+        active
+          ? 'bg-[var(--admin-pill)] text-[var(--admin-text)] shadow-[var(--admin-shadow)]'
+          : 'text-[var(--admin-muted)] hover:bg-[var(--admin-pill)]',
       )}
     >
       <span
         className={cn(
           'grid size-9 place-items-center rounded-xl border border-[var(--admin-border)] transition-colors',
-          active ? 'bg-[var(--admin-accent)]/20 text-[var(--admin-accent)]' : 'bg-[var(--admin-card)]'
+          active ? 'bg-[var(--admin-accent)]/20 text-[var(--admin-accent)]' : 'bg-[var(--admin-card)]',
         )}
       >
         <Icon className='size-4' />
       </span>
-      <span className='text-sm font-medium'>{item.label}</span>
+      <span className='text-sm font-medium'>{t(item.labelKey)}</span>
     </Link>
   );
 }
 
 function MoreMenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useAdminI18n();
   return (
     <AnimatePresence>
       {open ? (
@@ -101,7 +107,7 @@ function MoreMenuSheet({ open, onClose }: { open: boolean; onClose: () => void }
             className='fixed inset-x-0 bottom-0 z-[71] rounded-t-[24px] border border-[var(--admin-border)] bg-[var(--admin-card)] p-4 pb-8 shadow-[var(--admin-shadow)]'
           >
             <div className='mx-auto mb-4 h-1.5 w-12 rounded-full bg-[var(--admin-border)]' />
-            <p className='mb-3 text-sm font-semibold text-[var(--admin-text)]'>More</p>
+            <p className='mb-3 text-sm font-semibold text-[var(--admin-text)]'>{t('layout.more')}</p>
             <div className='grid grid-cols-2 gap-2'>
               {moreNav.map((item) => (
                 <NavLink key={item.href} item={item} onClick={onClose} />
@@ -116,6 +122,7 @@ function MoreMenuSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
 function MobileBottomNav({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
+  const { t } = useAdminI18n();
   const mobileItems = primaryNav.filter((item) => item.mobile);
 
   return (
@@ -130,17 +137,20 @@ function MobileBottomNav({ onMore }: { onMore: () => void }) {
               href={item.href}
               className={cn(
                 'flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors',
-                active ? 'bg-[var(--admin-pill)] text-[var(--admin-text)]' : 'text-[var(--admin-muted)]'
+                active ? 'bg-[var(--admin-pill)] text-[var(--admin-text)]' : 'text-[var(--admin-muted)]',
               )}
             >
               <Icon className='size-4' />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
-        <button onClick={onMore} className='flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium text-[var(--admin-muted)]'>
+        <button
+          onClick={onMore}
+          className='flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium text-[var(--admin-muted)]'
+        >
           <Menu className='size-4' />
-          More
+          {t('layout.more')}
         </button>
       </div>
     </nav>
@@ -152,8 +162,10 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   const router = useRouter();
   const { user, loading, logout } = useAdminAuth();
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t } = useAdminI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -162,20 +174,25 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   }, [loading, router, user]);
 
   const subtitle = useMemo(() => {
-    if (pathname.includes('/products')) return 'Product moderation and publishing flow';
-    if (pathname.includes('/applications')) return 'Review incoming shop applications';
-    if (pathname.includes('/shops')) return 'Manage shops, activation and suspension';
+    if (pathname.includes('/products')) return t('dashboard.subtitle');
+    if (pathname.includes('/applications')) return t('applications.subtitle');
+    if (pathname.includes('/shops')) return t('stores.title');
     return 'Clothes MP admin workspace';
-  }, [pathname]);
+  }, [pathname, t]);
 
   if (loading) {
-    return <div className='grid min-h-screen place-items-center bg-[var(--admin-bg)] text-[var(--admin-muted)]'>Loading...</div>;
+    return (
+      <div className='grid min-h-screen place-items-center bg-[var(--admin-bg)] text-[var(--admin-muted)]'>
+        {t('common.loading')}
+      </div>
+    );
   }
 
   if (!user) return null;
 
   return (
     <div className='min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]'>
+      {/* Desktop sidebar */}
       <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 xl:flex xl:flex-col'>
         <div className='mb-4 rounded-2xl bg-[var(--admin-pill)] p-3'>
           <p className='text-xl font-extrabold'>Clothes MP</p>
@@ -186,9 +203,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             <NavLink key={item.href} item={item} />
           ))}
           <div className='my-2 h-px bg-[var(--admin-border)]' />
-          {moreNav.filter((item) => !primaryNav.some((base) => base.href === item.href)).map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
+          {moreNav
+            .filter((item) => !primaryNav.some((base) => base.href === item.href))
+            .map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
         </div>
         <button
           onClick={() => {
@@ -197,10 +216,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
           }}
           className='mt-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3 text-left text-sm text-[var(--admin-muted)] transition hover:-translate-y-0.5'
         >
-          Sign out
+          {t('layout.logout')}
         </button>
       </aside>
 
+      {/* Tablet drawer */}
       <AnimatePresence>
         {drawerOpen ? (
           <>
@@ -225,7 +245,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                 </button>
               </div>
               <div className='space-y-1'>
-                {[...primaryNav, ...moreNav].map((item) => (
+                {primaryNav.map((item) => (
+                  <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
+                ))}
+                <div className='my-2 h-px bg-[var(--admin-border)]' />
+                {moreNav.map((item) => (
                   <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
                 ))}
               </div>
@@ -236,20 +260,74 @@ export function AdminShell({ title, children, actions }: { title: string; childr
 
       <div className='xl:pl-[260px]'>
         <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur md:px-6'>
-          <button onClick={() => setDrawerOpen(true)} className='rounded-xl border border-[var(--admin-border)] p-2 xl:hidden'>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className='rounded-xl border border-[var(--admin-border)] p-2 xl:hidden'
+          >
             <Menu className='size-4' />
           </button>
           <div className='min-w-0'>
             <h1 className='truncate text-lg font-bold'>{title}</h1>
             <p className='hidden text-xs text-[var(--admin-muted)] md:block'>{subtitle}</p>
           </div>
+
           <div className='ml-auto flex items-center gap-2'>
             {actions}
+
+            {/* Language switcher */}
+            <div className='relative'>
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition hover:-translate-y-0.5',
+                  langOpen
+                    ? 'border-[var(--admin-accent)] text-[var(--admin-accent)]'
+                    : 'border-[var(--admin-border)] bg-[var(--admin-pill)] text-[var(--admin-muted)]',
+                )}
+              >
+                <Globe className='size-3.5' />
+                {locale.toUpperCase()}
+              </button>
+              <AnimatePresence>
+                {langOpen && (
+                  <>
+                    <div className='fixed inset-0 z-40' onClick={() => setLangOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className='absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] shadow-[var(--admin-shadow)]'
+                    >
+                      {(['uz', 'ru', 'en'] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          onClick={() => {
+                            setLocale(lang);
+                            setLangOpen(false);
+                          }}
+                          className={cn(
+                            'w-full px-4 py-3 text-left text-sm font-medium transition-colors',
+                            locale === lang
+                              ? 'bg-[var(--admin-accent)] text-white'
+                              : 'text-[var(--admin-text)] hover:bg-[var(--admin-pill)]',
+                          )}
+                        >
+                          {t(`lang.${lang}`)}
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Theme toggle */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-2 text-xs font-semibold transition hover:-translate-y-0.5'
+              className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] p-2 transition hover:-translate-y-0.5'
             >
-              {theme === 'dark' ? 'Light' : 'Dark'}
+              {theme === 'dark' ? <Sun className='size-4' /> : <Moon className='size-4' />}
             </button>
           </div>
         </header>
@@ -272,10 +350,10 @@ export function AdminShell({ title, children, actions }: { title: string; childr
 
 export const adminNavigation = { primaryNav, moreNav };
 export const adminOverviewCards = [
-  { title: 'Users', value: '2.4k', icon: Users },
-  { title: 'Products', value: '9.8k', icon: ShoppingBag },
-  { title: 'Shops', value: '438', icon: Store },
-  { title: 'Moderation', value: '112', icon: Activity },
-  { title: 'Reports', value: '37', icon: ChartLine },
-  { title: 'Orders', value: '1.9k', icon: Package },
+  { titleKey: 'dashboard.users', icon: Users },
+  { titleKey: 'dashboard.products', icon: ShoppingBag },
+  { titleKey: 'dashboard.stores', icon: Store },
+  { titleKey: 'dashboard.applications', icon: Activity },
+  { titleKey: 'reports.title', icon: ChartLine },
+  { titleKey: 'nav.orders', icon: Package },
 ];

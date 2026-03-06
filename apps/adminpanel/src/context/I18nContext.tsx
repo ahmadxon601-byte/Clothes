@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 export type Locale = "uz" | "ru" | "en";
@@ -409,7 +411,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
+    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null as Locale | null;
     return stored === "uz" || stored === "ru" || stored === "en" ? stored : "uz";
   });
 

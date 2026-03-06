@@ -17,7 +17,7 @@ export function BottomNav() {
     ];
 
     return (
-        <div className="fixed inset-x-0 mx-auto bottom-0 w-full max-w-[500px] z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] pointer-events-none">
+        <div className="fixed inset-x-0 mx-auto bottom-0 w-full max-w-[500px] z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] pointer-events-none md:hidden">
             <div className="mx-auto w-[92%] max-w-[372px] h-[60px] bg-[var(--color-nav-bg)] rounded-[30px] shadow-[0_6px_25px_rgba(0,0,0,0.12)] border border-[var(--color-nav-border)] glass-blur pointer-events-auto">
                 <div className="flex items-center justify-between h-full px-2.5 relative">
                     {links.map((link) => {

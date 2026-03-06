@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { useState, type ReactNode } from 'react';
 import { ToastProvider } from '../../src/shared/ui/Toast';
 import { AdminAuthProvider } from '../../src/context/AdminAuthContext';
+import { AdminI18nProvider } from '../../src/context/AdminI18nContext';
 
 export default function AdminRootLayout({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -24,8 +25,10 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
     <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
       <QueryClientProvider client={queryClient}>
         <AdminAuthProvider>
-          {children}
-          <ToastProvider />
+          <AdminI18nProvider>
+            {children}
+            <ToastProvider />
+          </AdminI18nProvider>
         </AdminAuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

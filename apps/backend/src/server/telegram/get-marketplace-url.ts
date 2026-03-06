@@ -1,4 +1,4 @@
-const DEFAULT_LOCAL_MARKETPLACE_URL = "http://localhost:3000";
+const DEFAULT_LOCAL_MARKETPLACE_URL = "http://localhost:3010";
 
 export const getMarketplaceUrl = (): string => {
   const directUrl = process.env.URL?.trim();

@@ -3,6 +3,12 @@ import { getMarketplaceUrl } from "./get-marketplace-url";
 import { query } from "../../lib/db";
 
 export const registerTelegramHandlers = (bot: Bot): void => {
+  // ── Helper: marketplace WebApp button ────────────────────────────────────
+  const marketplaceButton = () => {
+    const url = `${getMarketplaceUrl()}/tg-auth`;
+    return new InlineKeyboard().webApp("🛒 Do'konni ochish", url);
+  };
+
   // ── /start ────────────────────────────────────────────────────────────────
   bot.command("start", async (ctx) => {
     const keyboard = new Keyboard()
@@ -15,6 +21,14 @@ export const registerTelegramHandlers = (bot: Bot): void => {
         `Clothes Marketplace'ga xush kelibsiz!\n` +
         `Davom etish uchun telefon raqamingizni yuboring.`,
       { reply_markup: keyboard }
+    );
+  });
+
+  // ── /shop — marketplace linkini qayta olish ───────────────────────────────
+  bot.command("shop", async (ctx) => {
+    await ctx.reply(
+      `🛍️ Do'konni ochish uchun pastdagi tugmani bosing:`,
+      { reply_markup: marketplaceButton() }
     );
   });
 
@@ -35,7 +49,6 @@ export const registerTelegramHandlers = (bot: Bot): void => {
     const placeholderEmail = `tg_${telegramId}@t.me`;
 
     try {
-      // Upsert: telegram_id bo'yicha topib yangilaydi, yo'q bo'lsa yaratadi
       await query(
         `INSERT INTO users (name, email, password_hash, telegram_id, phone)
          VALUES ($1, $2, 'TELEGRAM_AUTH_ONLY', $3, $4)
@@ -54,20 +67,11 @@ export const registerTelegramHandlers = (bot: Bot): void => {
       return;
     }
 
-    // WebApp URLi — /tg-auth sahifasiga yo'naltiradi (u yerda JWT olinadi)
-    const marketplaceUrl = getMarketplaceUrl();
-    const webAppUrl = `${marketplaceUrl}/tg-auth`;
-
-    const inlineKeyboard = new InlineKeyboard().webApp(
-      "🛒 Marketplaceni ochish",
-      webAppUrl
-    );
-
     await ctx.reply(
       `✅ Akkountingiz tayyor, ${contact.first_name}!\n\n` +
         `Endi pastdagi tugma orqali do'konni oching.\n` +
         `Siz avtomatik tarzda tizimga kirasiz.`,
-      { reply_markup: inlineKeyboard }
+      { reply_markup: marketplaceButton() }
     );
   });
 };

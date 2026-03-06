@@ -50,7 +50,7 @@ export default function StoresPage() {
             );
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3">
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3 md:px-8 lg:px-10">
             <div className="pt-1 pb-0.5">
                 <Link href={routes.PRODUCTS} className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
                     <Search size={16} className="opacity-40" />
@@ -86,7 +86,7 @@ export default function StoresPage() {
                     ))}
                 </div>
             ) : filteredStores.length > 0 ? (
-                <div className="space-y-3 pb-4">
+                <div className="space-y-3 pb-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
                     {filteredStores.map((store) => (
                         <Link
                             key={store.id}

@@ -1,42 +1,48 @@
+'use client';
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
-    theme: Theme;
-    toggleTheme: () => void;
+  theme: Theme;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<Theme>(() => {
-        const saved = localStorage.getItem('admin-theme');
-        if (saved === 'dark' || saved === 'light') return saved;
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-        return 'light';
-    });
+  const [theme, setTheme] = useState<Theme>('light');
 
-    useEffect(() => {
-        localStorage.setItem('admin-theme', theme);
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [theme]);
+  useEffect(() => {
+    const saved = localStorage.getItem('admin-theme');
+    if (saved === 'dark' || saved === 'light') {
+      setTheme(saved);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+    }
+  }, []);
 
-    const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
+  useEffect(() => {
+    localStorage.setItem('admin-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
-    return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
+  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
-    const context = useContext(ThemeContext);
-    if (!context) throw new Error('useTheme must be used within ThemeProvider');
-    return context;
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
 }
