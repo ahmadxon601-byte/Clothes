@@ -2,6 +2,7 @@
 
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
   AdminPageSection,
@@ -23,6 +24,7 @@ import { useUserMutation, useUsers } from '../../../src/features/admin/component
 import { useToast } from '../../../src/shared/ui/useToast';
 
 export default function UsersPage() {
+  const { t } = useAdminI18n();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [page, setPage] = useState(1);
@@ -32,17 +34,17 @@ export default function UsersPage() {
   const { showToast } = useToast();
 
   return (
-    <AdminShell title='Users'>
-      <AdminPageSection title='Users Management' description='Ban/unban with mandatory reason, role visibility and quick review.' />
+    <AdminShell title={t('users.title')}>
+      <AdminPageSection title={t('users.management')} description={t('users.managementDesc')} />
 
       <FilterBar>
         <div className='relative min-w-[240px] flex-1'>
           <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search by name or email' className='admin-input pl-10' />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('users.search')} className='admin-input pl-10' />
         </div>
         <select className='admin-input max-w-[220px]' value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value=''>All roles</option>
-          <option value='user'>User</option>
+          <option value=''>{t('common.allRoles')}</option>
+          <option value='user'>{t('roles.user')}</option>
           <option value='seller'>Seller</option>
           <option value='admin'>Admin</option>
         </select>
@@ -51,18 +53,18 @@ export default function UsersPage() {
       {query.isLoading ? (
         <SkeletonRows />
       ) : (query.data?.users.length ?? 0) === 0 ? (
-        <EmptyState title='No users found' description='Adjust filters and try again.' />
+        <EmptyState title={t('users.empty')} description={t('users.emptyDesc')} />
       ) : (
         <>
           <DesktopTable>
             <Table>
               <THead>
                 <tr>
-                  <TH>User</TH>
-                  <TH>Role</TH>
-                  <TH>Created</TH>
-                  <TH>Status</TH>
-                  <TH className='text-right'>Actions</TH>
+                  <TH>{t('roles.user')}</TH>
+                  <TH>{t('common.role')}</TH>
+                  <TH>{t('users.added')}</TH>
+                  <TH>{t('common.status')}</TH>
+                  <TH className='text-right'>{t('users.actions')}</TH>
                 </tr>
               </THead>
               <tbody>
@@ -77,7 +79,7 @@ export default function UsersPage() {
                       <TD>{item.role}</TD>
                       <TD>{new Date(item.created_at).toLocaleDateString()}</TD>
                       <TD>
-                        <StatusBadge label={banned ? 'Banned' : 'Active'} tone={banned ? 'danger' : 'success'} />
+                        <StatusBadge label={banned ? t('common.banned') : t('common.active')} tone={banned ? 'danger' : 'success'} />
                       </TD>
                       <TD className='text-right'>
                         <button
@@ -85,7 +87,7 @@ export default function UsersPage() {
                           className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs disabled:opacity-40'
                           onClick={() => setTargetUser({ id: item.id, banned })}
                         >
-                          {banned ? 'Unban' : 'Ban'}
+                          {banned ? t('common.unban') : t('common.ban')}
                         </button>
                       </TD>
                     </TR>
@@ -105,7 +107,7 @@ export default function UsersPage() {
                       <p className='font-semibold'>{item.name || '-'}</p>
                       <p className='text-sm text-[var(--admin-muted)]'>{item.email}</p>
                     </div>
-                    <StatusBadge label={banned ? 'Banned' : 'Active'} tone={banned ? 'danger' : 'success'} />
+                    <StatusBadge label={banned ? t('common.banned') : t('common.active')} tone={banned ? 'danger' : 'success'} />
                   </div>
                   <div className='mt-2 flex items-center justify-between text-xs text-[var(--admin-muted)]'>
                     <span>{item.role}</span>
@@ -116,7 +118,7 @@ export default function UsersPage() {
                     className='mt-3 w-full rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold disabled:opacity-40'
                     onClick={() => setTargetUser({ id: item.id, banned })}
                   >
-                    {banned ? 'Unban' : 'Ban'}
+                    {banned ? t('common.unban') : t('common.ban')}
                   </button>
                 </MobileCard>
               );
@@ -127,25 +129,24 @@ export default function UsersPage() {
 
       <div className='mt-4 flex justify-end gap-2'>
         <button disabled={page <= 1} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm disabled:opacity-50' onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
-          Previous
+          {t('common.previous')}
         </button>
         <button className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm' onClick={() => setPage((prev) => prev + 1)}>
-          Next
+          {t('common.next')}
         </button>
       </div>
 
       <ReasonDialog
         open={Boolean(targetUser)}
-        title={targetUser?.banned ? 'Unban user' : 'Ban user'}
-        confirmLabel={targetUser?.banned ? 'Unban' : 'Ban'}
+        title={targetUser?.banned ? t('users.unbanTitle') : t('users.banTitle')}
+        confirmLabel={targetUser?.banned ? t('common.unban') : t('common.ban')}
         onClose={() => setTargetUser(null)}
         onConfirm={async (reason) => {
           if (!targetUser) return;
           await mutation.mutateAsync({ id: targetUser.id, payload: { is_banned: !targetUser.banned, reason } });
-          showToast({ message: targetUser.banned ? 'User unbanned' : 'User banned', type: targetUser.banned ? 'success' : 'error' });
+          showToast({ message: targetUser.banned ? t('users.unbannedMsg') : t('users.bannedMsg'), type: targetUser.banned ? 'success' : 'error' });
         }}
       />
     </AdminShell>
   );
 }
-

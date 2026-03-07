@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import type { Product } from '../../../shared/types';
-import { APP_ROUTES } from '../../../shared/config/constants';
+import { useAppRoutes } from '../../../shared/config/useAppRoutes';
 import { formatPrice } from '../../../shared/lib/formatPrice';
 import { useFavoritesStore } from '../../favorites/model';
 import { cn } from '../../../shared/lib/utils';
@@ -20,6 +20,7 @@ export function ProductCard({
     const { favorites, toggleFavorite } = useFavoritesStore();
     const isFav = favorites.includes(product.id);
     const [imgError, setImgError] = useState(false);
+    const routes = useAppRoutes();
 
     // Hardcoded logic for "ONLY X LEFT" badge to match screenshot look
     const showBadge = product.price > 100; // Just as an example differentiator
@@ -32,7 +33,7 @@ export function ProductCard({
     );
 
     return (
-        <Link href={APP_ROUTES.PRODUCT(product.id)} className="block group">
+        <Link href={routes.PRODUCT(product.id)} className="block group">
             <div className="relative rounded-2xl overflow-hidden bg-[var(--color-surface2)] aspect-[1/1.2] isolate">
                 <img
                     src={!imgError && product.images[0] ? product.images[0] : 'https://placehold.co/400x500/png?text=No+Image'}

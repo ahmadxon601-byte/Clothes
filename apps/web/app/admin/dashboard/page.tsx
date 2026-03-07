@@ -1,7 +1,7 @@
 'use client';
 
-import { BarChart3, Files, ShoppingBag, Store, Users } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
+import { Files, ShoppingBag, Store, Users } from 'lucide-react';
+import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
   AdminPageSection,
@@ -19,31 +19,22 @@ import {
 } from '../../../src/features/admin/components/DataViews';
 import { useAdminStats, useApplications, useProducts } from '../../../src/features/admin/components/hooks';
 
-const growthData = [
-  { day: 'Mon', value: 220 },
-  { day: 'Tue', value: 240 },
-  { day: 'Wed', value: 205 },
-  { day: 'Thu', value: 260 },
-  { day: 'Fri', value: 290 },
-  { day: 'Sat', value: 310 },
-  { day: 'Sun', value: 360 },
-];
-
 export default function DashboardPage() {
+  const { t } = useAdminI18n();
   const stats = useAdminStats();
   const applications = useApplications({ page: 1, limit: 5, status: 'pending' });
   const products = useProducts({ page: 1, limit: 5 });
 
   const cards = [
-    { title: 'Users', value: stats.data?.users_count ?? 0, icon: Users },
-    { title: 'Products', value: stats.data?.products_count ?? 0, icon: ShoppingBag },
-    { title: 'Shops', value: stats.data?.stores_count ?? 0, icon: Store },
-    { title: 'Applications', value: stats.data?.pending_seller_requests ?? 0, icon: Files },
+    { title: t('dashboard.users'), value: stats.data?.users_count ?? 0, icon: Users },
+    { title: t('dashboard.products'), value: stats.data?.products_count ?? 0, icon: ShoppingBag },
+    { title: t('dashboard.stores'), value: stats.data?.stores_count ?? 0, icon: Store },
+    { title: t('dashboard.applications'), value: stats.data?.pending_seller_requests ?? 0, icon: Files },
   ];
 
   return (
-    <AdminShell title='Dashboard'>
-      <AdminPageSection title='Dashboard Overview' description='Realtime moderation and business metrics' />
+    <AdminShell title={t('dashboard.title')}>
+      <AdminPageSection title={t('dashboard.overview')} description={t('dashboard.overviewDesc')} />
 
       <section className='mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4'>
         {cards.map((card) => {
@@ -60,45 +51,22 @@ export default function DashboardPage() {
         })}
       </section>
 
-      <section className='admin-card mb-4 p-4'>
-        <div className='mb-4 flex items-center gap-2'>
-          <BarChart3 className='size-4 text-[var(--admin-accent)]' />
-          <p className='text-sm font-semibold'>Platform Growth</p>
-        </div>
-        <div className='h-64 w-full'>
-          <ResponsiveContainer width='100%' height='100%'>
-            <AreaChart data={growthData}>
-              <defs>
-                <linearGradient id='growthFill' x1='0' y1='0' x2='0' y2='1'>
-                  <stop offset='0%' stopColor='#22C55E' stopOpacity={0.35} />
-                  <stop offset='100%' stopColor='#22C55E' stopOpacity={0.04} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey='day' tickLine={false} axisLine={false} stroke='var(--admin-muted)' />
-              <YAxis tickLine={false} axisLine={false} stroke='var(--admin-muted)' />
-              <Tooltip />
-              <Area type='monotone' dataKey='value' stroke='#22C55E' fill='url(#growthFill)' strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
       <section className='grid gap-4 xl:grid-cols-2'>
         <div>
-          <AdminPageSection title='Latest Applications' />
+          <AdminPageSection title={t('dashboard.latestApplications')} />
           {applications.isLoading ? (
             <SkeletonRows />
           ) : (applications.data?.requests.length ?? 0) === 0 ? (
-            <EmptyState title='No applications' description='New shop applications will appear here.' />
+            <EmptyState title={t('dashboard.noApplications')} description={t('dashboard.noApplicationsDesc')} />
           ) : (
             <>
               <DesktopTable>
                 <Table>
                   <THead>
                     <tr>
-                      <TH>Shop</TH>
-                      <TH>Applicant</TH>
-                      <TH>Status</TH>
+                      <TH>{t('common.shop')}</TH>
+                      <TH>{t('applications.requester')}</TH>
+                      <TH>{t('common.status')}</TH>
                     </tr>
                   </THead>
                   <tbody>
@@ -130,20 +98,20 @@ export default function DashboardPage() {
         </div>
 
         <div>
-          <AdminPageSection title='Pending Products' />
+          <AdminPageSection title={t('dashboard.pendingProducts')} />
           {products.isLoading ? (
             <SkeletonRows />
           ) : (products.data?.products.length ?? 0) === 0 ? (
-            <EmptyState title='No products' description='Product queue will appear here.' />
+            <EmptyState title={t('dashboard.noProducts')} description={t('dashboard.noProductsDesc')} />
           ) : (
             <>
               <DesktopTable>
                 <Table>
                   <THead>
                     <tr>
-                      <TH>Product</TH>
-                      <TH>Shop</TH>
-                      <TH>Views</TH>
+                      <TH>{t('products.name')}</TH>
+                      <TH>{t('products.store')}</TH>
+                      <TH>{t('products.views')}</TH>
                     </tr>
                   </THead>
                   <tbody>
@@ -162,7 +130,7 @@ export default function DashboardPage() {
                   <MobileCard key={item.id}>
                     <p className='font-semibold'>{item.name}</p>
                     <p className='text-sm text-[var(--admin-muted)]'>{item.store_name || '-'}</p>
-                    <p className='mt-2 text-xs text-[var(--admin-muted)]'>Views: {item.views}</p>
+                    <p className='mt-2 text-xs text-[var(--admin-muted)]'>{t('products.views')}: {item.views}</p>
                   </MobileCard>
                 ))}
               </MobileCardList>

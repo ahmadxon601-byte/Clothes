@@ -2,6 +2,7 @@
 
 import { Filter, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
   AdminPageSection,
@@ -20,10 +21,11 @@ import {
   TR,
 } from '../../../src/features/admin/components/DataViews';
 import { ReasonDialog } from '../../../src/features/admin/components/ReasonDialog';
-import { useApplications, useUpdateApplication } from '../../../src/features/admin/components/hooks';
+import { useApplications, useUpdateApplication, useAdminSSE } from '../../../src/features/admin/components/hooks';
 import { useToast } from '../../../src/shared/ui/useToast';
 
 export default function ApplicationsPage() {
+  const { t } = useAdminI18n();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('pending');
   const [page, setPage] = useState(1);
@@ -31,6 +33,7 @@ export default function ApplicationsPage() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const { showToast } = useToast();
 
+  useAdminSSE();
   const query = useApplications({ page, limit: 12, status, search });
   const mutation = useUpdateApplication();
 
@@ -38,53 +41,53 @@ export default function ApplicationsPage() {
 
   return (
     <AdminShell
-      title='Applications'
+      title={t('applications.title')}
       actions={
         <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-          <Filter className='mr-1 inline size-4' /> Filters
+          <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
         </button>
       }
     >
-      <AdminPageSection title='Shop Applications' description='Review, approve or reject incoming applications.' />
+      <AdminPageSection title={t('applications.shopApplications')} description={t('applications.shopApplicationsDesc')} />
 
       <FilterBar>
         <div className='relative min-w-[240px] flex-1'>
           <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search by shop or user' className='admin-input pl-10' />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('applications.searchPlaceholder')} className='admin-input pl-10' />
         </div>
         <select className='admin-input max-w-[220px]' value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value=''>All statuses</option>
-          <option value='pending'>Pending</option>
-          <option value='approved'>Approved</option>
-          <option value='rejected'>Rejected</option>
+          <option value=''>{t('applications.allStatuses')}</option>
+          <option value='pending'>{t('applications.pending')}</option>
+          <option value='approved'>{t('applications.approved')}</option>
+          <option value='rejected'>{t('applications.rejected')}</option>
         </select>
       </FilterBar>
 
       <MobileFilterSheet open={showFilters} onClose={() => setShowFilters(false)} applied={appliedFilters}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search by shop or user' className='admin-input' />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('applications.searchPlaceholder')} className='admin-input' />
         <select className='admin-input' value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value=''>All statuses</option>
-          <option value='pending'>Pending</option>
-          <option value='approved'>Approved</option>
-          <option value='rejected'>Rejected</option>
+          <option value=''>{t('applications.allStatuses')}</option>
+          <option value='pending'>{t('applications.pending')}</option>
+          <option value='approved'>{t('applications.approved')}</option>
+          <option value='rejected'>{t('applications.rejected')}</option>
         </select>
       </MobileFilterSheet>
 
       {query.isLoading ? (
         <SkeletonRows />
       ) : (query.data?.requests.length ?? 0) === 0 ? (
-        <EmptyState title='No applications found' description='Try another filter or check back later.' />
+        <EmptyState title={t('applications.empty')} description={t('applications.emptyDesc')} />
       ) : (
         <>
           <DesktopTable>
             <Table>
               <THead>
                 <tr>
-                  <TH>Shop</TH>
-                  <TH>Applicant</TH>
-                  <TH>Contact</TH>
-                  <TH>Status</TH>
-                  <TH className='text-right'>Actions</TH>
+                  <TH>{t('common.shop')}</TH>
+                  <TH>{t('applications.requester')}</TH>
+                  <TH>{t('applications.contact')}</TH>
+                  <TH>{t('common.status')}</TH>
+                  <TH className='text-right'>{t('users.actions')}</TH>
                 </tr>
               </THead>
               <tbody>
@@ -92,7 +95,7 @@ export default function ApplicationsPage() {
                   <TR key={item.id}>
                     <TD>
                       <p className='font-semibold'>{item.store_name}</p>
-                      <p className='text-xs text-[var(--admin-muted)]'>{item.store_address || 'No address'}</p>
+                      <p className='text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
                     </TD>
                     <TD>{item.user_name || item.user_email}</TD>
                     <TD>{item.store_phone || '-'}</TD>
@@ -103,12 +106,12 @@ export default function ApplicationsPage() {
                       <div className='inline-flex gap-2'>
                         <button
                           className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
-                          onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: 'Application approved', type: 'success' }) })}
+                          onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
                         >
-                          Approve
+                          {t('applications.approve')}
                         </button>
                         <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white' onClick={() => setRejectId(item.id)}>
-                          Reject
+                          {t('applications.reject')}
                         </button>
                       </div>
                     </TD>
@@ -128,16 +131,16 @@ export default function ApplicationsPage() {
                   </div>
                   <StatusBadge label={item.status} tone={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'} />
                 </div>
-                <p className='mt-2 text-xs text-[var(--admin-muted)]'>{item.store_address || 'No address'}</p>
+                <p className='mt-2 text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
                 <div className='mt-3 flex gap-2'>
                   <button
                     className='flex-1 rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
-                    onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: 'Application approved', type: 'success' }) })}
+                    onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
                   >
-                    Approve
+                    {t('applications.approve')}
                   </button>
                   <button className='flex-1 rounded-full bg-rose-500 py-2 text-xs font-semibold text-white' onClick={() => setRejectId(item.id)}>
-                    Reject
+                    {t('applications.reject')}
                   </button>
                 </div>
               </MobileCard>
@@ -148,25 +151,24 @@ export default function ApplicationsPage() {
 
       <div className='mt-4 flex justify-end gap-2'>
         <button disabled={page <= 1} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm disabled:opacity-50' onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
-          Previous
+          {t('common.previous')}
         </button>
         <button className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm' onClick={() => setPage((prev) => prev + 1)}>
-          Next
+          {t('common.next')}
         </button>
       </div>
 
       <ReasonDialog
         open={Boolean(rejectId)}
-        title='Reject application'
-        confirmLabel='Reject'
+        title={t('applications.rejectTitle')}
+        confirmLabel={t('applications.reject')}
         onClose={() => setRejectId(null)}
         onConfirm={async (reason) => {
           if (!rejectId) return;
           await mutation.mutateAsync({ id: rejectId, status: 'rejected', reason });
-          showToast({ message: 'Application rejected', type: 'info' });
+          showToast({ message: t('applications.rejectedMsg'), type: 'info' });
         }}
       />
     </AdminShell>
   );
 }
-

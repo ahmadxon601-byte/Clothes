@@ -2,17 +2,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Heart, User, Home, Store } from 'lucide-react';
-import { APP_ROUTES } from '../config/constants';
+import { useAppRoutes } from '../config/useAppRoutes';
 import { cn } from '../lib/utils';
 
 export function BottomNav() {
     const pathname = usePathname();
+    const routes = useAppRoutes();
 
     const links = [
-        { href: APP_ROUTES.HOME, icon: Home, label: 'Products' },
-        { href: APP_ROUTES.PRODUCTS, icon: Store, label: 'Stores' },
-        { href: APP_ROUTES.FAVORITES, icon: Heart, label: 'Favorites' },
-        { href: APP_ROUTES.PROFILE, icon: User, label: 'Profile' },
+        { href: routes.HOME, icon: Home, label: 'Products' },
+        { href: routes.PRODUCTS, icon: Store, label: 'Stores' },
+        { href: routes.FAVORITES, icon: Heart, label: 'Favorites' },
+        { href: routes.PROFILE, icon: User, label: 'Profile' },
     ];
 
     return (
@@ -21,8 +22,8 @@ export function BottomNav() {
                 <div className="flex items-center justify-between h-full px-2.5 relative">
                     {links.map((link) => {
                         const isActive =
-                            link.href === APP_ROUTES.HOME
-                                ? pathname === APP_ROUTES.HOME || pathname === APP_ROUTES.STORES
+                            link.href === routes.HOME
+                                ? pathname === routes.HOME || pathname === routes.STORES
                                 : pathname === link.href;
                         const Icon = link.icon;
                         return (

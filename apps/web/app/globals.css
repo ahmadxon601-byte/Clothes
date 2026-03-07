@@ -118,6 +118,72 @@
         color: var(--admin-muted);
         border: 1px solid var(--admin-border);
     }
+
+    .admin-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        background: var(--admin-accent);
+        color: #fff;
+        transition: background 0.15s, opacity 0.15s;
+        cursor: pointer;
+        border: none;
+    }
+
+    .admin-btn:hover {
+        background: var(--admin-accent-hover);
+    }
+
+    .admin-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .admin-btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        background: var(--admin-pill);
+        color: var(--admin-text);
+        border: 1px solid var(--admin-border);
+        transition: background 0.15s;
+        cursor: pointer;
+    }
+
+    .admin-btn-secondary:hover {
+        background: var(--admin-border);
+    }
+
+    .admin-btn-secondary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .admin-select {
+        padding: 8px 12px;
+        border: 1px solid var(--admin-border);
+        border-radius: 10px;
+        font-size: 13px;
+        outline: none;
+        background: var(--admin-pill);
+        color: var(--admin-text);
+        transition: border-color 0.15s;
+        cursor: pointer;
+    }
+
+    .admin-select:focus {
+        border-color: var(--admin-accent);
+    }
 }
 
 @layer base {
@@ -164,5 +230,19 @@
 
     .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .font-playfair {
+        font-family: var(--font-playfair), Georgia, serif;
+    }
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
     }
 }

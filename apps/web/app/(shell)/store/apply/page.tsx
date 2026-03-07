@@ -4,30 +4,41 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
 import { cachePendingStoreApplication, ensureMarketplaceToken } from '../../../../src/lib/marketplaceAuth';
-import { APP_ROUTES } from '../../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../../src/shared/config/useAppRoutes';
 import { Button } from '../../../../src/shared/ui/Button';
 import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { validators } from '../../../../src/shared/lib/validators';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
-import { MapPicker, type LatLng } from '../../../../src/shared/ui/MapPicker';
-
-// Namangan city center default
-const NAMANGAN: LatLng = { lat: 41.0011, lng: 71.6681 };
 
 export default function StoreApplyPage() {
     const router = useRouter();
     const { user } = useTelegram();
     const { showToast } = useToast();
     const { t } = useTranslation();
+    const routes = useAppRoutes();
 
     const [formData, setFormData] = useState({
         storeName: '',
         addressText: '',
-        photoUrl: '',
+        lat: '',
+        lng: '',
+        photoUrl: '', // Start empty for upload
     });
-    const [location, setLocation] = useState<LatLng>(NAMANGAN);
     const [loading, setLoading] = useState(false);
+    const saveApplicationLocally = () => {
+        cachePendingStoreApplication({
+            id: crypto.randomUUID(),
+            userId: user ? String(user.id) : 'local-user',
+            storeName: formData.storeName,
+            addressText: formData.addressText,
+            location: {
+                lat: parseFloat(formData.lat) || 41.2995,
+                lng: parseFloat(formData.lng) || 69.2401,
+            },
+            photoUrl: formData.photoUrl,
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,16 +69,9 @@ export default function StoreApplyPage() {
                 throw new Error(result?.error ?? result?.message ?? 'Request failed');
             }
 
-            cachePendingStoreApplication({
-                id: crypto.randomUUID(),
-                userId: user ? String(user.id) : 'local-user',
-                storeName: formData.storeName,
-                addressText: formData.addressText,
-                location: { lat: location.lat, lng: location.lng },
-                photoUrl: formData.photoUrl,
-            });
+            saveApplicationLocally();
             showToast({ message: t.application_received, type: 'success' });
-            router.replace(APP_ROUTES.STORE_STATUS);
+            router.replace(routes.STORE_STATUS);
         } catch (err: any) {
             showToast({ message: err?.message || t.error_occurred, type: 'error' });
         } finally {
@@ -105,16 +109,25 @@ export default function StoreApplyPage() {
                     />
                 </div>
 
-                {/* Map location picker */}
-                <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">
-                        Joylashuv (xaritadan tanlang)
-                    </label>
-                    <MapPicker
-                        value={location}
-                        onChange={setLocation}
-                        height="240px"
-                    />
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Latitude</label>
+                        <Input
+                            placeholder="41.2995"
+                            value={formData.lat}
+                            onChange={(e) => setFormData(p => ({ ...p, lat: e.target.value }))}
+                            disabled={loading}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Longitude</label>
+                        <Input
+                            placeholder="69.2401"
+                            value={formData.lng}
+                            onChange={(e) => setFormData(p => ({ ...p, lng: e.target.value }))}
+                            disabled={loading}
+                        />
+                    </div>
                 </div>
 
                 <div>

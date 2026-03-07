@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
+import { SITE_ROUTES } from '../../../src/shared/config/constants';
 
 export default function SearchPage() {
-    redirect('/products');
+    redirect(SITE_ROUTES.PRODUCTS);
 }

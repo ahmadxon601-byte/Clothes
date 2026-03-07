@@ -7,7 +7,7 @@ import { ensureMarketplaceToken, getMarketplaceMe, markCachedStoreApproved, read
 import type { StoreApplication } from '../../../../src/shared/types';
 import { Button } from '../../../../src/shared/ui/Button';
 import { Skeleton } from '../../../../src/shared/ui/Skeleton';
-import { APP_ROUTES } from '../../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../../src/shared/config/useAppRoutes';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
 
 export default function StoreStatusPage() {
@@ -16,6 +16,7 @@ export default function StoreStatusPage() {
     const [application, setApplication] = useState<StoreApplication | null>(null);
     const [loading, setLoading] = useState(true);
     const { t } = useTranslation();
+    const routes = useAppRoutes();
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -67,7 +68,7 @@ export default function StoreStatusPage() {
                         <Info size={64} className="text-[var(--color-hint)] mb-4" />
                         <h2 className="text-xl font-bold mb-2 text-[var(--color-text)]">{t.no_application}</h2>
                         <p className="text-[var(--color-hint)] mb-8">{t.no_application_desc}</p>
-                        <Button onClick={() => router.push(APP_ROUTES.STORE_APPLY)}>
+                        <Button onClick={() => router.push(routes.STORE_APPLY)}>
                             {t.apply_now}
                         </Button>
                     </>
@@ -90,14 +91,14 @@ export default function StoreStatusPage() {
                             <p className="text-sm text-[var(--color-text)]"><strong>{t.store_name}:</strong> {application.storeName}</p>
                         </div>
                         {/* Real app would route to Store Admin panel here */}
-                        <Button className="mt-8 w-full" onClick={() => router.push(APP_ROUTES.PROFILE)}>{t.back_to_profile}</Button>
+                        <Button className="mt-8 w-full" onClick={() => router.push(routes.PROFILE)}>{t.back_to_profile}</Button>
                     </>
                 ) : (
                     <>
                         <Info size={64} className="text-red-500 mb-4" />
                         <h2 className="text-xl font-bold mb-2 text-[var(--color-text)]">{t.rejected_title}</h2>
                         <p className="text-[var(--color-hint)] mb-8">{t.rejected_desc}</p>
-                        <Button onClick={() => router.push(APP_ROUTES.STORE_APPLY)}>
+                        <Button onClick={() => router.push(routes.STORE_APPLY)}>
                             {t.reapply}
                         </Button>
                     </>

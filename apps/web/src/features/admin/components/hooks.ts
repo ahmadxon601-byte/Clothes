@@ -1,7 +1,49 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '../../../lib/adminApi';
+import { adminApi, TOKEN_STORAGE_KEY } from '../../../lib/adminApi';
+
+// ── SSE: real-time admin events ───────────────────────────────────────────────
+// Listens to /api/admin/events (Server-Sent Events) and invalidates
+// the relevant React Query caches when the server emits a change event.
+export function useAdminSSE() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+    if (!token) return;
+
+    const url = `/api/admin/events?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+
+    es.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data) as { type?: string };
+        if (!payload.type || payload.type === 'connected') return;
+
+        // Invalidate the matching cache key
+        const keyMap: Record<string, string[]> = {
+          seller_requests: ['admin', 'applications'],
+          users:           ['admin', 'users'],
+          products:        ['admin', 'products'],
+          stores:          ['admin', 'stores'],
+        };
+        const key = keyMap[payload.type];
+        if (key) {
+          qc.invalidateQueries({ queryKey: key });
+          qc.invalidateQueries({ queryKey: ['admin', 'stats'] });
+        }
+      } catch {}
+    };
+
+    es.onerror = () => {
+      // Browser will auto-reconnect; nothing to do
+    };
+
+    return () => es.close();
+  }, [qc]);
+}
 
 export function useAdminStats() {
   return useQuery({ queryKey: ['admin', 'stats'], queryFn: () => adminApi.getStats() });
@@ -11,6 +53,7 @@ export function useApplications(params: Record<string, string | number>) {
   return useQuery({
     queryKey: ['admin', 'applications', params],
     queryFn: () => adminApi.getApplications(params),
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -72,4 +115,38 @@ export function useOrderMutation() {
     mutationFn: ({ id, status }: { id: string; status: string }) => adminApi.updateOrderStatus(id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'orders'] }),
   });
+}
+
+export function useBanners(params: Record<string, string | number>) {
+  return useQuery({ queryKey: ['admin', 'banners', params], queryFn: () => adminApi.getBanners(params) });
+}
+
+export function useCreateBanner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { title: string; is_active: boolean; product_ids: string[] }) =>
+      adminApi.createBanner(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'banners'] }),
+  });
+}
+
+export function useUpdateBanner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { title?: string; is_active?: boolean; product_ids?: string[] } }) =>
+      adminApi.updateBanner(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'banners'] }),
+  });
+}
+
+export function useDeleteBanner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deleteBanner(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'banners'] }),
+  });
+}
+
+export function useAuditLogs(params: Record<string, string | number>) {
+  return useQuery({ queryKey: ['admin', 'audit-logs', params], queryFn: () => adminApi.getAuditLogs(params) });
 }

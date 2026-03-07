@@ -85,7 +85,22 @@ export interface Pagination {
     pages: number;
 }
 
+// ── Extended product type (detail page) ───────────────────────────────────────
+
+export interface ApiProductDetail extends ApiProduct {
+    description: string | null;
+    category_slug: string | null;
+    images: { id: string; url: string; sort_order: number }[];
+    variants: { id: string; size: string | null; color: string | null; price: number; stock: number; sku: string }[];
+    location: { latitude: number; longitude: number; address: string } | null;
+}
+
 // ── Products ──────────────────────────────────────────────────────────────────
+
+export async function fetchProductById(id: string): Promise<ApiProductDetail> {
+    const data = await apiGet<{ product: ApiProductDetail }>(`/products/${id}`);
+    return data.product;
+}
 
 export async function fetchProducts(params?: {
     category?: string;   // category UUID

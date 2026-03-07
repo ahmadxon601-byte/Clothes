@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
 
 const schema = z.object({
   store_name: z.string().min(2).max(255),
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       ]
     );
 
+    emitAdminEvent({ type: "seller_requests", action: "created" });
     return ok(
       { message: "Seller request submitted. Wait for admin approval." },
       201

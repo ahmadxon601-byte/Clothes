@@ -2,6 +2,7 @@
 
 import { Filter, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
   AdminPageSection,
@@ -29,6 +30,7 @@ function discount(oldPrice?: number | null, price?: number) {
 }
 
 export default function ProductsPage() {
+  const { t } = useAdminI18n();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -47,66 +49,66 @@ export default function ProductsPage() {
 
   return (
     <AdminShell
-      title='Products'
+      title={t('products.title')}
       actions={
         <div className='flex items-center gap-2'>
           <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-            <Filter className='mr-1 inline size-4' /> Filters
+            <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
           </button>
           <button onClick={() => setMobileMulti((prev) => !prev)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-            {mobileMulti ? 'Done' : 'Select'}
+            {mobileMulti ? t('common.done') : t('common.select')}
           </button>
         </div>
       }
     >
-      <AdminPageSection title='Product Moderation' description='Approve, reject, block and bulk process products.' />
+      <AdminPageSection title={t('products.moderation')} description={t('products.moderationDesc')} />
 
       <FilterBar>
         <div className='relative min-w-[240px] flex-1'>
           <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search by product, SKU or shop' className='admin-input pl-10' />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('products.searchPlaceholder')} className='admin-input pl-10' />
         </div>
         <select className='admin-input max-w-[220px]' value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value=''>All statuses</option>
-          <option value='active'>Active</option>
-          <option value='inactive'>Inactive</option>
+          <option value=''>{t('products.allStatuses')}</option>
+          <option value='active'>{t('products.filterActive')}</option>
+          <option value='inactive'>{t('products.filterInactive')}</option>
         </select>
       </FilterBar>
 
       <MobileFilterSheet open={showFilters} onClose={() => setShowFilters(false)} applied={appliedFilters}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search by product, SKU or shop' className='admin-input' />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('products.searchPlaceholder')} className='admin-input' />
         <select className='admin-input' value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value=''>All statuses</option>
-          <option value='active'>Active</option>
-          <option value='inactive'>Inactive</option>
+          <option value=''>{t('products.allStatuses')}</option>
+          <option value='active'>{t('products.filterActive')}</option>
+          <option value='inactive'>{t('products.filterInactive')}</option>
         </select>
       </MobileFilterSheet>
 
       {selected.length > 0 ? (
         <div className='admin-card mb-3 flex items-center justify-between gap-2 p-3'>
-          <p className='text-sm font-semibold'>{selected.length} selected</p>
+          <p className='text-sm font-semibold'>{t('common.selected', { count: selected.length })}</p>
           <div className='flex items-center gap-2'>
             <button
               className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
               onClick={() => {
                 Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { is_active: true } }))).then(() => {
                   setSelected([]);
-                  showToast({ message: 'Selected products approved', type: 'success' });
+                  showToast({ message: t('products.bulkApprovedMsg'), type: 'success' });
                 });
               }}
             >
-              Approve
+              {t('common.approve')}
             </button>
             <button
               className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white'
               onClick={() => {
                 Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { is_active: false } }))).then(() => {
                   setSelected([]);
-                  showToast({ message: 'Selected products blocked', type: 'error' });
+                  showToast({ message: t('products.bulkBlockedMsg'), type: 'error' });
                 });
               }}
             >
-              Block
+              {t('common.block')}
             </button>
           </div>
         </div>
@@ -115,7 +117,7 @@ export default function ProductsPage() {
       {query.isLoading ? (
         <SkeletonRows />
       ) : (query.data?.products.length ?? 0) === 0 ? (
-        <EmptyState title='No products found' description='Try changing filters or search query.' />
+        <EmptyState title={t('products.empty')} description={t('products.emptyDesc')} />
       ) : (
         <>
           <DesktopTable>
@@ -130,12 +132,12 @@ export default function ProductsPage() {
                       aria-label='Select all products'
                     />
                   </TH>
-                  <TH>Product</TH>
-                  <TH>Shop</TH>
-                  <TH>Price</TH>
-                  <TH>Discount</TH>
-                  <TH>Status</TH>
-                  <TH className='text-right'>Actions</TH>
+                  <TH>{t('products.name')}</TH>
+                  <TH>{t('products.store')}</TH>
+                  <TH>{t('products.price')}</TH>
+                  <TH>{t('products.discount')}</TH>
+                  <TH>{t('common.status')}</TH>
+                  <TH className='text-right'>{t('users.actions')}</TH>
                 </tr>
               </THead>
               <tbody>
@@ -173,24 +175,24 @@ export default function ProductsPage() {
                       </TD>
                       <TD>{off > 0 ? <StatusBadge label={`-${off}%`} tone='success' /> : '-'}</TD>
                       <TD>
-                        <StatusBadge label={item.is_active ? 'Active' : 'Blocked'} tone={item.is_active ? 'success' : 'danger'} />
+                        <StatusBadge label={item.is_active ? t('common.active') : t('products.blocked')} tone={item.is_active ? 'success' : 'danger'} />
                       </TD>
                       <TD className='text-right'>
                         <div className='inline-flex gap-2'>
                           <button
                             className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
-                            onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } }, { onSuccess: () => showToast({ message: 'Product approved', type: 'success' }) })}
+                            onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } }, { onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }) })}
                           >
-                            Approve
+                            {t('common.approve')}
                           </button>
                           <button
                             className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
-                            onClick={() => mutation.mutate({ id: item.id, payload: { is_active: !item.is_active } }, { onSuccess: () => showToast({ message: item.is_active ? 'Product blocked' : 'Product unblocked', type: 'info' }) })}
+                            onClick={() => mutation.mutate({ id: item.id, payload: { is_active: !item.is_active } }, { onSuccess: () => showToast({ message: item.is_active ? t('products.blockedMsg') : t('products.unblockedMsg'), type: 'info' }) })}
                           >
-                            {item.is_active ? 'Block' : 'Unblock'}
+                            {item.is_active ? t('common.block') : t('common.unblock')}
                           </button>
                           <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white' onClick={() => setRejectId(item.id)}>
-                            Reject
+                            {t('common.reject')}
                           </button>
                         </div>
                       </TD>
@@ -225,7 +227,7 @@ export default function ProductsPage() {
                     <div className='flex-1'>
                       <div className='mb-1 flex items-center justify-between gap-2'>
                         <p className='font-semibold'>{item.name}</p>
-                        <StatusBadge label={item.is_active ? 'Active' : 'Blocked'} tone={item.is_active ? 'success' : 'danger'} />
+                        <StatusBadge label={item.is_active ? t('common.active') : t('products.blocked')} tone={item.is_active ? 'success' : 'danger'} />
                       </div>
                       <p className='text-sm text-[var(--admin-muted)]'>{item.store_name || '-'}</p>
                       <div className='mt-2 flex items-center gap-2'>
@@ -240,16 +242,16 @@ export default function ProductsPage() {
                       className='rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
                       onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } })}
                     >
-                      Approve
+                      {t('common.approve')}
                     </button>
                     <button
                       className='rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
                       onClick={() => mutation.mutate({ id: item.id, payload: { is_active: !item.is_active } })}
                     >
-                      {item.is_active ? 'Block' : 'Unblock'}
+                      {item.is_active ? t('common.block') : t('common.unblock')}
                     </button>
                     <button className='rounded-full bg-rose-500 py-2 text-xs font-semibold text-white' onClick={() => setRejectId(item.id)}>
-                      Reject
+                      {t('common.reject')}
                     </button>
                   </div>
                 </MobileCard>
@@ -261,19 +263,19 @@ export default function ProductsPage() {
 
       {mobileMulti && selected.length > 0 ? (
         <div className='fixed inset-x-0 bottom-20 z-40 flex items-center justify-between border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-3 shadow-[var(--admin-shadow)] lg:hidden'>
-          <p className='text-sm font-semibold'>{selected.length} selected</p>
+          <p className='text-sm font-semibold'>{t('common.selected', { count: selected.length })}</p>
           <div className='flex gap-2'>
             <button
               className='rounded-full border border-[var(--admin-border)] px-3 py-2 text-xs'
               onClick={() => Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { is_active: true } }))).then(() => setSelected([]))}
             >
-              Approve
+              {t('common.approve')}
             </button>
             <button
               className='rounded-full bg-rose-500 px-3 py-2 text-xs text-white'
               onClick={() => Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { is_active: false } }))).then(() => setSelected([]))}
             >
-              Block
+              {t('common.block')}
             </button>
           </div>
         </div>
@@ -281,25 +283,24 @@ export default function ProductsPage() {
 
       <div className='mt-4 flex justify-end gap-2'>
         <button disabled={page <= 1} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm disabled:opacity-50' onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
-          Previous
+          {t('common.previous')}
         </button>
         <button className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm' onClick={() => setPage((prev) => prev + 1)}>
-          Next
+          {t('common.next')}
         </button>
       </div>
 
       <ReasonDialog
         open={Boolean(rejectId)}
-        title='Reject product'
-        confirmLabel='Reject'
+        title={t('products.rejectTitle')}
+        confirmLabel={t('common.reject')}
         onClose={() => setRejectId(null)}
         onConfirm={async (reason) => {
           if (!rejectId) return;
           await mutation.mutateAsync({ id: rejectId, payload: { is_active: false, rejection_reason: reason } });
-          showToast({ message: 'Product rejected', type: 'error' });
+          showToast({ message: t('products.rejectedMsg'), type: 'error' });
         }}
       />
     </AdminShell>
   );
 }
-

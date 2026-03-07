@@ -24,6 +24,10 @@ if (!token) {
 const bot = new Bot(token);
 registerTelegramHandlers(bot);
 
+bot.catch((err) => {
+  console.error("[bot] unhandled error:", err.message);
+});
+
 bot.start({
   onStart: (botInfo) => {
     console.log(`Bot @${botInfo.username} is running locally via Long Polling.`);

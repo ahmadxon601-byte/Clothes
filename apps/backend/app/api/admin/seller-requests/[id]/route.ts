@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
+import { logAction } from "@/src/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,7 +15,7 @@ const schema = z.object({
 // ── PUT /api/admin/seller-requests/[id] ──────────────────────────────────────
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    requireRole(req, "admin");
+    const admin = requireRole(req, "admin");
     const { id } = await params;
 
     const body = await req.json();
@@ -69,6 +71,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
 
       await client.query("COMMIT");
+      emitAdminEvent({ type: "seller_requests", action: "updated" });
+      if (action === "approve") emitAdminEvent({ type: "stores", action: "updated" });
+      logAction({ admin, action, entity: "seller_request", entityId: id, details: { note, newStatus } });
       return ok({ message: `Request ${newStatus}` });
     } catch (e) {
       await client.query("ROLLBACK");

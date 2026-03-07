@@ -7,7 +7,7 @@ import { mockApi } from '../../../src/services/mockServer';
 import type { Product, Store } from '../../../src/shared/types';
 import { formatPrice } from '../../../src/shared/lib/formatPrice';
 import { CommentList } from '../../../src/features/comments/ui/CommentList';
-import { APP_ROUTES } from '../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../src/shared/config/useAppRoutes';
 import { useFavoritesStore } from '../../../src/features/favorites/model';
 import { Button } from '../../../src/shared/ui/Button';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
@@ -24,6 +24,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const { favorites, toggleFavorite } = useFavoritesStore();
     const { showToast } = useToast();
     const { t } = useTranslation();
+    const routes = useAppRoutes();
 
     useEffect(() => {
         (async () => {
@@ -140,7 +141,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 {store && (
-                    <Link href={APP_ROUTES.STORE(store.id)} className="mt-8 block group active:scale-[0.98] transition-transform">
+                    <Link href={routes.STORE(store.id)} className="mt-8 block group active:scale-[0.98] transition-transform">
                         <div className="flex items-center gap-4 bg-[var(--color-bg)] p-5 rounded-[24px] border border-[var(--color-border)]">
                             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[var(--color-surface)] shadow-sm shrink-0">
                                 <img src={store.photoUrl} alt={store.name} className="w-full h-full object-cover" />

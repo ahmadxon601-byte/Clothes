@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
   AdminPageSection,
@@ -22,18 +23,19 @@ import { useOrderMutation, useOrders } from '../../../src/features/admin/compone
 const statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 export default function OrdersPage() {
+  const { t } = useAdminI18n();
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const query = useOrders({ page, limit: 16, status });
   const mutation = useOrderMutation();
 
   return (
-    <AdminShell title='Orders'>
-      <AdminPageSection title='Orders Queue' description='Track order lifecycle and update fulfillment statuses.' />
+    <AdminShell title={t('nav.orders')}>
+      <AdminPageSection title={t('orders.queue')} description={t('orders.queueDesc')} />
 
       <FilterBar>
         <select className='admin-input max-w-[240px]' value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value=''>All statuses</option>
+          <option value=''>{t('orders.allStatuses')}</option>
           {statuses.map((value) => (
             <option key={value} value={value}>
               {value}
@@ -45,19 +47,19 @@ export default function OrdersPage() {
       {query.isLoading ? (
         <SkeletonRows />
       ) : (query.data?.orders.length ?? 0) === 0 ? (
-        <EmptyState title='No orders found' description='Orders will appear here after customers place orders.' />
+        <EmptyState title={t('orders.empty')} description={t('orders.emptyDesc')} />
       ) : (
         <>
           <DesktopTable>
             <Table>
               <THead>
                 <tr>
-                  <TH>Order</TH>
-                  <TH>Customer</TH>
-                  <TH>Total</TH>
-                  <TH>Items</TH>
-                  <TH>Status</TH>
-                  <TH>Created</TH>
+                  <TH>{t('orders.order')}</TH>
+                  <TH>{t('orders.customer')}</TH>
+                  <TH>{t('orders.total')}</TH>
+                  <TH>{t('orders.items')}</TH>
+                  <TH>{t('common.status')}</TH>
+                  <TH>{t('orders.created')}</TH>
                 </tr>
               </THead>
               <tbody>
@@ -102,7 +104,7 @@ export default function OrdersPage() {
                   <StatusBadge label={item.status} tone={item.status === 'cancelled' ? 'danger' : item.status === 'delivered' ? 'success' : 'warning'} />
                 </div>
                 <p className='mt-2 text-sm'>{item.total_price.toLocaleString()} UZS</p>
-                <p className='text-xs text-[var(--admin-muted)]'>{item.items_count} items</p>
+                <p className='text-xs text-[var(--admin-muted)]'>{t('common.itemsCount', { count: item.items_count })}</p>
                 <select
                   value={item.status}
                   onChange={(event) => mutation.mutate({ id: item.id, status: event.target.value })}
@@ -122,13 +124,12 @@ export default function OrdersPage() {
 
       <div className='mt-4 flex justify-end gap-2'>
         <button disabled={page <= 1} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm disabled:opacity-50' onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
-          Previous
+          {t('common.previous')}
         </button>
         <button className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm' onClick={() => setPage((prev) => prev + 1)}>
-          Next
+          {t('common.next')}
         </button>
       </div>
     </AdminShell>
   );
 }
-

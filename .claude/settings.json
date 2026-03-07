@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run bot:dev:*)",
+      "Bash(ngrok version:*)",
+      "Bash(brew install:*)",
+      "Bash(ngrok http:*)",
+      "Bash(cloudflared tunnel:*)",
+      "Read(//Users/said/Desktop/Clothes/**)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiZWJlNDhjZC00YzA1LTQzMGQtOGUxZi02NDkxNmM2ZGZiZTciLCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3MjY5OTM1MywiZXhwIjoxNzczMzA0MTUzfQ.ZhPE4GI1XMwKvj6jrj6ROW4nxzP74JkUmRZZts3ZT00\")",
+      "Bash(find:*)"
+    ]
+  }
+}

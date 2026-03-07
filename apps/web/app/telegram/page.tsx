@@ -80,7 +80,7 @@ function TgProductCard({
         : 'https://placehold.co/200x200/png?text=No+Image';
 
     return (
-        <Link href={`/p/${product.id}`} className="block">
+        <Link href={`/telegram/p/${product.id}`} className="block">
             <div className="flex gap-3 p-3 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] active:scale-[0.98] transition-transform duration-150">
                 {/* Image */}
                 <div className="relative w-[88px] h-[88px] flex-shrink-0 rounded-xl overflow-hidden bg-[var(--color-surface2)]">

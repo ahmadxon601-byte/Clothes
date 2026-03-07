@@ -1,6 +1,8 @@
 import {
   adminUserSchema,
   applicationSchema,
+  auditLogSchema,
+  bannerSchema,
   orderSchema,
   paginationSchema,
   productSchema,
@@ -9,6 +11,8 @@ import {
   userSchema,
   type AdminUser,
   type Application,
+  type AuditLog,
+  type Banner,
   type Order,
   type Pagination,
   type Product,
@@ -41,7 +45,7 @@ function makeUrl(path: string, params?: QueryParams): string {
   }
 
   if (!API_BASE && typeof window !== 'undefined') {
-    return `${normalized}${url.search}`;
+    return url.pathname + url.search;
   }
 
   return `${url.pathname}${url.search}`.startsWith('//') ? url.toString() : `${API_BASE}${url.pathname}${url.search}`;
@@ -88,13 +92,23 @@ export const adminApi = {
       { method: 'POST', body: JSON.stringify({ login, password }) },
       z.object({ token: z.string(), user: adminUserSchema })
     ),
+  updateProfile: (name: string) =>
+    request('/api/auth/me', { method: 'PATCH', body: JSON.stringify({ name }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
-    request('/api/auth/change-password', { method: 'PATCH', body: JSON.stringify({ currentPassword, newPassword }) }),
+    request('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
+  promoteToAdmin: (id: string, login: string, password: string) =>
+    request(`/api/admin/users/${id}/promote`, { method: 'POST', body: JSON.stringify({ login, password }) }),
 
   getStats: () => request<Stats>('/api/admin/stats', {}, statsSchema),
   getApplications: (params: QueryParams) => request<{ requests: Application[]; pagination: Pagination }>('/api/admin/seller-requests?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('requests', applicationSchema)),
   updateApplication: (id: string, payload: { status: 'approved' | 'rejected'; reason?: string }) =>
-    request(`/api/admin/seller-requests/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    request(`/api/admin/seller-requests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        action: payload.status === 'approved' ? 'approve' : 'reject',
+        note: payload.reason,
+      }),
+    }),
 
   getProducts: (params: QueryParams) => request<{ products: Product[]; pagination: Pagination }>('/api/admin/products?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('products', productSchema)),
   updateProduct: (id: string, payload: Record<string, unknown>) => request(`/api/admin/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
@@ -108,13 +122,23 @@ export const adminApi = {
   getOrders: (params: QueryParams) => request<{ orders: Order[]; pagination: Pagination }>('/api/admin/orders?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('orders', orderSchema)),
   updateOrderStatus: (id: string, status: string) => request('/api/admin/orders', { method: 'PATCH', body: JSON.stringify({ id, status }) }),
 
+  getBanners: (params: QueryParams) => request<{ banners: Banner[]; pagination: Pagination }>('/api/admin/banners?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('banners', bannerSchema)),
+  createBanner: (payload: { title: string; is_active: boolean; product_ids: string[] }) =>
+    request<{ banner: Banner }>('/api/admin/banners', { method: 'POST', body: JSON.stringify(payload) }),
+  updateBanner: (id: string, payload: { title?: string; is_active?: boolean; product_ids?: string[] }) =>
+    request<{ banner: Banner }>(`/api/admin/banners/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteBanner: (id: string) =>
+    request<{ message: string }>(`/api/admin/banners/${id}`, { method: 'DELETE' }),
+
+  getAuditLogs: (params: QueryParams) => request<{ logs: AuditLog[]; pagination: Pagination }>('/api/admin/audit-logs?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('logs', auditLogSchema)),
+
   get: <T>(url: string) => request<T>(url),
   post: <T>(url: string, body: unknown) => request<T>(url, { method: 'POST', body: JSON.stringify(body) }),
   patch: <T>(url: string, body: unknown) => request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(url: string) => request<T>(url, { method: 'DELETE' }),
 };
 
-export type { AdminUser, Application, Order, Pagination, Product, Stats, StoreItem, User };
+export type { AdminUser, Application, AuditLog, Banner, Order, Pagination, Product, Stats, StoreItem, User };
 
 
 

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
+import { logAction } from "@/src/lib/audit";
 
 // GET /api/admin/orders — all orders (admin only)
 export async function GET(req: NextRequest) {
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
 // PATCH /api/admin/orders — update order status
 export async function PATCH(req: NextRequest) {
   try {
-    requireRole(req, "admin");
+    const admin = requireRole(req, "admin");
     const { id, status } = await req.json();
     const validStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
     if (!id || !status || !validStatuses.includes(status)) {
@@ -66,6 +67,7 @@ export async function PATCH(req: NextRequest) {
       [status, id]
     );
     if (rows.length === 0) return fail("Order not found", 404);
+    logAction({ admin, action: "update", entity: "order", entityId: id, details: { status } });
     return ok(rows[0]);
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

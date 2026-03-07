@@ -1,6 +1,7 @@
 import { Bot, InlineKeyboard, Keyboard } from "grammy";
 import { getMarketplaceUrl } from "./get-marketplace-url";
 import { query } from "../../lib/db";
+import { emitAdminEvent } from "../../lib/events";
 
 export const registerTelegramHandlers = (bot: Bot): void => {
   // ── Helper: marketplace WebApp button ────────────────────────────────────
@@ -66,6 +67,8 @@ export const registerTelegramHandlers = (bot: Bot): void => {
       );
       return;
     }
+
+    emitAdminEvent({ type: "users", action: "created" });
 
     await ctx.reply(
       `✅ Akkountingiz tayyor, ${contact.first_name}!\n\n` +

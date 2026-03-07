@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
-  BadgeAlert,
   Bell,
   Boxes,
   ChartLine,
@@ -14,11 +13,9 @@ import {
   Globe,
   LayoutDashboard,
   Menu,
-  MessageSquare,
   Moon,
   Package,
   Settings,
-  Shield,
   ShoppingBag,
   Store,
   Sun,
@@ -44,16 +41,13 @@ const primaryNav: NavItem[] = [
   { href: '/admin/products', labelKey: 'nav.products', icon: ShoppingBag, mobile: true },
   { href: '/admin/shops', labelKey: 'nav.shops', icon: Store, mobile: true },
   { href: '/admin/users', labelKey: 'nav.users', icon: Users },
-  { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 const moreNav: NavItem[] = [
   { href: '/admin/categories', labelKey: 'nav.categories', icon: Boxes },
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
-  { href: '/admin/comments', labelKey: 'nav.comments', icon: MessageSquare },
-  { href: '/admin/reports', labelKey: 'nav.reports', icon: BadgeAlert },
-  { href: '/admin/roles', labelKey: 'nav.roles', icon: Shield },
   { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
+  { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {

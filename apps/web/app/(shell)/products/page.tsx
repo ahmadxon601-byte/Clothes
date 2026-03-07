@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ChevronRight, MapPin, Search, Store as StoreIcon } from 'lucide-react';
 import { mockApi } from '../../../src/services/mockServer';
 import type { Product, Store } from '../../../src/shared/types';
-import { APP_ROUTES } from '../../../src/shared/config/constants';
+import { useAppRoutes } from '../../../src/shared/config/useAppRoutes';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 import { cn } from '../../../src/shared/lib/utils';
@@ -19,6 +19,7 @@ export default function StoresPage() {
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState<Category>('All');
     const { t } = useTranslation();
+    const routes = useAppRoutes();
     const categoryLabels: Record<Category, string> = {
         All: t.all,
         Jackets: t.cat_jackets,
@@ -51,7 +52,7 @@ export default function StoresPage() {
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3 md:px-8 lg:px-10">
             <div className="pt-1 pb-0.5">
-                <Link href={APP_ROUTES.PRODUCTS} className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
+                <Link href={routes.PRODUCTS} className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
                     <Search size={16} className="opacity-40" />
                     <span className="text-[13px]">{t.search}</span>
                 </Link>
@@ -89,7 +90,7 @@ export default function StoresPage() {
                     {filteredStores.map((store) => (
                         <Link
                             key={store.id}
-                            href={APP_ROUTES.STORE(store.id)}
+                            href={routes.STORE(store.id)}
                             className="block rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 active:scale-[0.99] transition-transform shadow-sm"
                         >
                             <div className="relative w-full h-36 rounded-2xl overflow-hidden">
