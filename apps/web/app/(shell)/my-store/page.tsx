@@ -37,7 +37,8 @@ type RequestData = {
 function parseAddress(raw: string): { text: string; lat: number | null; lng: number | null } {
     const m = raw.match(/Coordinates:\s*([-\d.]+),\s*([-\d.]+)/i);
     if (!m) return { text: raw.trim(), lat: null, lng: null };
-    const text = raw.replace(/\s+\S*\s*Coordinates:.*$/i, '').trim();
+    const idx = raw.toLowerCase().indexOf('coordinates:');
+    const text = idx > 0 ? raw.slice(0, idx).trim() : '';
     return { text, lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
 }
 
@@ -55,7 +56,6 @@ export default function MyStorePage() {
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
     const [form, setForm] = useState({ name: '', description: '', phone: '', address: '' });
-    const [mapOpen, setMapOpen] = useState(false);
 
     const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
 
@@ -84,7 +84,7 @@ export default function MyStorePage() {
     const openEdit = (store: StoreData) => {
         setForm({
             name: store.name,
-            description: store.description ?? '',
+            description: store.description ? parseAddress(store.description).text : '',
             phone: store.phone ?? '',
             address: store.address ?? '',
         });
@@ -343,46 +343,17 @@ export default function MyStorePage() {
                                         />
                                     </label>
                                 ))}
-                                {/* Address with map picker */}
+                                {/* Address with embedded map */}
                                 <div className="grid gap-1.5">
-                                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Manzil</span>
-                                    {(() => {
-                                        const { lat, lng, text } = parseAddress(form.address);
-                                        if (lat !== null && lng !== null) {
-                                            return (
-                                                <div className="rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={`https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=460x130&markers=${lat},${lng},red`}
-                                                        alt="Map preview"
-                                                        className="w-full object-cover"
-                                                        style={{ height: 130, display: 'block' }}
-                                                    />
-                                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#111111]">
-                                                        <MapPin size={12} className="shrink-0 text-[#00a645]" />
-                                                        <p className="flex-1 text-[12px] text-[#374151] dark:text-[#d1d5db] line-clamp-1">{text || `${lat.toFixed(5)}, ${lng.toFixed(5)}`}</p>
-                                                        <button type="button" onClick={() => setMapOpen(true)} disabled={saving} className="shrink-0 rounded-lg border border-[#00c853]/40 bg-[#00c853]/10 px-2.5 py-1 text-[11px] font-bold text-[#008d3a] transition-all hover:bg-[#00c853]/20 dark:text-[#4ade80]">
-                                                            O&#39;zgartirish
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <div className="flex gap-2">
-                                                <input
-                                                    value={form.address}
-                                                    onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                                                    placeholder="Manzilni kiriting yoki xaritadan tanlang"
-                                                    className="h-11 flex-1 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                                    disabled={saving}
-                                                />
-                                                <button type="button" onClick={() => setMapOpen(true)} disabled={saving} className="h-11 px-3 rounded-xl border border-[#00c853]/40 bg-[#00c853]/10 text-[#008d3a] transition-all hover:bg-[#00c853]/20 dark:border-[#00c853]/30 dark:text-[#4ade80]" title="Xaritadan tanlash">
-                                                    <MapPin size={16} />
-                                                </button>
-                                            </div>
-                                        );
-                                    })()}
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Manzil (xaritadan tanlang)</span>
+                                    <MapPickerLeaflet
+                                        embedded
+                                        initialLat={parseAddress(form.address).lat ?? 41.2995}
+                                        initialLng={parseAddress(form.address).lng ?? 69.2401}
+                                        onChange={(v) => setForm((p) => ({ ...p, address: v }))}
+                                        onConfirm={(v) => setForm((p) => ({ ...p, address: v }))}
+                                        onClose={() => {}}
+                                    />
                                 </div>
                                 <label className="grid gap-1.5">
                                     <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Tavsif</span>
@@ -405,19 +376,6 @@ export default function MyStorePage() {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* Map picker */}
-            {mapOpen && (
-                <MapPickerLeaflet
-                    initialLat={parseAddress(form.address).lat ?? 41.2995}
-                    initialLng={parseAddress(form.address).lng ?? 69.2401}
-                    onConfirm={(formatted) => {
-                        setForm((p) => ({ ...p, address: formatted }));
-                        setMapOpen(false);
-                    }}
-                    onClose={() => setMapOpen(false)}
-                />
             )}
 
             {/* Delete Confirm Modal */}

@@ -16,9 +16,12 @@ type Props = {
     initialLng?: number;
     onConfirm: (formatted: string) => void;
     onClose: () => void;
+    /** Render as inline map (no fullscreen overlay, no header/footer). Fires onChange on each pin change. */
+    embedded?: boolean;
+    onChange?: (formatted: string) => void;
 };
 
-export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, onConfirm, onClose }: Props) {
+export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, onConfirm, onClose, embedded, onChange }: Props) {
     const hasInitialPin = initialLat !== 41.2995 || initialLng !== 69.2401;
     const [pin, setPin] = useState<{ lat: number; lng: number } | null>(
         hasInitialPin ? { lat: initialLat, lng: initialLng } : null
@@ -35,6 +38,13 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
         });
         setMounted(true);
     }, []);
+
+    const handlePick = (lat: number, lng: number) => {
+        setPin({ lat, lng });
+        if (embedded && onChange) {
+            onChange(`Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        }
+    };
 
     const handleConfirm = async () => {
         if (!pin) return;
@@ -56,6 +66,40 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
     };
 
     if (!mounted) return null;
+
+    if (embedded) {
+        return (
+            <div className="rounded-xl overflow-hidden border border-black/10 dark:border-white/10" style={{ height: 260, position: 'relative' }}>
+                <MapContainer
+                    center={[pin?.lat ?? initialLat, pin?.lng ?? initialLng]}
+                    zoom={14}
+                    style={{ height: '100%', width: '100%' }}
+                >
+                    <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution="© OpenStreetMap contributors"
+                    />
+                    <ClickHandler onPick={handlePick} />
+                    {pin && <Marker position={[pin.lat, pin.lng]} />}
+                </MapContainer>
+                {!pin && (
+                    <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none z-[400]">
+                        <span className="bg-black/70 text-white text-[12px] font-semibold px-3 py-1.5 rounded-full">
+                            Xaritaga bosib joy tanlang
+                        </span>
+                    </div>
+                )}
+                {pin && (
+                    <div className="absolute bottom-0 inset-x-0 z-[400] flex items-center gap-1.5 bg-white/90 dark:bg-[#1a1a1a]/90 px-3 py-2 backdrop-blur-sm pointer-events-none">
+                        <MapPin size={11} className="shrink-0 text-[#00a645]" />
+                        <span className="text-[11px] text-[#374151] dark:text-[#d1d5db]">
+                            {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+                        </span>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-[300] flex flex-col">
@@ -81,7 +125,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution="© OpenStreetMap contributors"
                     />
-                    <ClickHandler onPick={(lat, lng) => setPin({ lat, lng })} />
+                    <ClickHandler onPick={handlePick} />
                     {pin && <Marker position={[pin.lat, pin.lng]} />}
                 </MapContainer>
                 {!pin && (
