@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
+import { logAction } from "@/src/lib/audit";
+import bcrypt from "bcryptjs";
 
 // ── GET /api/admin/users ──────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -65,6 +68,42 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[admin/users GET]", e);
+    return fail("Internal server error", 500);
+  }
+}
+
+const createSchema = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(["user", "seller", "admin"]).default("user"),
+});
+
+// ── POST /api/admin/users ─────────────────────────────────────────────────────
+export async function POST(req: NextRequest) {
+  try {
+    const admin = requireRole(req, "admin");
+    const body = await req.json();
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
+
+    const { name, email, password, role } = parsed.data;
+    const hash = await bcrypt.hash(password, 10);
+
+    const result = await query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, email, role, created_at`,
+      [name, email, hash, role]
+    );
+
+    logAction({ admin, action: "create", entity: "user", entityId: result.rows[0].id, details: { name, email, role } });
+    return ok({ user: result.rows[0] }, 201);
+  } catch (e) {
+    if (e instanceof AuthError) return fail(e.message, e.status);
+    const code = (e as { code?: string })?.code;
+    if (code === "23505") return fail("Bu email allaqachon ro'yxatdan o'tgan", 409);
+    console.error("[admin/users POST]", e);
     return fail("Internal server error", 500);
   }
 }

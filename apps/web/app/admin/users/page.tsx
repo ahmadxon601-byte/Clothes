@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Pencil, Search, Shield, ShieldOff, Trash2, X } from 'lucide-react';
+import { Eye, Pencil, Plus, Search, Shield, ShieldOff, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
@@ -37,6 +37,9 @@ export default function UsersPage() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ name: '', role: '' });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [createError, setCreateError] = useState('');
 
   const query = useUsers({ page, limit: 16, search, role });
   const mutation = useUserMutation();
@@ -51,13 +54,34 @@ export default function UsersPage() {
     },
   });
 
+  const createMut = useMutation({
+    mutationFn: (data: { name: string; email: string; password: string; role: string }) =>
+      adminApi.post('/api/admin/users', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      setCreateOpen(false);
+      setCreateForm({ name: '', email: '', password: '', role: 'user' });
+      setCreateError('');
+      showToast({ message: 'Foydalanuvchi yaratildi', type: 'success' });
+    },
+    onError: (e: Error) => setCreateError(e.message),
+  });
+
   const openEdit = (user: User) => {
     setEditForm({ name: user.name, role: user.role });
     setEditUser(user);
   };
 
   return (
-    <AdminShell title={t('users.title')}>
+    <AdminShell
+      title={t('users.title')}
+      actions={
+        <button onClick={() => { setCreateForm({ name: '', email: '', password: '', role: 'user' }); setCreateError(''); setCreateOpen(true); }} className='admin-btn flex items-center gap-2 px-4 py-2 text-sm'>
+          <Plus className='size-4' /> Yangi foydalanuvchi
+        </button>
+      }
+    >
       <AdminPageSection title={t('users.management')} description={t('users.managementDesc')} />
 
       <FilterBar>
@@ -299,6 +323,51 @@ export default function UsersPage() {
                 className='flex-1 rounded-full bg-[var(--admin-accent)] py-2 text-sm font-semibold text-white'
               >
                 Saqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create user modal */}
+      {createOpen && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm'>
+          <div className='admin-card relative w-full max-w-sm p-6'>
+            <button onClick={() => setCreateOpen(false)} className='absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)]'>
+              <X size={14} />
+            </button>
+            <h2 className='mb-4 text-base font-bold'>Yangi foydalanuvchi</h2>
+            <div className='space-y-3'>
+              <label className='block'>
+                <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Ism</span>
+                <input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} className='admin-input w-full' placeholder='To'liq ism' />
+              </label>
+              <label className='block'>
+                <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Email</span>
+                <input type='email' value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} className='admin-input w-full' placeholder='email@example.com' />
+              </label>
+              <label className='block'>
+                <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Parol</span>
+                <input type='password' value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} className='admin-input w-full' placeholder='Kamida 6 ta belgi' />
+              </label>
+              <label className='block'>
+                <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Rol</span>
+                <select value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))} className='admin-input w-full'>
+                  <option value='user'>User</option>
+                  <option value='seller'>Seller</option>
+                  <option value='admin'>Admin</option>
+                </select>
+              </label>
+            </div>
+            {createError && <p className='mt-2 text-xs text-rose-500'>{createError}</p>}
+            <div className='mt-5 flex gap-2'>
+              <button onClick={() => setCreateOpen(false)} className='flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm'>Bekor</button>
+              <button
+                disabled={createMut.isPending || !createForm.name.trim() || !createForm.email.trim() || createForm.password.length < 6}
+                onClick={() => createMut.mutate(createForm)}
+                className='flex-1 rounded-full bg-[var(--admin-accent)] py-2 text-sm font-semibold text-white disabled:opacity-50'
+              >
+                {createMut.isPending ? '...' : 'Yaratish'}
               </button>
             </div>
           </div>
