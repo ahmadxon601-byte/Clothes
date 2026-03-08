@@ -122,12 +122,14 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState('');
+  const [selectedName, setSelectedName] = useState('');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'select' | 'credentials'>('select');
 
   const users = useQuery({
     queryKey: ['admin', 'users-nonadmin', search],
-    queryFn: () => adminApi.getUsers({ page: 1, limit: 20, search, role: '' }),
+    queryFn: () => adminApi.getUsers({ page: 1, limit: 50, search, role: '' }),
     enabled: open,
   });
 
@@ -139,89 +141,145 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
       showToast({ message: t('settings.promoteSuccess'), type: 'success' });
       qc.invalidateQueries({ queryKey: ['admin', 'admins'] });
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-      onClose();
-      setSelectedId('');
-      setLogin('');
-      setPassword('');
-      setSearch('');
+      handleClose();
     },
     onError: (e: Error) => showToast({ message: e.message, type: 'error' }),
   });
 
+  function handleClose() {
+    onClose();
+    setSelectedId('');
+    setSelectedName('');
+    setLogin('');
+    setPassword('');
+    setSearch('');
+    setStep('select');
+  }
+
   if (!open) return null;
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm'>
       <div className='admin-card w-full max-w-md p-6'>
-        <h2 className='mb-5 text-base font-semibold'>{t('settings.addAdmin')}</h2>
+        <div className='mb-5 flex items-center justify-between'>
+          <h2 className='text-base font-semibold'>{t('settings.addAdmin')}</h2>
+          {/* Step indicator */}
+          <div className='flex items-center gap-1.5 text-xs text-[var(--admin-muted)]'>
+            <span className={step === 'select' ? 'font-bold text-[var(--admin-accent)]' : ''}>1. Foydalanuvchi</span>
+            <span>→</span>
+            <span className={step === 'credentials' ? 'font-bold text-[var(--admin-accent)]' : ''}>2. Kirish ma&apos;lumotlari</span>
+          </div>
+        </div>
 
-        <div className='space-y-4'>
-          {/* User search */}
-          <div>
-            <label className='mb-1 block text-xs text-[var(--admin-muted)]'>{t('settings.selectUser')}</label>
-            <div className='relative'>
+        {step === 'select' ? (
+          <>
+            {/* Search */}
+            <div className='relative mb-3'>
               <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
               <input
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setSelectedId(''); }}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('users.search')}
                 className='admin-input pl-10'
+                autoFocus
               />
             </div>
-            {nonAdmins.length > 0 && (
-              <ul className='mt-1 max-h-40 overflow-y-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)]'>
-                {nonAdmins.map((u) => (
-                  <li
+
+            {/* User list */}
+            <div className='max-h-64 overflow-y-auto rounded-2xl border border-[var(--admin-border)]'>
+              {users.isLoading ? (
+                <p className='py-6 text-center text-sm text-[var(--admin-muted)]'>{t('common.loading')}</p>
+              ) : nonAdmins.length === 0 ? (
+                <p className='py-6 text-center text-sm text-[var(--admin-muted)]'>Foydalanuvchilar topilmadi</p>
+              ) : (
+                nonAdmins.map((u) => (
+                  <button
                     key={u.id}
-                    onClick={() => { setSelectedId(u.id); setSearch(u.name || u.email); }}
-                    className={`cursor-pointer px-4 py-2 text-sm hover:bg-[var(--admin-pill)] ${selectedId === u.id ? 'bg-[var(--admin-pill)] font-semibold' : ''}`}
+                    type='button'
+                    onClick={() => {
+                      setSelectedId(u.id);
+                      setSelectedName(u.name || u.email);
+                    }}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--admin-pill)] ${
+                      selectedId === u.id ? 'bg-[var(--admin-accent)]/10 border-l-2 border-[var(--admin-accent)]' : ''
+                    }`}
                   >
-                    <span className='font-medium'>{u.name || '-'}</span>
-                    <span className='ml-2 text-xs text-[var(--admin-muted)]'>{u.email}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                    <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-pill)] text-xs font-bold text-[var(--admin-muted)]'>
+                      {(u.name || u.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <p className='truncate text-sm font-semibold'>{u.name || '—'}</p>
+                      <p className='truncate text-xs text-[var(--admin-muted)]'>{u.email}</p>
+                    </div>
+                    <span className='shrink-0 rounded-full bg-[var(--admin-pill)] px-2 py-0.5 text-xs capitalize text-[var(--admin-muted)]'>{u.role}</span>
+                  </button>
+                ))
+              )}
+            </div>
 
-          {/* Login */}
-          <div>
-            <label className='mb-1 block text-xs text-[var(--admin-muted)]'>{t('settings.adminLogin')}</label>
-            <input
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-              className='admin-input'
-              placeholder='admin_username'
-            />
-          </div>
+            <div className='mt-5 flex justify-end gap-3'>
+              <button onClick={handleClose} className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'>
+                {t('common.reject')}
+              </button>
+              <button
+                disabled={!selectedId}
+                onClick={() => setStep('credentials')}
+                className='rounded-full bg-[var(--admin-accent)] px-5 py-2 text-xs font-semibold text-white disabled:opacity-50'
+              >
+                Keyingi →
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Selected user badge */}
+            <div className='mb-4 flex items-center gap-2 rounded-xl bg-[var(--admin-pill)] px-4 py-2.5'>
+              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-accent)]/20 text-xs font-bold text-[var(--admin-accent)]'>
+                {selectedName.charAt(0).toUpperCase()}
+              </div>
+              <span className='text-sm font-semibold'>{selectedName}</span>
+              <button onClick={() => setStep('select')} className='ml-auto text-xs text-[var(--admin-muted)] hover:text-[var(--admin-fg)]'>
+                O&apos;zgartirish
+              </button>
+            </div>
 
-          {/* Password */}
-          <div>
-            <label className='mb-1 block text-xs text-[var(--admin-muted)]'>{t('settings.adminPassword')}</label>
-            <input
-              type='password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className='admin-input'
-            />
-          </div>
-        </div>
+            <div className='space-y-3'>
+              <div>
+                <label className='mb-1 block text-xs text-[var(--admin-muted)]'>{t('settings.adminLogin')}</label>
+                <input
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+                  className='admin-input w-full'
+                  placeholder='admin_username'
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-[var(--admin-muted)]'>{t('settings.adminPassword')}</label>
+                <input
+                  type='password'
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className='admin-input w-full'
+                  placeholder='••••••'
+                />
+              </div>
+            </div>
 
-        <div className='mt-6 flex justify-end gap-3'>
-          <button
-            onClick={onClose}
-            className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'
-          >
-            {t('common.reject')}
-          </button>
-          <button
-            disabled={!selectedId || login.length < 2 || password.length < 6 || promote.isPending}
-            onClick={() => promote.mutate()}
-            className='rounded-full bg-[var(--admin-accent)] px-5 py-2 text-xs font-semibold text-white disabled:opacity-50'
-          >
-            {promote.isPending ? t('common.loading') : t('settings.addAdmin')}
-          </button>
-        </div>
+            <div className='mt-5 flex justify-end gap-3'>
+              <button onClick={() => setStep('select')} className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'>
+                ← Orqaga
+              </button>
+              <button
+                disabled={login.length < 2 || password.length < 6 || promote.isPending}
+                onClick={() => promote.mutate()}
+                className='rounded-full bg-[var(--admin-accent)] px-5 py-2 text-xs font-semibold text-white disabled:opacity-50'
+              >
+                {promote.isPending ? t('common.loading') : t('settings.addAdmin')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
