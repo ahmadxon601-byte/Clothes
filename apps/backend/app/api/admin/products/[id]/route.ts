@@ -41,18 +41,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const fields = ["is_active = $1", "updated_at = NOW()"];
     const vals: unknown[] = [body.is_active];
 
-    if (typeof body.rejection_reason === "string") {
-      vals.push(body.rejection_reason || null);
-      fields.push(`rejection_reason = $${vals.length}`);
-    } else if (body.is_active === true) {
-      // Clear rejection reason when approving
-      fields.push("rejection_reason = NULL");
+    // rejection_reason column added in migration 005 — skip if not present
+    const hasRejectionCol = await query(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_name='products' AND column_name='rejection_reason' LIMIT 1`
+    );
+    if (hasRejectionCol.rows.length > 0) {
+      if (typeof body.rejection_reason === "string") {
+        vals.push(body.rejection_reason || null);
+        fields.push(`rejection_reason = $${vals.length}`);
+      } else if (body.is_active === true) {
+        fields.push("rejection_reason = NULL");
+      }
     }
 
     vals.push(id);
     const result = await query(
       `UPDATE products SET ${fields.join(", ")}
-       WHERE id = $${vals.length} RETURNING id, name, is_active, rejection_reason`,
+       WHERE id = $${vals.length} RETURNING id, name, is_active`,
       vals
     );
     if (result.rows.length === 0) return fail("Product not found", 404);

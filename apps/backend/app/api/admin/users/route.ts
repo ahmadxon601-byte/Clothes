@@ -34,13 +34,29 @@ export async function GET(req: NextRequest) {
     const total = parseInt(countResult.rows[0].count);
 
     params.push(limit, offset);
-    const dataResult = await query(
-      `SELECT id, name, email, role, is_banned, ban_reason, created_at
-       FROM users ${where}
-       ORDER BY created_at DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
+    // Try with ban columns; fall back if migration 005 hasn't been run yet
+    let dataResult;
+    try {
+      dataResult = await query(
+        `SELECT id, name, email, role, is_banned, ban_reason, created_at
+         FROM users ${where}
+         ORDER BY created_at DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
+        params
+      );
+    } catch (colErr: unknown) {
+      const code = (colErr as { code?: string })?.code;
+      if (code === "42703") {
+        // Column doesn't exist yet — return defaults until migration runs
+        dataResult = await query(
+          `SELECT id, name, email, role, FALSE as is_banned, NULL as ban_reason, created_at
+           FROM users ${where}
+           ORDER BY created_at DESC
+           LIMIT $${params.length - 1} OFFSET $${params.length}`,
+          params
+        );
+      } else throw colErr;
+    }
 
     return ok({
       users: dataResult.rows,
