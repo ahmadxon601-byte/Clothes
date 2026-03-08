@@ -340,7 +340,7 @@ export default function UsersPage() {
             <div className='space-y-3'>
               <label className='block'>
                 <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Ism</span>
-                <input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} className='admin-input w-full' placeholder='To'liq ism' />
+                <input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} className='admin-input w-full' placeholder="To'liq ism" />
               </label>
               <label className='block'>
                 <span className='mb-1 block text-xs font-semibold text-[var(--admin-muted)]'>Email</span>
