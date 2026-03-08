@@ -108,7 +108,7 @@ export default function UsersPage() {
                         <div className='inline-flex items-center gap-1.5'>
                           {/* View */}
                           <button
-                            title='Ko'rish'
+                            title="Ko'rish"
                             onClick={() => setViewUser(item)}
                             className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors'
                           >
@@ -116,7 +116,7 @@ export default function UsersPage() {
                           </button>
                           {/* Edit */}
                           <button
-                            title='Tahrirlash'
+                            title="Tahrirlash"
                             onClick={() => openEdit(item)}
                             className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors'
                           >
