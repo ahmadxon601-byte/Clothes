@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Search, Check } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, ToggleLeft, ToggleRight, X, Search, Check } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
@@ -253,6 +253,7 @@ export default function BannersPage() {
   const [params] = useState({ page: 1, limit: 20 });
   const [dialogBanner, setDialogBanner] = useState<Banner | null | undefined>(undefined);
   // undefined = closed, null = create new, Banner object = edit
+  const [viewBanner, setViewBanner] = useState<Banner | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'banners', params],
@@ -324,6 +325,9 @@ export default function BannersPage() {
                     </TD>
                     <TD className='text-right'>
                       <div className='flex items-center justify-end gap-2'>
+                        <button onClick={() => setViewBanner(b)} className='rounded-lg p-1.5 hover:bg-[var(--admin-pill)]' title="Ko'rish">
+                          <Eye className='size-4 text-[var(--admin-muted)]' />
+                        </button>
                         <button
                           onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })}
                           className='rounded-lg p-1.5 hover:bg-[var(--admin-pill)]'
@@ -400,6 +404,34 @@ export default function BannersPage() {
           banner={dialogBanner ?? undefined}
           onClose={() => setDialogBanner(undefined)}
         />
+      )}
+
+      {/* View modal */}
+      {viewBanner && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm'>
+          <div className='admin-card relative w-full max-w-sm p-6'>
+            <button onClick={() => setViewBanner(null)} className='absolute right-4 top-4 rounded-lg p-1 hover:bg-[var(--admin-pill)]'><X className='size-4' /></button>
+            <h2 className='mb-4 text-base font-bold'>{viewBanner.title}</h2>
+            <div className='space-y-3 text-sm'>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Holat</span><StatusBadge label={viewBanner.is_active ? t('banners.active') : t('banners.inactive')} tone={viewBanner.is_active ? 'success' : 'neutral'} /></div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Mahsulotlar</span><span className='font-semibold'>{viewBanner.product_ids?.length ?? 0} ta</span></div>
+              {(viewBanner.products?.length ?? 0) > 0 && (
+                <div>
+                  <p className='mb-1 text-[var(--admin-muted)]'>Mahsulotlar ro&apos;yxati:</p>
+                  <ul className='space-y-1'>
+                    {viewBanner.products.map((p) => (
+                      <li key={p.id} className='flex justify-between rounded-lg bg-[var(--admin-pill)] px-3 py-1.5'>
+                        <span>{p.name}</span>
+                        {p.price != null && <span className='text-[var(--admin-muted)]'>{p.price.toLocaleString()} UZS</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Yaratilgan</span><span className='font-semibold'>{new Date(viewBanner.created_at).toLocaleDateString()}</span></div>
+            </div>
+          </div>
+        </div>
       )}
     </AdminShell>
   );

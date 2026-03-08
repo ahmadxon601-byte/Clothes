@@ -1,7 +1,8 @@
 'use client';
 
-import { Filter, Search } from 'lucide-react';
+import { Eye, Filter, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import type { Product } from '../../../src/lib/adminApi';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
@@ -38,6 +39,7 @@ export default function ProductsPage() {
   const [mobileMulti, setMobileMulti] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
+  const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const query = useProducts({ page, limit: 16, search, status });
   const mutation = useProductMutation();
   const { showToast } = useToast();
@@ -178,7 +180,10 @@ export default function ProductsPage() {
                         <StatusBadge label={item.is_active ? t('common.active') : t('products.blocked')} tone={item.is_active ? 'success' : 'danger'} />
                       </TD>
                       <TD className='text-right'>
-                        <div className='inline-flex gap-2'>
+                        <div className='inline-flex items-center gap-1.5'>
+                          <button title="Ko'rish" onClick={() => setViewProduct(item)} className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors'>
+                            <Eye size={14} />
+                          </button>
                           <button
                             className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
                             onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } }, { onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }) })}
@@ -301,6 +306,33 @@ export default function ProductsPage() {
           showToast({ message: t('products.rejectedMsg'), type: 'error' });
         }}
       />
+
+      {/* View modal */}
+      {viewProduct && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm'>
+          <div className='admin-card relative w-full max-w-sm p-6'>
+            <button onClick={() => setViewProduct(null)} className='absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)]'>
+              <X size={14} />
+            </button>
+            {viewProduct.thumbnail && (
+              <img src={viewProduct.thumbnail} alt={viewProduct.name} className='mb-4 h-32 w-full rounded-xl object-cover' />
+            )}
+            <h2 className='mb-4 text-base font-bold'>{viewProduct.name}</h2>
+            <div className='space-y-2 text-sm'>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>SKU</span><span className='font-semibold'>{viewProduct.sku || '—'}</span></div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Narx</span><span className='font-semibold'>{(viewProduct.price ?? viewProduct.base_price ?? 0).toLocaleString()} UZS</span></div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Do&apos;kon</span><span className='font-semibold'>{viewProduct.store_name || '—'}</span></div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Kategoriya</span><span className='font-semibold'>{viewProduct.category_name || '—'}</span></div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Ko&apos;rishlar</span><span className='font-semibold'>{viewProduct.views}</span></div>
+              <div className='flex justify-between'>
+                <span className='text-[var(--admin-muted)]'>Holat</span>
+                <StatusBadge label={viewProduct.is_active ? t('common.active') : t('products.blocked')} tone={viewProduct.is_active ? 'success' : 'danger'} />
+              </div>
+              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Sana</span><span className='font-semibold'>{new Date(viewProduct.created_at).toLocaleDateString()}</span></div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
