@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, LocateFixed, Minus, Plus } from 'lucide-react';
-import { ensureMarketplaceToken } from '../../../src/lib/marketplaceAuth';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, LocateFixed, Minus, Plus, Loader2, UserRound } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
+import { useWebAuth } from '../../../src/context/WebAuthContext';
+import { AuthModal } from '../../../src/shared/ui/AuthModal';
 
 type FormState = {
     storeName: string;
@@ -42,7 +44,10 @@ function worldToLngLat(x: number, y: number, zoom: number) {
 }
 
 export default function OpenStorePage() {
+    const router = useRouter();
     const { w } = useWebI18n();
+    const { user, loading: authLoading, refreshStore } = useWebAuth();
+    const [authModal, setAuthModal] = useState(false);
     const [form, setForm] = useState<FormState>({
         storeName: '',
         ownerName: '',
@@ -131,6 +136,8 @@ export default function OpenStorePage() {
         e.preventDefault();
         setResult(null);
 
+        if (!user) { setAuthModal(true); return; }
+
         if (!form.storeName.trim() || !form.ownerName.trim() || !form.phone.trim() || !form.address.trim()) {
             setResult({ type: 'error', message: w.openStore.fillRequired });
             return;
@@ -138,9 +145,8 @@ export default function OpenStorePage() {
 
         setLoading(true);
         try {
-            const token = await ensureMarketplaceToken(null);
-            const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-            const res = await fetch(`${base}/api/stores/request`, {
+            const token = localStorage.getItem('marketplace_token') ?? '';
+            const res = await fetch(`/api/stores/request`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -157,18 +163,15 @@ export default function OpenStorePage() {
 
             const body = await res.json().catch(() => ({}));
             if (res.ok) {
-                setResult({
-                    type: 'success',
-                    message: w.openStore.accepted,
-                });
-                setForm({ storeName: '', ownerName: '', phone: '', address: '', description: '' });
+                await refreshStore();
+                router.replace('/my-store');
                 return;
             }
 
             if (res.status === 409) {
                 setResult({
                     type: 'info',
-                    message: w.openStore.pending,
+                    message: 'Sizda allaqachon kutilayotgan ariza mavjud. Iltimos, tasdiqlanishini kuting.',
                 });
                 return;
             }
@@ -181,7 +184,61 @@ export default function OpenStorePage() {
         }
     };
 
+    if (authLoading) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-[#00c853]" />
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <>
+                <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
+                <section className="pb-14 md:pb-20">
+                    <div className="relative h-[48vh] min-h-[340px] w-full overflow-hidden">
+                        <img
+                            src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2200&auto=format&fit=crop"
+                            alt="Open your store"
+                            className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
+                        <div className="absolute inset-0 mx-auto flex w-full max-w-[1280px] items-end px-6 pb-10 md:px-10 md:pb-14">
+                            <div>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8af9b3]">{w.openStore.partner}</p>
+                                <h1 className="mt-2 font-[family-name:var(--font-playfair)] text-[clamp(2.2rem,6vw,4.5rem)] font-black leading-none text-white">
+                                    {w.openStore.title}
+                                </h1>
+                                <p className="mt-4 max-w-lg text-[14px] leading-6 text-white/75">{w.openStore.subtitle}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mx-auto mt-8 w-full max-w-[900px] px-6 md:mt-10 md:px-10">
+                        <div className="rounded-[28px] border border-black/10 bg-white p-7 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.25)] text-center">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f3f4f6]">
+                                <UserRound size={28} className="text-[#9ca3af]" />
+                            </div>
+                            <h2 className="mt-4 text-[22px] font-black text-[#111111]">Kirish talab qilinadi</h2>
+                            <p className="mt-2 text-[14px] text-[#6b7280]">Do'kon ochish uchun avval tizimga kiring yoki ro'yxatdan o'ting.</p>
+                            <div className="mt-6 flex flex-wrap justify-center gap-3">
+                                <button
+                                    onClick={() => setAuthModal(true)}
+                                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                                >
+                                    Kirish / Ro'yxat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </>
+        );
+    }
+
     return (
+        <>
+        <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
         <section className="pb-14 md:pb-20">
             <div className="relative h-[48vh] min-h-[340px] w-full overflow-hidden">
                 <img
@@ -204,17 +261,17 @@ export default function OpenStorePage() {
             </div>
 
             <div className="mx-auto mt-8 w-full max-w-[900px] px-6 md:mt-10 md:px-10">
-                <form onSubmit={onSubmit} className="rounded-[28px] border border-black/10 bg-white p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.25)] md:p-7">
-                    <h2 className="text-[22px] font-black text-[#111111]">{w.openStore.formTitle}</h2>
-                    <p className="mt-1 text-[13px] text-[#6b7280]">{w.openStore.formDesc}</p>
+                <form onSubmit={onSubmit} className="rounded-[28px] border border-black/10 bg-white p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.25)] md:p-7 dark:border-white/10 dark:bg-[#1a1a1a]">
+                    <h2 className="text-[22px] font-black text-[#111111] dark:text-white">{w.openStore.formTitle}</h2>
+                    <p className="mt-1 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.formDesc}</p>
 
                     <div className="mt-5 grid gap-4">
                         <label className="grid gap-1.5">
-                            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{w.openStore.storeName}</span>
+                            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.storeName}</span>
                             <input
                                 value={form.storeName}
                                 onChange={(e) => onChange('storeName', e.target.value)}
-                                className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853]"
+                                className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                                 placeholder="Masalan: Urban Line"
                                 disabled={loading}
                             />
@@ -222,21 +279,21 @@ export default function OpenStorePage() {
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <label className="grid gap-1.5">
-                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{w.openStore.ownerName}</span>
+                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.ownerName}</span>
                                 <input
                                     value={form.ownerName}
                                     onChange={(e) => onChange('ownerName', e.target.value)}
-                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853]"
+                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                                     placeholder="Ism Familiya"
                                     disabled={loading}
                                 />
                             </label>
                             <label className="grid gap-1.5">
-                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{w.openStore.phone}</span>
+                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.phone}</span>
                                 <input
                                     value={form.phone}
                                     onChange={(e) => onChange('phone', e.target.value)}
-                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853]"
+                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                                     placeholder="+998 90 123 45 67"
                                     disabled={loading}
                                 />
@@ -245,12 +302,12 @@ export default function OpenStorePage() {
 
                         <label className="grid gap-1.5">
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{w.openStore.addressMap}</span>
+                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.addressMap}</span>
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <button
                                         type="button"
                                         onClick={() => setZoom(-1)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111]"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
                                         aria-label={w.openStore.zoomOut}
                                     >
                                         <Minus size={14} />
@@ -258,7 +315,7 @@ export default function OpenStorePage() {
                                     <button
                                         type="button"
                                         onClick={() => setZoom(1)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111]"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
                                         aria-label={w.openStore.zoomIn}
                                     >
                                         <Plus size={14} />
@@ -266,7 +323,7 @@ export default function OpenStorePage() {
                                     <button
                                         type="button"
                                         onClick={pickMyLocation}
-                                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#111111]"
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
                                     >
                                         <LocateFixed size={13} />
                                         {w.openStore.myLocation}
@@ -276,7 +333,7 @@ export default function OpenStorePage() {
 
                             <div
                                 onClick={handleMapClick}
-                                className="group relative overflow-hidden rounded-2xl border border-black/12 bg-[#f3f5f8] cursor-crosshair"
+                                className="group relative overflow-hidden rounded-2xl border border-black/12 bg-[#f3f5f8] cursor-crosshair dark:border-white/10 dark:bg-[#111111]"
                             >
                                 <img src={mapUrl} alt="Map picker" className="h-[260px] w-full object-cover" />
                                 <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-bold text-white">
@@ -284,20 +341,20 @@ export default function OpenStorePage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-black/12 bg-[#f9fafb] px-3 py-2.5 text-[13px] text-[#4b5563]">
+                            <div className="rounded-xl border border-black/12 bg-[#f9fafb] px-3 py-2.5 text-[13px] text-[#4b5563] dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db]">
                                 {addressLoading ? w.openStore.resolving : (form.address || w.openStore.notPicked)}
                             </div>
-                            <p className="text-[12px] text-[#6b7280]">
+                            <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                                 {w.openStore.pickedCoords}: {map.markerLat.toFixed(6)}, {map.markerLng.toFixed(6)}
                             </p>
                         </label>
 
                         <label className="grid gap-1.5">
-                            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{w.openStore.descLabel}</span>
+                            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.descLabel}</span>
                             <textarea
                                 value={form.description}
                                 onChange={(e) => onChange('description', e.target.value)}
-                                className="min-h-[110px] rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none transition-all focus:border-[#00c853]"
+                                className="min-h-[110px] rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                                 placeholder="Nimalarni sotmoqchisiz, assortimenti haqida yozing..."
                                 disabled={loading}
                             />
@@ -308,9 +365,9 @@ export default function OpenStorePage() {
                         <div
                             className={cn(
                                 'mt-4 rounded-xl px-3 py-2.5 text-[13px] font-semibold',
-                                result.type === 'success' && 'bg-[#e7f9ef] text-[#0a7b35]',
-                                result.type === 'error' && 'bg-red-50 text-red-600',
-                                result.type === 'info' && 'bg-blue-50 text-blue-600',
+                                result.type === 'success' && 'bg-[#e7f9ef] text-[#0a7b35] dark:bg-[#00c853]/10 dark:text-[#4ade80]',
+                                result.type === 'error' && 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
+                                result.type === 'info' && 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
                             )}
                         >
                             {result.message}
@@ -328,5 +385,6 @@ export default function OpenStorePage() {
                 </form>
             </div>
         </section>
+        </>
     );
 }

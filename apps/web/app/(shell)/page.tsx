@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Heart, Star } from 'lucide-react';
 import { SITE_ROUTES } from '../../src/shared/config/constants';
-import { mockApi } from '../../src/services/mockServer';
-import type { Product } from '../../src/shared/types';
+import { fetchProducts } from '../../src/lib/apiClient';
+import type { ApiProduct } from '../../src/lib/apiClient';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
+import { useWebAuth } from '../../src/context/WebAuthContext';
+import { AuthModal } from '../../src/shared/ui/AuthModal';
 
 const CATEGORIES = ['All', 'Jackets', 'Shirts', 'Shoes', 'Pants', 'Hoodies', 'Accessories', 'T-Shirts'] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -77,22 +79,29 @@ function useScrollReveal() {
     return { ref, visible };
 }
 
+function getToken() {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('marketplace_token');
+}
+
 export default function WebsiteHomePage() {
     const { w, tc } = useWebI18n();
-    const [products, setProducts] = useState<Product[]>([]);
+    const { user } = useWebAuth();
+    const [products, setProducts] = useState<ApiProduct[]>([]);
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+    const [authModal, setAuthModal] = useState(false);
 
     const catReveal = useScrollReveal();
     const prodReveal = useScrollReveal();
 
     useEffect(() => {
-        mockApi.listProducts().then(setProducts);
+        fetchProducts({ limit: 50 }).then(({ products: data }) => setProducts(data)).catch(() => {});
     }, []);
 
     const featuredProducts = useMemo(() => {
-        const list = activeCategory === 'All' ? products : products.filter((p) => p.category === activeCategory);
-        return list.slice(0, 8);
+        if (activeCategory === 'All') return products.slice(0, 8);
+        return products.filter((p) => (p.category_name ?? '').toLowerCase().includes(activeCategory.toLowerCase())).slice(0, 8);
     }, [activeCategory, products]);
     const featuredBanner = useMemo(
         () => CATEGORY_BANNERS.find((item) => item.isFeatured) ?? CATEGORY_BANNERS[0],
@@ -103,16 +112,28 @@ export default function WebsiteHomePage() {
         [featuredBanner.title],
     );
 
-    const toggleWishlist = (id: string) => {
+    const toggleWishlist = async (id: string) => {
+        if (!user) { setAuthModal(true); return; }
+        const token = getToken();
+        if (!token) { setAuthModal(true); return; }
+        // Optimistic toggle
         setWishlist((prev) => {
             const next = new Set(prev);
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
         });
+        try {
+            await fetch('/api/favorites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ product_id: id }),
+            });
+        } catch { /* ignore */ }
     };
 
     return (
         <div id="home" className="w-full">
+            <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
 
             {/* Hero */}
             <section className="relative h-[74vh] min-h-[460px] w-full overflow-hidden md:h-[84vh] md:min-h-[520px] lg:h-[92vh] lg:min-h-[580px]">
@@ -306,9 +327,9 @@ export default function WebsiteHomePage() {
                         {featuredProducts.map((product) => {
                             const seed = product.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
                             const off = 10 + (seed % 30);
-                            const oldPrice = Math.round((product.price * 1.2) / 1000) * 1000;
+                            const oldPrice = Math.round((product.base_price * 1.2) / 1000) * 1000;
                             const rating = 3 + (seed % 3);
-                            const primaryImage = product.images[0] || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product';
+                            const primaryImage = product.thumbnail || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product';
                             const inWish = wishlist.has(product.id);
 
                             return (
@@ -319,7 +340,7 @@ export default function WebsiteHomePage() {
                                     <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
                                         <img
                                             src={primaryImage}
-                                            alt={product.title}
+                                            alt={product.name}
                                             className="absolute inset-0 h-full w-full object-cover"
                                         />
                                         <span className="absolute left-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 text-[10px] font-black text-white">
@@ -338,16 +359,16 @@ export default function WebsiteHomePage() {
                                         </button>
                                     </div>
                                     <div className="px-1 pt-4 pb-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{tc(product.category)}</p>
-                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.title}</h3>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{tc(product.category_name ?? '')}</p>
+                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.name}</h3>
                                         <div className="mt-1.5 flex items-center gap-0.5">
                                             {Array.from({ length: 5 }, (_, i) => (
                                                 <Star key={i} size={11} className={i < rating ? 'fill-[#00c853] text-[#00c853]' : 'text-[#e5e7eb]'} />
                                             ))}
                                         </div>
                                         <div className="mt-2.5 flex items-end gap-2">
-                                            <span className="text-[17px] font-black text-[#111111] dark:text-white">{formatPrice(product.price, product.currency)}</span>
-                                            <span className="text-[12px] text-[#c4c9d4] line-through">{formatPrice(oldPrice, product.currency)}</span>
+                                            <span className="text-[17px] font-black text-[#111111] dark:text-white">{formatPrice(product.base_price, 'UZS')}</span>
+                                            <span className="text-[12px] text-[#c4c9d4] line-through">{formatPrice(oldPrice, 'UZS')}</span>
                                         </div>
                                     </div>
                                 </div>

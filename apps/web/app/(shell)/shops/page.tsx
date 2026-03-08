@@ -72,14 +72,14 @@ export default function ShopsPage() {
 
                 {/* Search */}
                 <div className="mb-8">
-                    <label className="flex items-center gap-3 h-12 rounded-full border border-black/10 bg-white px-5 w-full sm:max-w-xl shadow-sm">
+                    <label className="flex items-center gap-3 h-12 rounded-full border border-black/10 bg-white px-5 w-full sm:max-w-xl shadow-sm dark:border-white/10 dark:bg-[#1a1a1a]">
                         <Search size={15} className="text-[#9ca3af] shrink-0" />
                         <input
                             type="text"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder={w.shops.searchPlaceholder}
-                            className="w-full bg-transparent text-[13px] text-[#111111] outline-none placeholder:text-[#9ca3af]"
+                            className="w-full bg-transparent text-[13px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:text-white"
                         />
                     </label>
                 </div>
@@ -93,11 +93,11 @@ export default function ShopsPage() {
                 {loading ? (
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 animate-pulse">
-                                <div className="h-52 rounded-2xl bg-black/8" />
+                            <div key={i} className="rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 animate-pulse dark:border-white/5 dark:bg-[#1a1a1a]">
+                                <div className="h-52 rounded-2xl bg-black/8 dark:bg-white/8" />
                                 <div className="mt-4 px-1 space-y-2">
-                                    <div className="h-4 w-2/3 rounded-full bg-black/8" />
-                                    <div className="h-3 w-1/2 rounded-full bg-black/5" />
+                                    <div className="h-4 w-2/3 rounded-full bg-black/8 dark:bg-white/8" />
+                                    <div className="h-3 w-1/2 rounded-full bg-black/5 dark:bg-white/5" />
                                 </div>
                             </div>
                         ))}
@@ -120,7 +120,7 @@ export default function ShopsPage() {
                                 <Link
                                     key={store.id}
                                     href={`/store/${store.id}`}
-                                    className="group rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.22)] block"
+                                    className="group rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.22)] block dark:border-white/5 dark:bg-[#1a1a1a]"
                                 >
                                     {/* Store image */}
                                     <div className="relative h-52 overflow-hidden rounded-2xl bg-black/5">
@@ -144,14 +144,14 @@ export default function ShopsPage() {
 
                                     {/* Info */}
                                     <div className="px-1 pt-4 pb-1">
-                                        <h3 className="line-clamp-1 text-[16px] font-extrabold text-[#111111]">{store.name}</h3>
+                                        <h3 className="line-clamp-1 text-[16px] font-extrabold text-[#111111] dark:text-white">{store.name}</h3>
                                         <div className="mt-1.5 flex items-center gap-1 text-[#00a645]">
                                             {Array.from({ length: 5 }, (_, i) => (
                                                 <Star key={i} size={11} className={i < rating ? 'fill-[#00c853] text-[#00c853]' : 'text-[#e5e7eb]'} />
                                             ))}
                                             <span className="ml-1 text-[11px] text-[#9ca3af]">({rating}.0)</span>
                                         </div>
-                                        <div className="mt-2 flex items-start gap-1.5 text-[12px] text-[#6b7280]">
+                                        <div className="mt-2 flex items-start gap-1.5 text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                                             <MapPin size={13} className="mt-0.5 shrink-0" />
                                             <span className="line-clamp-1">{store.addressText}</span>
                                         </div>

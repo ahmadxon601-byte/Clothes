@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
 
-    // Sellers / admins already have stores — block duplicate requests
-    if (jwtUser.role === "seller" || jwtUser.role === "admin") {
-      return fail("You already have seller access", 409);
+    // Admins cannot submit store requests
+    if (jwtUser.role === "admin") {
+      return fail("Adminlar do'kon ochish uchun ariza yuborolmaydi", 403);
     }
 
     // Check for an existing pending request
