@@ -38,14 +38,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return fail("is_active (boolean) required", 422);
     }
 
+    const fields = ["is_active = $1", "updated_at = NOW()"];
+    const vals: unknown[] = [body.is_active];
+
+    if (typeof body.rejection_reason === "string") {
+      vals.push(body.rejection_reason || null);
+      fields.push(`rejection_reason = $${vals.length}`);
+    } else if (body.is_active === true) {
+      // Clear rejection reason when approving
+      fields.push("rejection_reason = NULL");
+    }
+
+    vals.push(id);
     const result = await query(
-      `UPDATE products SET is_active = $1, updated_at = NOW()
-       WHERE id = $2 RETURNING id, name, is_active`,
-      [body.is_active, id]
+      `UPDATE products SET ${fields.join(", ")}
+       WHERE id = $${vals.length} RETURNING id, name, is_active, rejection_reason`,
+      vals
     );
     if (result.rows.length === 0) return fail("Product not found", 404);
     emitAdminEvent({ type: "products", action: "updated" });
-    logAction({ admin, action: "update", entity: "product", entityId: id, details: { is_active: body.is_active } });
+    logAction({ admin, action: "update", entity: "product", entityId: id, details: { is_active: body.is_active, rejection_reason: body.rejection_reason } });
     return ok({ product: result.rows[0] });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

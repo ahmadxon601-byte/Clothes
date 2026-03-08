@@ -53,7 +53,8 @@ export const userSchema = z.object({
   name: z.string().default(''),
   email: z.string(),
   role: z.string(),
-  is_banned: z.boolean().optional(),
+  is_banned: z.boolean().optional().default(false),
+  ban_reason: z.string().nullish(),
   created_at: z.string(),
 });
 

@@ -10,10 +10,12 @@ type Params = { params: Promise<{ id: string }> };
 const updateSchema = z.object({
   role: z.enum(["user", "seller", "admin"]).optional(),
   name: z.string().min(2).max(255).optional(),
+  is_banned: z.boolean().optional(),
+  reason: z.string().optional(),
 });
 
-// ── PUT /api/admin/users/[id] ─────────────────────────────────────────────────
-export async function PUT(req: NextRequest, { params }: Params) {
+// ── PATCH /api/admin/users/[id] ───────────────────────────────────────────────
+export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");
     const { id } = await params;
@@ -33,6 +35,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
       vals.push(parsed.data.name);
       fields.push(`name = $${vals.length}`);
     }
+    if (parsed.data.is_banned !== undefined) {
+      vals.push(parsed.data.is_banned);
+      fields.push(`is_banned = $${vals.length}`);
+      if (parsed.data.reason !== undefined) {
+        vals.push(parsed.data.is_banned ? (parsed.data.reason || null) : null);
+        fields.push(`ban_reason = $${vals.length}`);
+      }
+    }
     if (fields.length === 0) return fail("No fields to update", 422);
 
     fields.push(`updated_at = NOW()`);
@@ -41,16 +51,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const result = await query(
       `UPDATE users SET ${fields.join(", ")}
        WHERE id = $${vals.length}
-       RETURNING id, name, email, role, created_at`,
+       RETURNING id, name, email, role, is_banned, ban_reason, created_at`,
       vals
     );
 
     if (result.rows.length === 0) return fail("User not found", 404);
-    logAction({ admin, action: "update", entity: "user", entityId: id, details: parsed.data });
+    const action = parsed.data.is_banned !== undefined
+      ? (parsed.data.is_banned ? "ban" : "unban")
+      : "update";
+    logAction({ admin, action, entity: "user", entityId: id, details: parsed.data });
+    emitAdminEvent({ type: "users", action: "updated" });
     return ok({ user: result.rows[0] });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
-    console.error("[admin/users PUT]", e);
+    console.error("[admin/users PATCH]", e);
     return fail("Internal server error", 500);
   }
 }

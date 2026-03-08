@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     params.push(limit, offset);
     const dataResult = await query(
-      `SELECT id, name, email, role, created_at
+      `SELECT id, name, email, role, is_banned, ban_reason, created_at
        FROM users ${where}
        ORDER BY created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

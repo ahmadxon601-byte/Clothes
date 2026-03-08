@@ -22,7 +22,7 @@ import { adminApi } from '../../../src/lib/adminApi';
 import type { AuditLog } from '../../../src/lib/adminApi';
 
 const ENTITIES = ['user', 'product', 'store', 'seller_request', 'order', 'banner'];
-const ACTIONS = ['create', 'update', 'delete', 'approve', 'reject', 'promote', 'update_profile', 'change_password'];
+const ACTIONS = ['create', 'update', 'delete', 'approve', 'reject', 'promote', 'ban', 'unban', 'update_profile', 'change_password'];
 
 const LOCALE_MAP: Record<string, string> = { uz: 'uz-UZ', ru: 'ru-RU', en: 'en-GB' };
 
