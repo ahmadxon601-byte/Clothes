@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
     if (parsed.data.product_ids !== undefined) {
       vals.push(parsed.data.product_ids);
-      fields.push(`product_ids = $${vals.length}`);
+      fields.push(`product_ids = $${vals.length}::uuid[]`);
     }
     if (fields.length === 0) return fail("No fields to update", 422);
 

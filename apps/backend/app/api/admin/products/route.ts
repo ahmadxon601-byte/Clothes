@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const s = req.nextUrl.searchParams;
     const search = s.get("search")?.trim() || null;
     const storeId = s.get("store_id") || null;
+    const statusParam = s.get("status") || null;
     const { page, limit, offset } = paginate(s.get("page"), s.get("limit"));
 
     const conditions: string[] = [];
@@ -23,6 +24,11 @@ export async function GET(req: NextRequest) {
     if (storeId) {
       params.push(storeId);
       conditions.push(`p.store_id = $${params.length}`);
+    }
+    if (statusParam === "active") {
+      conditions.push(`p.is_active = TRUE`);
+    } else if (statusParam === "inactive") {
+      conditions.push(`p.is_active = FALSE`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

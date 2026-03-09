@@ -87,7 +87,7 @@ const createSchema = z.object({
   category_id: z.string().uuid().optional(),
   store_id: z.string().uuid().optional(),
   images: z
-    .array(z.object({ url: z.string().url(), sort_order: z.number().int().min(0) }))
+    .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
     .optional(),
   variants: z.array(variantSchema).optional(),
   location: z

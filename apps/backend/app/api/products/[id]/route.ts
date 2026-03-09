@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { query } from "@/src/lib/db";
+import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 
 type Params = { params: Promise<{ id: string }> };
@@ -68,6 +68,9 @@ const updateSchema = z.object({
   base_price: z.number().positive().optional(),
   category_id: z.string().uuid().nullable().optional(),
   is_active: z.boolean().optional(),
+  images: z
+    .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
+    .optional(),
 });
 
 export async function PUT(req: NextRequest, { params }: Params) {
@@ -90,27 +93,55 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
+    const { images, ...rest } = parsed.data;
+
     const fields: string[] = [];
     const vals: unknown[] = [];
 
-    for (const [key, val] of Object.entries(parsed.data)) {
+    for (const [key, val] of Object.entries(rest)) {
       if (val === undefined) continue;
       vals.push(val);
       fields.push(`${key} = $${vals.length}`);
     }
 
-    if (fields.length === 0) return fail("No fields to update", 422);
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    fields.push(`updated_at = NOW()`);
-    vals.push(id);
+      let product: Record<string, unknown>;
+      if (fields.length > 0) {
+        fields.push(`updated_at = NOW()`);
+        vals.push(id);
+        const result = await client.query(
+          `UPDATE products SET ${fields.join(", ")} WHERE id = $${vals.length} RETURNING *`,
+          vals
+        );
+        if (result.rows.length === 0) { await client.query("ROLLBACK"); return fail("Product not found", 404); }
+        product = result.rows[0];
+      } else {
+        const result = await client.query("SELECT * FROM products WHERE id = $1", [id]);
+        if (result.rows.length === 0) { await client.query("ROLLBACK"); return fail("Product not found", 404); }
+        product = result.rows[0];
+      }
 
-    const result = await query(
-      `UPDATE products SET ${fields.join(", ")} WHERE id = $${vals.length} RETURNING *`,
-      vals
-    );
+      if (images !== undefined) {
+        await client.query("DELETE FROM product_images WHERE product_id = $1", [id]);
+        for (const img of images) {
+          await client.query(
+            "INSERT INTO product_images (product_id, url, sort_order) VALUES ($1, $2, $3)",
+            [id, img.url, img.sort_order]
+          );
+        }
+      }
 
-    if (result.rows.length === 0) return fail("Product not found", 404);
-    return ok({ product: result.rows[0] });
+      await client.query("COMMIT");
+      return ok({ product });
+    } catch (e) {
+      await client.query("ROLLBACK");
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[product PUT]", e);

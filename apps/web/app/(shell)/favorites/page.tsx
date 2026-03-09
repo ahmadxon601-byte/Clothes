@@ -169,7 +169,7 @@ export default function FavoritesPage() {
                     <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
                         {filtered.map((product) => {
                             const img = product.image_url || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product';
-                            const seed = product.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+                            const seed = product.product_id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
                             const off = 10 + (seed % 25);
                             const oldPrice = Math.round((product.base_price * 1.2) / 1000) * 1000;
                             const rating = 3 + (seed % 3);

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { Heart, Package, Search } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Heart, Loader2, Package, Search } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -14,6 +14,10 @@ interface Product {
   store_id: string;
 }
 
+function getToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
+}
+
 export default function ClothingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -22,6 +26,45 @@ export default function ClothingPage() {
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLElement>(null);
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
+  const [toggling, setToggling] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json) => {
+        const rows: { product_id: string }[] = json?.data ?? json ?? [];
+        setFavIds(new Set(rows.map((r) => r.product_id)));
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleFav = useCallback(async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    const token = getToken();
+    if (!token) return;
+    setToggling((p) => { const s = new Set(p); s.add(productId); return s; });
+    try {
+      const res = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ product_id: productId }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const favorited = json.data?.favorited ?? json.favorited;
+        setFavIds((prev) => {
+          const s = new Set(prev);
+          favorited ? s.add(productId) : s.delete(productId);
+          return s;
+        });
+      }
+    } catch { /* noop */ } finally {
+      setToggling((p) => { const s = new Set(p); s.delete(productId); return s; });
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -112,7 +155,7 @@ export default function ClothingPage() {
           {products.map((product) => (
             <Link
               key={product.id}
-              href={`/store/${product.store_id}`}
+              href={`/product/${product.id}`}
               className="group rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.22)] dark:border-white/5 dark:bg-[#1a1a1a]"
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
@@ -125,10 +168,18 @@ export default function ClothingPage() {
                   </div>
                 )}
                 <button
-                  onClick={(e) => e.preventDefault()}
-                  className="absolute right-3 top-3 rounded-full p-2.5 backdrop-blur-md border border-white/30 bg-white/15 text-white transition-all hover:bg-[#00c853] hover:text-[#06200f]"
+                  onClick={(e) => toggleFav(e, product.id)}
+                  disabled={toggling.has(product.id)}
+                  className={`absolute right-3 top-3 rounded-full p-2.5 backdrop-blur-md border transition-all disabled:opacity-60 ${
+                    favIds.has(product.id)
+                      ? 'border-[#00c853]/40 bg-[#00c853] text-[#06200f]'
+                      : 'border-white/30 bg-white/15 text-white hover:bg-[#00c853] hover:text-[#06200f]'
+                  }`}
                 >
-                  <Heart size={13} />
+                  {toggling.has(product.id)
+                    ? <Loader2 size={13} className="animate-spin" />
+                    : <Heart size={13} className={favIds.has(product.id) ? 'fill-current' : ''} />
+                  }
                 </button>
               </div>
               <div className="px-1 pt-4 pb-1">

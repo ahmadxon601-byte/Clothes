@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       `SELECT
          b.id, b.title, b.is_active, b.product_ids, b.created_at, b.updated_at,
          COALESCE(
-           (SELECT json_agg(json_build_object('id', p.id, 'name', p.name, 'price', p.price))
+           (SELECT json_agg(json_build_object('id', p.id, 'name', p.name, 'price', p.base_price))
             FROM products p WHERE p.id = ANY(b.product_ids)),
            '[]'
          ) AS products
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     const { rows } = await query(
       `INSERT INTO banners (title, is_active, product_ids)
-       VALUES ($1, $2, $3)
+       VALUES ($1, $2, $3::uuid[])
        RETURNING id, title, is_active, product_ids, created_at, updated_at`,
       [title, is_active, product_ids]
     );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Edit3, Loader2, Package, Plus, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { Camera, Edit3, Loader2, Package, Plus, Trash2, X, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
@@ -62,6 +62,8 @@ export default function MyProductsPage() {
     category_id: '',
     store_id: '',
   });
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -109,6 +111,7 @@ export default function MyProductsPage() {
 
   const openCreate = () => {
     setForm({ name: '', base_price: '', description: '', category_id: '', store_id: stores[0]?.id ?? '' });
+    setFormImages([]);
     setFormError('');
     setEditProduct(null);
     setCreateOpen(true);
@@ -122,9 +125,33 @@ export default function MyProductsPage() {
       category_id: '',
       store_id: p.store_id,
     });
+    setFormImages(p.thumbnail ? [p.thumbnail] : []);
     setFormError('');
     setEditProduct(p);
     setCreateOpen(true);
+  };
+
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingImg(true);
+    const token = getToken();
+    const urls: string[] = [];
+    for (const file of Array.from(files)) {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const url = json.data?.url ?? json.url;
+        if (url) urls.push(url);
+      }
+    }
+    setFormImages((prev) => [...prev, ...urls]);
+    setUploadingImg(false);
   };
 
   const handleSave = async () => {
@@ -134,6 +161,9 @@ export default function MyProductsPage() {
     setSaving(true);
     try {
       let res: Response;
+      const imagePayload = formImages.length > 0
+        ? { images: formImages.map((url, i) => ({ url, sort_order: i })) }
+        : {};
       if (editProduct) {
         res = await fetch(`/api/products/${editProduct.id}`, {
           method: 'PUT',
@@ -143,6 +173,7 @@ export default function MyProductsPage() {
             base_price: Number(form.base_price),
             ...(form.description.trim() && { description: form.description.trim() }),
             ...(form.category_id && { category_id: form.category_id }),
+            ...imagePayload,
           }),
         });
       } else {
@@ -155,6 +186,7 @@ export default function MyProductsPage() {
             ...(form.description.trim() && { description: form.description.trim() }),
             ...(form.category_id && { category_id: form.category_id }),
             ...(form.store_id && { store_id: form.store_id }),
+            ...imagePayload,
           }),
         });
       }
@@ -266,38 +298,47 @@ export default function MyProductsPage() {
               className="group relative overflow-hidden rounded-[22px] border border-black/10 bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.2)] dark:border-white/10 dark:bg-[#1a1a1a]"
             >
               {/* Thumbnail */}
-              <div className="relative h-[180px] w-full bg-[#f3f4f6] dark:bg-[#111111]">
-                {p.thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <Package size={36} className="text-[#d1d5db]" />
-                  </div>
-                )}
-                {!p.is_active && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <span className="rounded-full bg-black/70 px-3 py-1 text-[11px] font-bold text-white">Nofaol</span>
-                  </div>
-                )}
-              </div>
+              <Link href={`/product/${p.id}`} className="block">
+                <div className="relative h-[180px] w-full bg-[#f3f4f6] dark:bg-[#111111]">
+                  {p.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Package size={36} className="text-[#d1d5db]" />
+                    </div>
+                  )}
+                  {!p.is_active && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <span className="rounded-full bg-black/70 px-3 py-1 text-[11px] font-bold text-white">Nofaol</span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Info */}
-              <div className="p-4">
-                <p className="line-clamp-1 text-[14px] font-bold text-[#111111] dark:text-white">{p.name}</p>
-                <p className="mt-0.5 text-[12px] text-[#6b7280]">{p.store_name}</p>
-                {p.category_name && (
-                  <p className="mt-0.5 text-[11px] text-[#9ca3af]">{p.category_name}</p>
-                )}
-                <p className="mt-2 text-[16px] font-black text-[#00c853]">
-                  {Number(p.base_price).toLocaleString()} so'm
-                </p>
-              </div>
+                {/* Info */}
+                <div className="p-4 pb-2">
+                  <p className="line-clamp-1 text-[14px] font-bold text-[#111111] dark:text-white">{p.name}</p>
+                  <p className="mt-0.5 text-[12px] text-[#6b7280]">{p.store_name}</p>
+                  {p.category_name && (
+                    <p className="mt-0.5 text-[11px] text-[#9ca3af]">{p.category_name}</p>
+                  )}
+                  <p className="mt-2 text-[16px] font-black text-[#00c853]">
+                    {Number(p.base_price).toLocaleString()} so&apos;m
+                  </p>
+                </div>
+              </Link>
 
               {/* Actions */}
               <div className="flex items-center justify-between border-t border-black/8 px-4 py-2.5 dark:border-white/8">
                 <span className="text-[11px] text-[#9ca3af]">{p.views} ko'rishlar</span>
                 <div className="flex items-center gap-1">
+                  <Link
+                    href={`/product/${p.id}`}
+                    title="Ko'rish"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-[#6b7280] transition-colors hover:text-[#00c853] dark:border-white/10"
+                  >
+                    <ExternalLink size={13} />
+                  </Link>
                   <button
                     title={p.is_active ? 'Yashirish' : "Ko'rsatish"}
                     onClick={() => toggleActive(p)}
@@ -331,7 +372,7 @@ export default function MyProductsPage() {
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-sm overflow-y-auto rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
             <button
-              onClick={() => { setCreateOpen(false); setEditProduct(null); }}
+              onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); }}
               className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-[#6b7280] hover:text-[#111111] dark:border-white/10 dark:hover:text-white"
             >
               <X size={16} />
@@ -399,11 +440,48 @@ export default function MyProductsPage() {
                     placeholder="Mahsulot haqida qisqacha..."
                   />
                 </label>
+                {/* Image upload */}
+                <div>
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Rasmlar (ixtiyoriy)</span>
+                  <div className="flex flex-wrap gap-2">
+                    {formImages.map((url, i) => (
+                      <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setFormImages((prev) => prev.filter((_, j) => j !== i))}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                    <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-black/15 bg-[#f9fafb] text-[#9ca3af] transition-colors hover:border-[#00c853] hover:text-[#00c853] dark:border-white/15 dark:bg-[#111111]">
+                      {uploadingImg ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <>
+                          <Camera size={18} />
+                          <span className="text-[9px] font-bold">Rasm</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="sr-only"
+                        disabled={uploadingImg}
+                        onChange={(e) => handleImageUpload(e.target.files)}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
               {formError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
               <div className="mt-4 flex gap-2">
                 <button
-                  onClick={() => { setCreateOpen(false); setEditProduct(null); }}
+                  onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); }}
                   className="flex-1 h-11 rounded-full border border-black/10 text-[13px] font-bold text-[#111111] dark:border-white/10 dark:text-white"
                 >
                   Bekor
