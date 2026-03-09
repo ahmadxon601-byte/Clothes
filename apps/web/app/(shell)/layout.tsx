@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Facebook, Globe, Heart, Instagram, Moon, Search, Sun, User, Youtube, LogIn, UserPlus, Store } from 'lucide-react';
+import { Facebook, Globe, Heart, Instagram, Moon, Package, Search, Sun, User, Youtube, LogIn, UserPlus, Store } from 'lucide-react';
 import { BottomNav } from '../../src/shared/ui/BottomNav';
 import { ToastProvider } from '../../src/shared/ui/Toast';
 import { AppHeader, hasUnifiedHeader } from '../../src/shared/ui/AppHeader';
@@ -65,19 +65,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             { href: WEB_LINKS.HOME, label: w.navbar.home },
             { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
             { href: WEB_LINKS.CLOTHING, label: w.navbar.clothing },
-            { href: WEB_LINKS.FOOTWEAR, label: w.navbar.footwear },
+            { href: '/products', label: 'Mahsulotlar' },
         ];
 
-        // Show store-related nav link only if logged in
-        const storeLink = user
-            ? storeApproved
-                ? { href: WEB_LINKS.MY_STORE, label: "Mening Do'konim" }
-                : storePending
-                    ? null  // pending — no nav link, shown in profile area
-                    : { href: WEB_LINKS.STORE_APPLY, label: w.navbar.openStore }
-            : null;
-
-        const links = storeLink ? [...baseLinks, storeLink] : baseLinks;
+        const links = baseLinks;
 
         const langOptions: WebLanguage[] = ['uz', 'ru', 'en'];
         const langLabels: Record<WebLanguage, string> = { uz: "O'zbek", en: 'English', ru: 'Русский' };
@@ -197,14 +188,24 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                     Profil
                                                 </Link>
                                                 {storeApproved && (
-                                                    <Link
-                                                        href="/my-store"
-                                                        onClick={() => setUserMenuOpen(false)}
-                                                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
-                                                    >
-                                                        <Store size={15} />
-                                                        Mening Do'konim
-                                                    </Link>
+                                                    <>
+                                                        <Link
+                                                            href="/my-store"
+                                                            onClick={() => setUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                        >
+                                                            <Store size={15} />
+                                                            Mening Do&apos;konim
+                                                        </Link>
+                                                        <Link
+                                                            href="/my-products"
+                                                            onClick={() => setUserMenuOpen(false)}
+                                                            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                        >
+                                                            <Package size={15} />
+                                                            Mening Mahsulotlarim
+                                                        </Link>
+                                                    </>
                                                 )}
                                                 <button
                                                     onClick={() => { logout(); setUserMenuOpen(false); }}

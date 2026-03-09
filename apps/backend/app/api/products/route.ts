@@ -85,6 +85,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   base_price: z.number().positive(),
   category_id: z.string().uuid().optional(),
+  store_id: z.string().uuid().optional(),
   images: z
     .array(z.object({ url: z.string().url(), sort_order: z.number().int().min(0) }))
     .optional(),
@@ -122,18 +123,26 @@ export async function POST(req: NextRequest) {
       return fail(parsed.error.errors[0].message, 422);
     }
 
-    const { name, description, base_price, category_id, images, variants, location } =
+    const { name, description, base_price, category_id, store_id, images, variants, location } =
       parsed.data;
 
     // Find store owned by this seller
-    const storeResult = await query(
-      "SELECT id FROM stores WHERE owner_id = $1 AND is_active = TRUE LIMIT 1",
-      [jwtUser.userId]
-    );
-    if (storeResult.rows.length === 0) {
-      return fail("You do not have an active store", 403);
+    let storeId: string;
+    if (store_id) {
+      const own = await query(
+        "SELECT id FROM stores WHERE id = $1 AND owner_id = $2 AND is_active = TRUE",
+        [store_id, jwtUser.userId]
+      );
+      if (own.rows.length === 0) return fail("Store not found or not yours", 403);
+      storeId = store_id;
+    } else {
+      const storeResult = await query(
+        "SELECT id FROM stores WHERE owner_id = $1 AND is_active = TRUE LIMIT 1",
+        [jwtUser.userId]
+      );
+      if (storeResult.rows.length === 0) return fail("You do not have an active store", 403);
+      storeId = storeResult.rows[0].id;
     }
-    const storeId = storeResult.rows[0].id;
 
     // Resolve category slug for SKU prefix
     let categorySlug: string | undefined;
