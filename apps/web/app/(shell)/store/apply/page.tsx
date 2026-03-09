@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
@@ -10,6 +11,19 @@ import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { validators } from '../../../../src/shared/lib/validators';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
+
+const MapPickerLeaflet = dynamic(
+    () => import('../../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
+    { ssr: false },
+);
+
+const NAMANGAN_LAT = 41.0011;
+const NAMANGAN_LNG = 71.6726;
+
+function parseCoords(input: string) {
+    const m = input.match(/Coordinates:\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+    return m ? { lat: m[1], lng: m[2] } : null;
+}
 
 export default function StoreApplyPage() {
     const router = useRouter();
@@ -26,6 +40,7 @@ export default function StoreApplyPage() {
         photoUrl: '', // Start empty for upload
     });
     const [loading, setLoading] = useState(false);
+    const [mapOpen, setMapOpen] = useState(false);
     const saveApplicationLocally = () => {
         cachePendingStoreApplication({
             id: crypto.randomUUID(),
@@ -33,8 +48,8 @@ export default function StoreApplyPage() {
             storeName: formData.storeName,
             addressText: formData.addressText,
             location: {
-                lat: parseFloat(formData.lat) || 41.2995,
-                lng: parseFloat(formData.lng) || 69.2401,
+                lat: parseFloat(formData.lat) || NAMANGAN_LAT,
+                lng: parseFloat(formData.lng) || NAMANGAN_LNG,
             },
             photoUrl: formData.photoUrl,
         });
@@ -80,7 +95,7 @@ export default function StoreApplyPage() {
     };
 
     return (
-        <div className="flex flex-col min-h-[100dvh] bg-[var(--color-bg)] animate-in slide-in-from-right-8 duration-300">
+        <div className="flex min-h-full flex-col bg-[var(--color-bg)] animate-in slide-in-from-right-8 duration-300">
             <div className="sticky top-0 z-10 flex items-center p-4 bg-[var(--color-bg)]/80 backdrop-blur-xl border-b border-[var(--color-border)]">
                 <button onClick={() => router.back()} className="mr-3 text-[var(--color-text)]">
                     <ChevronLeft size={24} />
@@ -88,7 +103,7 @@ export default function StoreApplyPage() {
                 <h1 className="text-xl font-bold text-[var(--color-text)]">{t.store_apply}</h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-5 flex-1 mt-2">
+            <form onSubmit={handleSubmit} className="mt-2 flex-1 space-y-5 p-4 pb-[calc(var(--shell-nav-total)+28px)]">
                 <div>
                     <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.store_name}</label>
                     <Input
@@ -97,37 +112,6 @@ export default function StoreApplyPage() {
                         onChange={(e) => setFormData(p => ({ ...p, storeName: e.target.value }))}
                         disabled={loading}
                     />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.address}</label>
-                    <Input
-                        placeholder="Toshkent sh., Yunusobod t."
-                        value={formData.addressText}
-                        onChange={(e) => setFormData(p => ({ ...p, addressText: e.target.value }))}
-                        disabled={loading}
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Latitude</label>
-                        <Input
-                            placeholder="41.2995"
-                            value={formData.lat}
-                            onChange={(e) => setFormData(p => ({ ...p, lat: e.target.value }))}
-                            disabled={loading}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Longitude</label>
-                        <Input
-                            placeholder="69.2401"
-                            value={formData.lng}
-                            onChange={(e) => setFormData(p => ({ ...p, lng: e.target.value }))}
-                            disabled={loading}
-                        />
-                    </div>
                 </div>
 
                 <div>
@@ -171,12 +155,64 @@ export default function StoreApplyPage() {
                     </div>
                 </div>
 
+                {!mapOpen && (
+                    <div className="mb-3 space-y-3">
+                        <MapPickerLeaflet
+                            embedded
+                            initialLat={parseFloat(formData.lat) || NAMANGAN_LAT}
+                            initialLng={parseFloat(formData.lng) || NAMANGAN_LNG}
+                            onChange={(formatted) => {
+                                const coords = parseCoords(formatted);
+                                if (!coords) return;
+                                setFormData((p) => ({ ...p, lat: coords.lat, lng: coords.lng }));
+                            }}
+                            onConfirm={(formatted) => {
+                                const coords = parseCoords(formatted);
+                                setFormData((p) => ({
+                                    ...p,
+                                    addressText: formatted,
+                                    lat: coords?.lat ?? p.lat,
+                                    lng: coords?.lng ?? p.lng,
+                                }));
+                            }}
+                            onClose={() => {}}
+                        />
+                        <Button
+                            type="button"
+                            onClick={() => setMapOpen(true)}
+                            className="w-full"
+                            disabled={loading}
+                        >
+                            Lokatsiyani xaritadan tanlash
+                        </Button>
+                    </div>
+                )}
+
                 <div className="pt-6">
                     <Button type="submit" isLoading={loading} className="w-full">
                         {t.submit_application}
                     </Button>
                 </div>
+
             </form>
+
+            {mapOpen && (
+                <MapPickerLeaflet
+                    initialLat={parseFloat(formData.lat) || NAMANGAN_LAT}
+                    initialLng={parseFloat(formData.lng) || NAMANGAN_LNG}
+                    onConfirm={(formatted) => {
+                        const coords = parseCoords(formatted);
+                        setFormData((p) => ({
+                            ...p,
+                            addressText: formatted,
+                            lat: coords?.lat ?? p.lat,
+                            lng: coords?.lng ?? p.lng,
+                        }));
+                        setMapOpen(false);
+                    }}
+                    onClose={() => setMapOpen(false)}
+                />
+            )}
         </div>
     );
 }

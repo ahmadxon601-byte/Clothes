@@ -221,11 +221,11 @@ export default function WebsiteHomePage() {
                         {w.home.viewAll} <ArrowRight size={13} />
                     </Link>
                 </div>
-                <div className="grid gap-4 lg:grid-cols-12 lg:h-[620px]">
+                <div className="grid gap-4 lg:grid-cols-12 lg:min-h-[620px]">
                     <Link
                         href={featuredBanner.href}
                         aria-label={`${featuredBanner.title} style`}
-                        className="group relative isolate overflow-hidden rounded-[28px] bg-black/10 min-h-[260px] md:min-h-[330px] lg:col-span-7 lg:min-h-0 lg:h-full"
+                        className="group relative isolate overflow-hidden rounded-[40px] bg-black/10 min-h-[260px] md:min-h-[330px] lg:col-span-7 lg:min-h-[620px]"
                     >
                         <img
                             src={featuredBanner.image}
@@ -239,7 +239,7 @@ export default function WebsiteHomePage() {
                             </span>
                         )}
                         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-7">
-                            <div className="transition-transform duration-300 group-hover:-translate-y-0.5">
+                            <div className="rounded-[30px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm transition-transform duration-300 group-hover:-translate-y-0.5">
                                 <h3 className="font-[family-name:var(--font-playfair)] text-[clamp(1.5rem,2.4vw,2.3rem)] font-black leading-[0.95] text-white">
                                     {w.home.categoryBanners[0]?.title ?? featuredBanner.title}
                                 </h3>
@@ -250,7 +250,7 @@ export default function WebsiteHomePage() {
                         </div>
                     </Link>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5 lg:h-full lg:grid-rows-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5 lg:min-h-[620px] lg:grid-rows-2">
                         {compactBanners.map((cat, idx) => {
                             const tIndex = idx + 1;
                             return (
@@ -258,7 +258,7 @@ export default function WebsiteHomePage() {
                                     key={cat.title}
                                     href={cat.href}
                                     aria-label={`${cat.title} style`}
-                                    className="group relative isolate overflow-hidden rounded-[24px] bg-black/10 min-h-[155px] md:min-h-[190px] lg:min-h-0 lg:h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00c853] focus-visible:ring-offset-2"
+                                    className="group relative isolate overflow-hidden rounded-[36px] bg-black/10 min-h-[155px] md:min-h-[190px] lg:min-h-[302px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00c853] focus-visible:ring-offset-2"
                                 >
                                     <img
                                         src={cat.image}
@@ -272,7 +272,7 @@ export default function WebsiteHomePage() {
                                         </span>
                                     )}
                                     <div className="absolute bottom-4 left-4 right-4">
-                                        <div className="transition-transform duration-300 group-hover:-translate-y-0.5">
+                                        <div className="rounded-[26px] border border-white/15 bg-black/25 p-3 backdrop-blur-sm transition-transform duration-300 group-hover:-translate-y-0.5">
                                             <h3 className="font-[family-name:var(--font-playfair)] text-[clamp(1.2rem,1.6vw,1.7rem)] font-black leading-[0.95] text-white">
                                                 {w.home.categoryBanners[tIndex]?.title ?? cat.title}
                                             </h3>
@@ -293,7 +293,7 @@ export default function WebsiteHomePage() {
                 id="featured"
                 ref={prodReveal.ref as React.RefObject<HTMLElement>}
                 className={cn(
-                    'bg-white py-14 md:py-20 transition-all duration-700 dark:bg-[#111111]',
+                    'bg-white pt-6 pb-14 md:pt-8 md:pb-20 transition-all duration-700 dark:bg-[#111111]',
                     prodReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8',
                 )}
             >
