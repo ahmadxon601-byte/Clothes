@@ -64,8 +64,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         const baseLinks = [
             { href: WEB_LINKS.HOME, label: w.navbar.home },
             { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
-            { href: WEB_LINKS.CLOTHING, label: w.navbar.clothing },
-            { href: '/products', label: 'Mahsulotlar' },
+            { href: WEB_LINKS.CLOTHING, label: 'Mahsulotlar' },
         ];
 
         const links = baseLinks;
