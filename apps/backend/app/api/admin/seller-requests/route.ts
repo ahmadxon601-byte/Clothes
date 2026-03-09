@@ -9,12 +9,16 @@ export async function GET(req: NextRequest) {
     requireRole(req, "admin");
 
     const s = req.nextUrl.searchParams;
-    const status = s.get("status") || "pending";
+    const statusParam = s.get("status");
+    const status = statusParam && statusParam !== "" ? statusParam : null;
     const { page, limit, offset } = paginate(s.get("page"), s.get("limit"));
 
+    const whereClause = status ? "WHERE sr.status = $1" : "";
+    const countParams = status ? [status] : [];
+
     const countResult = await query(
-      "SELECT COUNT(*) FROM seller_requests WHERE status = $1",
-      [status]
+      `SELECT COUNT(*) FROM seller_requests ${status ? "WHERE status = $1" : ""}`,
+      countParams
     );
     const total = parseInt(countResult.rows[0].count);
 
@@ -22,10 +26,10 @@ export async function GET(req: NextRequest) {
       `SELECT sr.*, u.name AS user_name, u.email AS user_email
        FROM seller_requests sr
        JOIN users u ON u.id = sr.user_id
-       WHERE sr.status = $1
+       ${whereClause}
        ORDER BY sr.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [status, limit, offset]
+       LIMIT $${status ? 2 : 1} OFFSET $${status ? 3 : 2}`,
+      status ? [status, limit, offset] : [limit, offset]
     );
 
     return ok({

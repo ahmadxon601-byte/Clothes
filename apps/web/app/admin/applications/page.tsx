@@ -27,7 +27,7 @@ import { useToast } from '../../../src/shared/ui/useToast';
 export default function ApplicationsPage() {
   const { t } = useAdminI18n();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
