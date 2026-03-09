@@ -69,7 +69,7 @@ export default function MyProductsPage() {
     try {
       const res = await fetch('/api/products/my', { headers: authHeader() });
       const json = await res.json();
-      setProducts(json.products ?? []);
+      setProducts(json.data?.products ?? json.products ?? []);
     } catch {
       /* noop */
     } finally {
@@ -81,7 +81,7 @@ export default function MyProductsPage() {
     try {
       const res = await fetch('/api/stores/my/all', { headers: authHeader() });
       const json = await res.json();
-      setStores(json.stores ?? []);
+      setStores(json.data?.stores ?? json.stores ?? []);
     } catch {
       /* noop */
     }
@@ -91,7 +91,7 @@ export default function MyProductsPage() {
     try {
       const res = await fetch('/api/categories');
       const json = await res.json();
-      setCategories(json.categories ?? []);
+      setCategories(json.data?.categories ?? json.categories ?? []);
     } catch {
       /* noop */
     }
