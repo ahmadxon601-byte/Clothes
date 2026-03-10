@@ -26,6 +26,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
     const [pin, setPin] = useState<{ lat: number; lng: number } | null>(
         hasInitialPin ? { lat: initialLat, lng: initialLng } : null
     );
+    const [addressLabel, setAddressLabel] = useState('');
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
     const mapRef = useRef<L.Map | null>(null);
@@ -47,10 +48,35 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
         };
     }, []);
 
-    const handlePick = (lat: number, lng: number) => {
+    const handlePick = async (lat: number, lng: number) => {
         setPin({ lat, lng });
-        if (embedded && onChange) {
-            onChange(`Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        if (embedded) {
+            setAddressLabel('');
+            setLoading(true);
+            let displayName = '';
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+                    { headers: { 'Accept-Language': 'uz,ru,en' } }
+                );
+                const data = await res.json();
+                displayName = data.display_name ?? '';
+                const addr = data.address ?? {};
+                const parts = [
+                    addr.road || addr.pedestrian || addr.footway,
+                    addr.house_number,
+                    addr.neighbourhood || addr.suburb,
+                    addr.city || addr.town || addr.village || addr.county,
+                ].filter(Boolean);
+                displayName = parts.length ? parts.join(', ') : displayName;
+            } catch { /* ignore */ }
+            setLoading(false);
+            setAddressLabel(displayName);
+            const formatted = displayName
+                ? `${displayName} Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                : `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            onChange?.(formatted);
+            onConfirm(formatted);
         }
     };
 
@@ -102,9 +128,11 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                 )}
                 {pin && (
                     <div className="absolute bottom-0 inset-x-0 z-[400] flex items-center gap-1.5 bg-white/90 dark:bg-[#1a1a1a]/90 px-3 py-2 backdrop-blur-sm pointer-events-none">
-                        <MapPin size={11} className="shrink-0 text-[#00a645]" />
-                        <span className="text-[11px] text-[#374151] dark:text-[#d1d5db]">
-                            {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+                        {loading
+                            ? <Loader2 size={11} className="shrink-0 animate-spin text-[#00a645]" />
+                            : <MapPin size={11} className="shrink-0 text-[#00a645]" />}
+                        <span className="text-[11px] text-[#374151] dark:text-[#d1d5db] truncate">
+                            {loading ? 'Manzil aniqlanmoqda...' : (addressLabel || `${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)}`)}
                         </span>
                     </div>
                 )}

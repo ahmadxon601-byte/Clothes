@@ -183,7 +183,7 @@ export default function StoreApplyPage() {
                 {formData.addressText && (
                     <div className="px-4 py-3 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[13px] text-[var(--color-hint)]">
                         <span className="font-semibold text-[var(--color-text)]">📍 </span>
-                        {formData.addressText}
+                        {formData.addressText.replace(/\s*Coordinates:.*$/, '')}
                     </div>
                 )}
 
