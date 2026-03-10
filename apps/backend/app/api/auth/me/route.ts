@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const jwtUser = requireAuth(req);
 
     const result = await query(
-      "SELECT id, name, email, role, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, role, phone, telegram_id, created_at FROM users WHERE id = $1",
       [jwtUser.userId]
     );
 
