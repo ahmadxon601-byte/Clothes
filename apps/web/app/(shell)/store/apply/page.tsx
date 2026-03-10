@@ -188,7 +188,7 @@ export default function StoreApplyPage() {
                 )}
 
                 {!mapOpen && (
-                    <div className="mb-3 space-y-3">
+                    <div className="mb-3">
                         <MapPickerLeaflet
                             embedded
                             initialLat={parseFloat(formData.lat) || NAMANGAN_LAT}
@@ -209,14 +209,6 @@ export default function StoreApplyPage() {
                             }}
                             onClose={() => {}}
                         />
-                        <Button
-                            type="button"
-                            onClick={() => setMapOpen(true)}
-                            className="w-full"
-                            disabled={loading}
-                        >
-                            Lokatsiyani xaritadan tanlash
-                        </Button>
                     </div>
                 )}
 
