@@ -34,10 +34,12 @@ export default function StoreApplyPage() {
 
     const [formData, setFormData] = useState({
         storeName: '',
+        phone: '',
+        description: '',
         addressText: '',
         lat: '',
         lng: '',
-        photoUrl: '', // Start empty for upload
+        photoUrl: '',
     });
     const [loading, setLoading] = useState(false);
     const [mapOpen, setMapOpen] = useState(false);
@@ -57,7 +59,7 @@ export default function StoreApplyPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validators.required(formData.storeName) || !validators.required(formData.addressText)) {
+        if (!validators.required(formData.storeName) || !validators.required(formData.phone)) {
             showToast({ message: t.fill_all_fields, type: 'error' });
             return;
         }
@@ -66,9 +68,9 @@ export default function StoreApplyPage() {
             const token = await ensureMarketplaceToken(user);
             const body = {
                 store_name: formData.storeName,
-                store_description: '',
+                store_description: formData.description,
                 owner_name: user ? `${user.first_name} ${user.last_name ?? ''}`.trim() : 'Marketplace User',
-                phone: '',
+                phone: formData.phone,
                 address: formData.addressText,
             };
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''}/api/stores/request`, {
@@ -115,6 +117,29 @@ export default function StoreApplyPage() {
                 </div>
 
                 <div>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.phone ?? 'Telefon raqam'}</label>
+                    <Input
+                        placeholder="+998 90 000 00 00"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                        disabled={loading}
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.description ?? 'Tavsif'}</label>
+                    <textarea
+                        placeholder={t.store_description ?? "Do'kon haqida qisqacha..."}
+                        value={formData.description}
+                        onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                        disabled={loading}
+                        rows={3}
+                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)]/60 outline-none focus:ring-2 ring-[var(--color-primary)]/25 resize-none transition-all"
+                    />
+                </div>
+
+                <div>
                     <label className="block text-sm font-medium text-[var(--color-hint)] mb-2.5 ml-1">{t.store_image}</label>
                     <div
                         onClick={() => document.getElementById('file-upload')?.click()}
@@ -154,6 +179,13 @@ export default function StoreApplyPage() {
                         />
                     </div>
                 </div>
+
+                {formData.addressText && (
+                    <div className="px-4 py-3 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[13px] text-[var(--color-hint)]">
+                        <span className="font-semibold text-[var(--color-text)]">📍 </span>
+                        {formData.addressText}
+                    </div>
+                )}
 
                 {!mapOpen && (
                     <div className="mb-3 space-y-3">
