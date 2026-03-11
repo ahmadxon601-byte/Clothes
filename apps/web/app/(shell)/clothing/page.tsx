@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Heart, Loader2, Package, Search } from 'lucide-react';
+import { Heart, Loader2, Package, Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { cn } from '../../../src/shared/lib/utils';
 
 interface Product {
   id: string;
@@ -12,6 +13,75 @@ interface Product {
   category_name: string | null;
   store_name: string;
   store_id: string;
+}
+
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
+
+function formatDateLabel(iso: string) {
+  const [y, m, d] = iso.split('-');
+  return `${parseInt(d)} ${UZ_MONTHS[parseInt(m) - 1]} ${y}`;
+}
+
+function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (iso: string) => void }) {
+  const today = new Date();
+  const [year, setYear]   = useState(selected ? parseInt(selected.split('-')[0]) : today.getFullYear());
+  const [month, setMonth] = useState(selected ? parseInt(selected.split('-')[1]) - 1 : today.getMonth());
+
+  const firstDay    = new Date(year, month, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+
+  const cells: (number | null)[] = [
+    ...Array(startOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const toIso = (d: number) => `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  return (
+    <div className="rounded-[16px] border border-black/8 dark:border-white/8 bg-[#f8f9fb] dark:bg-[#111111] p-4 select-none w-72">
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+          <ChevronLeft size={16} className="text-[#9ca3af]" />
+        </button>
+        <span className="text-[14px] font-bold text-[#111111] dark:text-white">{UZ_MONTHS[month]} {year}</span>
+        <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+          <ChevronRight size={16} className="text-[#9ca3af]" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {UZ_DAYS.map(d => (
+          <div key={d} className="text-center text-[11px] font-bold text-[#9ca3af] py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-1">
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />;
+          const iso = toIso(day);
+          const isSelected = iso === selected;
+          const isToday    = iso === todayIso;
+          return (
+            <button key={i} onClick={() => onSelect(iso)}
+              className={cn(
+                'h-9 w-full rounded-lg text-[13px] font-semibold transition-all',
+                isSelected ? 'bg-[#00c853] text-white' :
+                isToday    ? 'border border-[#00c853] text-[#00c853]' :
+                             'text-[#111111] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+              )}>
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function getToken() {
@@ -24,10 +94,25 @@ export default function ClothingPage() {
   const [activeCategory, setActiveCategory] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLElement>(null);
   const [favIds, setFavIds] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<Set<string>>(new Set());
+
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
+  const [minDiscount, setMinDiscount] = useState('');
+  const [createdFrom, setCreatedFrom] = useState('');
+  const [calOpen, setCalOpen] = useState(false);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeFilterCount =
+    (minPrice ? 1 : 0) +
+    (maxPrice ? 1 : 0) +
+    (sizeFilter ? 1 : 0) +
+    (minDiscount ? 1 : 0) +
+    (createdFrom ? 1 : 0);
 
   useEffect(() => {
     const token = getToken();
@@ -72,47 +157,178 @@ export default function ClothingPage() {
       .then((json) => setCategories(json.data?.categories ?? json.categories ?? []));
   }, []);
 
-  useEffect(() => {
+  const doFetch = useCallback((params: {
+    query: string; category: string;
+    minPrice: string; maxPrice: string; sizeFilter: string; minDiscount: string; createdFrom: string;
+  }) => {
     setLoading(true);
-    const params = new URLSearchParams({ limit: '60' });
-    if (activeCategory) params.set('category', activeCategory);
-    if (query.trim()) params.set('search', query.trim());
-    fetch(`/api/products?${params}`)
+    const p = new URLSearchParams({ limit: '80' });
+    if (params.category) p.set('category', params.category);
+    if (params.query.trim()) p.set('search', params.query.trim());
+    if (params.minPrice) p.set('min_price', params.minPrice);
+    if (params.maxPrice) p.set('max_price', params.maxPrice);
+    if (params.sizeFilter) p.set('size', params.sizeFilter);
+    if (params.minDiscount) p.set('min_discount', params.minDiscount);
+    if (params.createdFrom) p.set('created_from', params.createdFrom);
+    fetch(`/api/products?${p}`)
       .then((r) => r.json())
-      .then((json) => {
-        setProducts(json.data?.products ?? json.products ?? []);
-        setLoading(false);
-      })
+      .then((json) => { setProducts(json.data?.products ?? json.products ?? []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [activeCategory, query]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05 });
-    obs.observe(el);
-    return () => obs.disconnect();
   }, []);
 
+  const triggerFetch = useCallback((immediate = false) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const go = () => doFetch({ query, category: activeCategory, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
+    if (immediate) go();
+    else debounceRef.current = setTimeout(go, 400);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, activeCategory, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, doFetch]);
+
+  useEffect(() => {
+    triggerFetch(false);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [triggerFetch]);
+
+  const clearFilters = () => {
+    setMinPrice(''); setMaxPrice(''); setSizeFilter('');
+    setMinDiscount(''); setCreatedFrom(''); setCalOpen(false);
+  };
+
   return (
-    <section ref={ref as React.RefObject<HTMLElement>} className={`mx-auto max-w-[1280px] px-6 md:px-10 py-12 md:py-16 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+    <section className="mx-auto max-w-[1280px] px-6 md:px-10 py-12 md:py-16">
       <div className="mb-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Barcha mahsulotlar</p>
         <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">Mahsulotlar</h1>
       </div>
 
-      <div className="mb-5">
-        <div className="flex h-11 items-center gap-2.5 rounded-full border border-black/10 bg-white px-4 dark:border-white/10 dark:bg-[#1a1a1a]">
-          <Search size={16} className="text-[#9ca3af]" />
+      {/* Search + filter */}
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1 min-w-0">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Mahsulot qidirish..."
-            className="h-full w-full bg-transparent text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:text-white"
+            className="h-11 w-full rounded-full border border-black/10 bg-white pl-10 pr-10 text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white focus:ring-2 ring-[#00c853]/20"
           />
+          {query && (
+            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-black/5 rounded-full">
+              <X size={13} className="text-[#9ca3af]" />
+            </button>
+          )}
         </div>
+        <button
+          onClick={() => setFilterOpen(o => !o)}
+          className={cn(
+            'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
+            filterOpen || activeFilterCount > 0
+              ? 'bg-[#00c853] border-[#00c853] text-white'
+              : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-[#9ca3af] hover:border-[#00c853]/40'
+          )}
+        >
+          <SlidersHorizontal size={18} />
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
+      {/* Filter dropdown */}
+      {filterOpen && (
+        <div className="mb-6 bg-white dark:bg-[#1a1a1a] rounded-[20px] border border-black/8 dark:border-white/8 p-5 space-y-5">
+          {/* Date from */}
+          <div>
+            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Yaratilgan sana (dan)</p>
+            {createdFrom ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00c853]/10 border border-[#00c853]/20 text-[13px] font-semibold text-[#008d3a] dark:text-[#00c853]">
+                  <CalendarDays size={14} />
+                  {formatDateLabel(createdFrom)} dan
+                </span>
+                <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5">
+                  <X size={12} className="text-[#9ca3af]" />
+                </button>
+                <button onClick={() => setCalOpen(o => !o)}
+                  className="text-[12px] font-semibold text-[#9ca3af] hover:text-[#111111] dark:hover:text-white underline">
+                  O&apos;zgartirish
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setCalOpen(o => !o)}
+                className={cn('flex items-center gap-2 px-4 py-1.5 rounded-full border text-[13px] font-semibold transition-all',
+                  calOpen
+                    ? 'bg-[#00c853] text-white border-[#00c853]'
+                    : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                )}>
+                <CalendarDays size={15} />
+                Sana tanlash
+              </button>
+            )}
+            {calOpen && (
+              <div className="mt-3">
+                <MiniCalendar
+                  selected={createdFrom}
+                  onSelect={iso => { setCreatedFrom(iso); setCalOpen(false); }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Price range */}
+          <div>
+            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Narx oralig&apos;i (so&apos;m)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min narx"
+                type="number"
+                className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
+              <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Max narx"
+                type="number"
+                className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
+            </div>
+          </div>
+
+          {/* Size */}
+          <div>
+            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">O&apos;lcham</p>
+            <div className="flex flex-wrap gap-2">
+              {SIZES.map(s => (
+                <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
+                  className={cn('h-10 px-3 rounded-xl text-[13px] font-bold border transition-all',
+                    sizeFilter === s
+                      ? 'bg-[#00c853] text-white border-[#00c853]'
+                      : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                  )}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Min discount + clear */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Aksiya (kamida %)</p>
+              <div className="flex items-center gap-2">
+                <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
+                  type="number" min="1" max="99" placeholder="20"
+                  className="h-10 w-24 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
+                <span className="text-[13px] text-[#9ca3af]">% va undan ko&apos;p chegirma</span>
+              </div>
+            </div>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters}
+                className="px-4 py-2 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all self-end">
+                Tozalash
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Category chips */}
       {categories.length > 0 && (
         <div className="no-scrollbar mb-8 flex flex-nowrap gap-2 overflow-x-auto pb-1">
           <button
@@ -134,16 +350,8 @@ export default function ClothingPage() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 animate-pulse dark:border-white/5 dark:bg-[#1a1a1a]">
-              <div className="aspect-[3/4] rounded-2xl bg-black/8 dark:bg-white/8" />
-              <div className="mt-3 space-y-2 px-1">
-                <div className="h-3 w-2/3 rounded-full bg-black/8" />
-                <div className="h-4 w-1/2 rounded-full bg-black/8" />
-              </div>
-            </div>
-          ))}
+        <div className="flex justify-center py-24">
+          <Loader2 size={32} className="animate-spin text-[#00c853]" />
         </div>
       ) : products.length === 0 ? (
         <div className="py-24 text-center">

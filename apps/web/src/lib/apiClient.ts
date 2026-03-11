@@ -105,13 +105,15 @@ export async function fetchProductById(id: string): Promise<ApiProductDetail> {
 export async function fetchProducts(params?: {
     category?: string;
     search?: string;
-    sort?: 'newest' | 'popular' | 'price_asc' | 'price_desc';
+    sort?: 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc';
     limit?: number;
     page?: number;
     min_price?: number;
     max_price?: number;
-    on_sale?: boolean;
+    min_discount?: number;
     size?: string;
+    created_from?: string;
+    created_to?: string;
 }): Promise<{ products: ApiProduct[]; pagination: Pagination }> {
     const p: Record<string, string> = {
         limit: String(params?.limit ?? 50),
@@ -122,8 +124,10 @@ export async function fetchProducts(params?: {
     if (params?.sort) p.sort = params.sort;
     if (params?.min_price != null) p.min_price = String(params.min_price);
     if (params?.max_price != null) p.max_price = String(params.max_price);
-    if (params?.on_sale) p.on_sale = 'true';
+    if (params?.min_discount != null) p.min_discount = String(params.min_discount);
     if (params?.size) p.size = params.size;
+    if (params?.created_from) p.created_from = params.created_from;
+    if (params?.created_to) p.created_to = params.created_to;
     return apiGet('/products', p);
 }
 

@@ -463,15 +463,21 @@ export default function MyProductsPage() {
                   />
                   {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                 </label>
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">O'lcham</span>
-                  <input
-                    value={form.size}
-                    onChange={(e) => setForm((p) => ({ ...p, size: e.target.value }))}
-                    className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                    placeholder="S, M, L, XL ..."
-                  />
-                </label>
+                <div>
+                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">O&apos;lcham</span>
+                  <div className="flex flex-wrap gap-2">
+                    {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, size: p.size === s ? '' : s }))}
+                        className={`h-9 px-3 rounded-xl text-[13px] font-bold border transition-all ${form.size === s ? 'bg-[#00c853] text-[#06200f] border-[#00c853]' : 'bg-[#f8f9fb] text-[#6b7280] border-black/12 hover:border-[#00c853]/50 dark:bg-[#111111] dark:text-[#9ca3af] dark:border-white/10'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Asl narx (so&apos;m) *</span>
                   <input

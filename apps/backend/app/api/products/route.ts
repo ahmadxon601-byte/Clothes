@@ -11,14 +11,16 @@ export async function GET(req: NextRequest) {
   try {
     const s = req.nextUrl.searchParams;
     const sortParam = s.get("sort") ?? "newest";
-    const sort = ["popular", "price_asc", "price_desc"].includes(sortParam) ? sortParam : "newest";
+    const sort = ["popular", "price_asc", "price_desc", "oldest"].includes(sortParam) ? sortParam : "newest";
     const categoryId = s.get("category");
     const storeId = s.get("store_id");
     const search = s.get("search")?.trim() || null;
     const minPrice = s.get("min_price") ? Number(s.get("min_price")) : null;
     const maxPrice = s.get("max_price") ? Number(s.get("max_price")) : null;
-    const onSale = s.get("on_sale") === "true";
+    const minDiscount = s.get("min_discount") ? Number(s.get("min_discount")) : null;
     const sizeFilter = s.get("size")?.trim() || null;
+    const createdFrom = s.get("created_from")?.trim() || null;
+    const createdTo   = s.get("created_to")?.trim()   || null;
     const { page, limit, offset } = paginate(s.get("page"), s.get("limit"));
 
     const conditions: string[] = ["p.is_active = TRUE", "st.is_active = TRUE"];
@@ -45,19 +47,29 @@ export async function GET(req: NextRequest) {
       params.push(maxPrice);
       conditions.push(`p.base_price <= $${params.length}`);
     }
-    if (onSale) {
-      conditions.push(`EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.price < p.base_price)`);
+    if (minDiscount !== null && !isNaN(minDiscount) && minDiscount > 0) {
+      params.push(minDiscount);
+      conditions.push(`EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND p.base_price > 0 AND (1.0 - pv.price::numeric / p.base_price) * 100 >= $${params.length})`);
     }
     if (sizeFilter) {
       params.push(sizeFilter);
       conditions.push(`EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.size ILIKE $${params.length})`);
     }
+    if (createdFrom) {
+      params.push(createdFrom);
+      conditions.push(`p.created_at >= $${params.length}::date`);
+    }
+    if (createdTo) {
+      params.push(createdTo);
+      conditions.push(`p.created_at < $${params.length}::date + interval '1 day'`);
+    }
 
     const where = conditions.join(" AND ");
     const orderBy =
-      sort === "popular" ? "p.views DESC, p.created_at DESC" :
-      sort === "price_asc" ? "p.base_price ASC, p.created_at DESC" :
+      sort === "popular"    ? "p.views DESC, p.created_at DESC" :
+      sort === "price_asc"  ? "p.base_price ASC, p.created_at DESC" :
       sort === "price_desc" ? "p.base_price DESC, p.created_at DESC" :
+      sort === "oldest"     ? "p.created_at ASC" :
       "p.created_at DESC";
 
     // total count

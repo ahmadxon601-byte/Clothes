@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Package, Plus, Trash2, Edit3, Eye, Loader2, Image as ImageIcon, X } from 'lucide-react';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/lib/apiClient';
@@ -103,8 +103,6 @@ export default function ProfileProductsPage() {
     const [editCategoryId, setEditCategoryId] = useState('');
     const [editImages, setEditImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
 
-    const fileRef = useRef<HTMLInputElement>(null);
-    const editFileRef = useRef<HTMLInputElement>(null);
 
     const fetchAll = async () => {
         const token = getApiToken();
@@ -294,15 +292,14 @@ export default function ProfileProductsPage() {
     );
 
     // ── Image strip component (reused in create/edit) ──
-    const ImageStrip = ({ imgs, onRemove, onAdd, fileInputRef }: {
+    const ImageStrip = ({ imgs, onRemove, onAdd, inputId }: {
         imgs: { preview: string }[];
         onRemove: (i: number) => void;
         onAdd: (f: File) => void;
-        fileInputRef: React.RefObject<HTMLInputElement | null>;
+        inputId: string;
     }) => (
         <div className="space-y-2">
             {imgs.length > 0 && (
-                // First image: full-width, screen-width-fitted
                 <div className="relative w-full aspect-[3/4] rounded-[20px] overflow-hidden bg-[var(--color-surface2)] border border-[var(--color-border)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imgs[0].preview} alt="" className="w-full h-full object-contain bg-[var(--color-surface2)]" />
@@ -321,15 +318,15 @@ export default function ProfileProductsPage() {
                         </button>
                     </div>
                 ))}
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-1"
+                <label
+                    htmlFor={inputId}
+                    className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-1 cursor-pointer active:opacity-70"
                 >
                     <ImageIcon size={18} className="text-[var(--color-hint)]" />
                     <span className="text-[10px] text-[var(--color-hint)]">Rasm</span>
-                </button>
+                </label>
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => {
+            <input id={inputId} type="file" accept="image/*" multiple className="hidden" onChange={e => {
                 Array.from(e.target.files ?? []).forEach(f => onAdd(f));
                 e.target.value = '';
             }} />
@@ -356,7 +353,7 @@ export default function ProfileProductsPage() {
                             imgs={images}
                             onRemove={i => setImages(prev => prev.filter((_, idx) => idx !== i))}
                             onAdd={f => addImageToList(f, 'create')}
-                            fileInputRef={fileRef}
+                            inputId="tg-img-create"
                         />
                         <div>
                             <input
@@ -367,12 +364,18 @@ export default function ProfileProductsPage() {
                             />
                             {createErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                         </div>
-                        <input
-                            value={size}
-                            onChange={e => setSize(e.target.value)}
-                            placeholder="O'lcham (S, M, L, XL ...)"
-                            className={`${inputCls} border-[var(--color-border)]`}
-                        />
+                        <div>
+                            <p className="mb-2 text-[12px] font-semibold text-[var(--color-hint)]">O&apos;lcham</p>
+                            <div className="flex flex-wrap gap-2">
+                                {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
+                                    <button key={s} type="button"
+                                        onClick={() => setSize(prev => prev === s ? '' : s)}
+                                        className={`h-9 px-3 rounded-xl text-[12px] font-bold border transition-all ${size === s ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'}`}>
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div>
                             <input
                                 value={originalPrice}
@@ -484,7 +487,7 @@ export default function ProfileProductsPage() {
                             imgs={editImages}
                             onRemove={i => setEditImages(prev => prev.filter((_, idx) => idx !== i))}
                             onAdd={f => addImageToList(f, 'edit')}
-                            fileInputRef={editFileRef}
+                            inputId="tg-img-edit"
                         />
                         <div>
                             <input
@@ -495,12 +498,18 @@ export default function ProfileProductsPage() {
                             />
                             {editErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                         </div>
-                        <input
-                            value={editSize}
-                            onChange={e => setEditSize(e.target.value)}
-                            placeholder="O'lcham (S, M, L, XL ...)"
-                            className={`${inputCls} border-[var(--color-border)]`}
-                        />
+                        <div>
+                            <p className="mb-2 text-[12px] font-semibold text-[var(--color-hint)]">O&apos;lcham</p>
+                            <div className="flex flex-wrap gap-2">
+                                {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
+                                    <button key={s} type="button"
+                                        onClick={() => setEditSize(prev => prev === s ? '' : s)}
+                                        className={`h-9 px-3 rounded-xl text-[12px] font-bold border transition-all ${editSize === s ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'}`}>
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div>
                             <input
                                 value={editOriginalPrice}
