@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Heart, Star } from 'lucide-react';
 import { SITE_ROUTES } from '../../src/shared/config/constants';
 import { fetchProducts } from '../../src/lib/apiClient';
@@ -11,6 +11,7 @@ import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../src/context/WebAuthContext';
 import { AuthModal } from '../../src/shared/ui/AuthModal';
+import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 
 const CATEGORIES = ['All', 'Jackets', 'Shirts', 'Shoes', 'Pants', 'Hoodies', 'Accessories', 'T-Shirts'] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -95,9 +96,13 @@ export default function WebsiteHomePage() {
     const catReveal = useScrollReveal();
     const prodReveal = useScrollReveal();
 
-    useEffect(() => {
+    const loadProducts = useCallback(() => {
         fetchProducts({ limit: 50 }).then(({ products: data }) => setProducts(data)).catch(() => {});
     }, []);
+
+    useEffect(() => { loadProducts(); }, [loadProducts]);
+
+    useSSERefetch(['products', 'banners'], loadProducts);
 
     const featuredProducts = useMemo(() => {
         if (activeCategory === 'All') return products.slice(0, 8);

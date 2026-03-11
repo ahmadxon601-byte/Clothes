@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi, TOKEN_STORAGE_KEY } from '../../../lib/adminApi';
 
@@ -9,40 +9,58 @@ import { adminApi, TOKEN_STORAGE_KEY } from '../../../lib/adminApi';
 // the relevant React Query caches when the server emits a change event.
 export function useAdminSSE() {
   const qc = useQueryClient();
+  const qcRef = useRef(qc);
+  qcRef.current = qc;
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
     if (!token) return;
 
-    const url = `/api/admin/events?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(url);
+    const base = `${window.location.protocol}//${window.location.hostname}:3001`;
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    es.onmessage = (e) => {
-      try {
-        const payload = JSON.parse(e.data) as { type?: string };
-        if (!payload.type || payload.type === 'connected') return;
-
-        // Invalidate the matching cache key
-        const keyMap: Record<string, string[]> = {
-          seller_requests: ['admin', 'applications'],
-          users:           ['admin', 'users'],
-          products:        ['admin', 'products'],
-          stores:          ['admin', 'stores'],
-        };
-        const key = keyMap[payload.type];
-        if (key) {
-          qc.invalidateQueries({ queryKey: key });
-          qc.invalidateQueries({ queryKey: ['admin', 'stats'] });
-        }
-      } catch {}
+    const keyMap: Record<string, string[]> = {
+      seller_requests: ['admin', 'applications'],
+      users:           ['admin', 'users'],
+      products:        ['admin', 'products'],
+      stores:          ['admin', 'stores'],
+      categories:      ['admin', 'categories'],
+      banners:         ['admin', 'banners'],
+      orders:          ['admin', 'orders'],
     };
 
-    es.onerror = () => {
-      // Browser will auto-reconnect; nothing to do
+    const connect = () => {
+      if (es) { try { es.close(); } catch {} }
+      es = new EventSource(`${base}/api/admin/events?token=${encodeURIComponent(token)}`);
+
+      es.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data) as { type?: string };
+          if (!payload.type || payload.type === 'connected') return;
+          const key = keyMap[payload.type];
+          if (key) {
+            qcRef.current.invalidateQueries({ queryKey: key });
+            qcRef.current.invalidateQueries({ queryKey: ['admin', 'stats'] });
+            qcRef.current.invalidateQueries({ queryKey: ['admin', 'audit-logs'] });
+          }
+        } catch {}
+      };
+
+      es.onerror = () => {
+        try { es?.close(); } catch {}
+        es = null;
+        reconnectTimer = setTimeout(connect, 3000);
+      };
     };
 
-    return () => es.close();
-  }, [qc]);
+    connect();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      try { es?.close(); } catch {}
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 export function useAdminStats() {

@@ -27,6 +27,7 @@ import { useTheme } from 'next-themes';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useAdminI18n } from '../../context/AdminI18nContext';
 import { cn } from '../../shared/lib/utils';
+import { useAdminSSE } from './components/hooks';
 
 export type NavItem = {
   href: string;
@@ -155,6 +156,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useAdminAuth();
+  useAdminSSE();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useAdminI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);

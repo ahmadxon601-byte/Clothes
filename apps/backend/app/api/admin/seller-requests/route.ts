@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
     const total = parseInt(countResult.rows[0].count);
 
     const dataResult = await query(
-      `SELECT sr.*, u.name AS user_name, u.email AS user_email
+      `SELECT sr.id, sr.store_name, sr.store_description, sr.owner_name,
+              sr.phone, sr.address AS store_address, sr.status,
+              sr.admin_note, sr.created_at, sr.updated_at, sr.image_url,
+              u.name AS user_name, u.email AS user_email
        FROM seller_requests sr
        JOIN users u ON u.id = sr.user_id
        ${whereClause}

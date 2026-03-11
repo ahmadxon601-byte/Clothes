@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, Edit3, MapPin, Phone, Trash2, X, Loader2, Clock, XCircle, CheckCircle2 } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
+import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 
 const MapPickerLeaflet = dynamic(
     () => import('../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
@@ -56,6 +58,12 @@ export default function MyStorePage() {
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
     const [form, setForm] = useState({ name: '', description: '', phone: '', address: '' });
+    const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
+    const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
+        open: false,
+        message: '',
+        onConfirm: () => {},
+    });
 
     const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
 
@@ -81,6 +89,8 @@ export default function MyStorePage() {
         if (!authLoading && user) fetchAll();
     }, [authLoading, user, router, fetchAll]);
 
+    useSSERefetch(['stores', 'seller_requests'], fetchAll);
+
     const openEdit = (store: StoreData) => {
         setForm({
             name: store.name,
@@ -89,12 +99,17 @@ export default function MyStorePage() {
             address: store.address ?? '',
         });
         setError('');
+        setFormErrors({});
         setEditingStore(store);
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingStore) return;
+        const errors: Record<string, boolean> = {};
+        if (!form.name.trim()) errors.name = true;
+        if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
+        setFormErrors({});
         setError('');
         setSaving(true);
         try {
@@ -135,6 +150,23 @@ export default function MyStorePage() {
         }
     };
 
+    const handleDeleteRequest = async (reqId: string) => {
+        setConfirmDialog({
+            open: true,
+            message: "Arizani o'chirishni tasdiqlaysizmi?",
+            onConfirm: async () => {
+                setConfirmDialog(d => ({ ...d, open: false }));
+                try {
+                    await fetch(`/api/stores/request?id=${reqId}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                    });
+                    await fetchAll();
+                } catch { /* ignore */ }
+            },
+        });
+    };
+
     if (authLoading || dataLoading) {
         return (
             <div className="flex min-h-[60vh] items-center justify-center">
@@ -148,6 +180,12 @@ export default function MyStorePage() {
 
     return (
         <section className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12 space-y-5">
+            <ConfirmDialog
+                open={confirmDialog.open}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
+            />
 
             {/* Page title */}
             <div>
@@ -266,6 +304,9 @@ export default function MyStorePage() {
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-bold text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400">
                                 ⏳ Kutilmoqda
                             </span>
+                            <button onClick={() => handleDeleteRequest(req.id)} className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors">
+                                <Trash2 size={14} />
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -289,6 +330,9 @@ export default function MyStorePage() {
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-600 dark:bg-red-500/20 dark:text-red-400">
                                 Rad etildi
                             </span>
+                            <button onClick={() => handleDeleteRequest(req.id)} className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors">
+                                <Trash2 size={14} />
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -329,20 +373,25 @@ export default function MyStorePage() {
                             <h2 className="text-[22px] font-black text-[#111111] dark:text-white">Do'konni Tahrirlash</h2>
                             <p className="mt-0.5 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{editingStore.name}</p>
                             <form onSubmit={handleUpdate} className="mt-5 grid gap-3">
-                                {[
-                                    { key: 'name', label: "Do'kon nomi" },
-                                    { key: 'phone', label: 'Telefon' },
-                                ].map(({ key, label }) => (
-                                    <label key={key} className="grid gap-1.5">
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{label}</span>
-                                        <input
-                                            value={form[key as keyof typeof form]}
-                                            onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                                            className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                            disabled={saving}
-                                        />
-                                    </label>
-                                ))}
+                                <label className="grid gap-1.5">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Do&apos;kon nomi</span>
+                                    <input
+                                        value={form.name}
+                                        onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); if (formErrors.name) setFormErrors(p => ({ ...p, name: false })); }}
+                                        className={`h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white ${formErrors.name ? 'border-red-500' : 'border-black/12 dark:border-white/10'}`}
+                                        disabled={saving}
+                                    />
+                                    {formErrors.name && <p className="text-[12px] text-red-500">Do&apos;kon nomi majburiy</p>}
+                                </label>
+                                <label className="grid gap-1.5">
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Telefon</span>
+                                    <input
+                                        value={form.phone}
+                                        onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                                        className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                                        disabled={saving}
+                                    />
+                                </label>
                                 {/* Address with embedded map */}
                                 <div className="grid gap-1.5">
                                     <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Manzil (xaritadan tanlang)</span>

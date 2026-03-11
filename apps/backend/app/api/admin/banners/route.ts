@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
+import { emitAdminEvent } from "@/src/lib/events";
 
 const bannerSchema = z.object({
   title: z.string().min(1).max(255),
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
 
     const banner = rows[0];
     logAction({ admin, action: "create", entity: "banner", entityId: banner.id, details: { title } });
+    emitAdminEvent({ type: "banners", action: "created" });
 
     return ok({ banner }, 201);
   } catch (e) {

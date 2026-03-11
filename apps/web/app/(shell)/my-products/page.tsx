@@ -5,6 +5,8 @@ import { Camera, Edit3, Loader2, Package, Plus, Trash2, X, Eye, EyeOff, External
 import Link from 'next/link';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
+import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 
 interface Product {
   id: string;
@@ -65,6 +67,7 @@ export default function MyProductsPage() {
   const [formImages, setFormImages] = useState<string[]>([]);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [formError, setFormError] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
   const loadProducts = async () => {
@@ -109,10 +112,13 @@ export default function MyProductsPage() {
     }
   }, [user, loading]);
 
+  useSSERefetch(['products'], loadProducts);
+
   const openCreate = () => {
     setForm({ name: '', base_price: '', description: '', category_id: '', store_id: stores[0]?.id ?? '' });
     setFormImages([]);
     setFormError('');
+    setFormErrors({});
     setEditProduct(null);
     setCreateOpen(true);
   };
@@ -127,6 +133,7 @@ export default function MyProductsPage() {
     });
     setFormImages(p.thumbnail ? [p.thumbnail] : []);
     setFormError('');
+    setFormErrors({});
     setEditProduct(p);
     setCreateOpen(true);
   };
@@ -156,8 +163,11 @@ export default function MyProductsPage() {
 
   const handleSave = async () => {
     setFormError('');
-    if (!form.name.trim()) { setFormError("Nomi kiritilmadi"); return; }
-    if (!form.base_price || isNaN(Number(form.base_price))) { setFormError("Narx noto'g'ri"); return; }
+    const errors: Record<string, boolean> = {};
+    if (!form.name.trim()) errors.name = true;
+    if (!form.base_price || isNaN(Number(form.base_price)) || Number(form.base_price) <= 0) errors.price = true;
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
+    setFormErrors({});
     setSaving(true);
     try {
       let res: Response;
@@ -256,6 +266,7 @@ export default function MyProductsPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-12">
+      {/* ConfirmDialog placeholder — delete uses its own modal in this page */}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -401,21 +412,23 @@ export default function MyProductsPage() {
                   <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Nomi</span>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                    onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); if (formErrors.name) setFormErrors(p => ({ ...p, name: false })); }}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:bg-[#111111] dark:text-white ${formErrors.name ? 'border-red-500' : 'border-black/12 dark:border-white/10'}`}
                     placeholder="Masalan: Erkaklar ko'ylagi"
                   />
+                  {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Narxi (so'm)</span>
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Narxi (so&apos;m)</span>
                   <input
                     type="number"
                     min="0"
                     value={form.base_price}
-                    onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))}
-                    className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                    onChange={(e) => { setForm((p) => ({ ...p, base_price: e.target.value })); if (formErrors.price) setFormErrors(p => ({ ...p, price: false })); }}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:bg-[#111111] dark:text-white ${formErrors.price ? 'border-red-500' : 'border-black/12 dark:border-white/10'}`}
                     placeholder="50000"
                   />
+                  {formErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Kategoriya</span>

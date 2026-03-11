@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError, paginate } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
 
 // GET /api/orders — list user's orders
 export async function GET(req: NextRequest) {
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
       ]);
 
       await client.query("COMMIT");
+      emitAdminEvent({ type: "orders", action: "created" });
       return ok(order, 201);
     } catch (e) {
       await client.query("ROLLBACK");

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, X, Store as StoreIcon, Package, Loader2 } from 'lucide-react';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 
 interface StoreItem {
     id: string;
@@ -41,6 +42,8 @@ export default function TgStoresPage() {
         const t = setTimeout(() => loadStores(searchInput || undefined), 400);
         return () => clearTimeout(t);
     }, [searchInput]);
+
+    useSSERefetch(['stores'], () => loadStores(searchInput || undefined));
 
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-4 py-3">

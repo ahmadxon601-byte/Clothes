@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -135,6 +136,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
 
       await client.query("COMMIT");
+      emitAdminEvent({ type: "products", action: "updated" });
       return ok({ product });
     } catch (e) {
       await client.query("ROLLBACK");
@@ -171,6 +173,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
     if (result.rows.length === 0) return fail("Product not found", 404);
 
+    emitAdminEvent({ type: "products", action: "deleted" });
     return ok({ message: "Product deleted" });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
+import { emitAdminEvent } from "@/src/lib/events";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -51,6 +52,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     if (rows.length === 0) return fail("Banner not found", 404);
     logAction({ admin, action: "update", entity: "banner", entityId: id, details: parsed.data });
+    emitAdminEvent({ type: "banners", action: "updated" });
 
     return ok({ banner: rows[0] });
   } catch (e) {
@@ -73,6 +75,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (rows.length === 0) return fail("Banner not found", 404);
 
     logAction({ admin, action: "delete", entity: "banner", entityId: id, details: { title: rows[0].title } });
+    emitAdminEvent({ type: "banners", action: "deleted" });
     return ok({ message: "Banner deleted" });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

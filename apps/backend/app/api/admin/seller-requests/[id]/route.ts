@@ -72,7 +72,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
       await client.query("COMMIT");
       emitAdminEvent({ type: "seller_requests", action: "updated" });
-      if (action === "approve") emitAdminEvent({ type: "stores", action: "updated" });
+      emitAdminEvent({ type: "stores", action: "updated" });
       logAction({ admin, action, entity: "seller_request", entityId: id, details: { note, newStatus } });
       return ok({ message: `Request ${newStatus}` });
     } catch (e) {

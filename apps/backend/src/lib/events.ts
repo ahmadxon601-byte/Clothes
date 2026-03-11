@@ -14,10 +14,13 @@ if (!globalThis._adminEvents) {
 }
 
 export type AdminEventPayload =
-  | { type: "users"; action: "created" | "deleted" }
+  | { type: "users"; action: "created" | "updated" | "deleted" }
   | { type: "seller_requests"; action: "created" | "updated" }
   | { type: "products"; action: "created" | "updated" | "deleted" }
-  | { type: "stores"; action: "updated" | "deleted" };
+  | { type: "stores"; action: "created" | "updated" | "deleted" }
+  | { type: "categories"; action: "created" | "updated" | "deleted" }
+  | { type: "banners"; action: "created" | "updated" | "deleted" }
+  | { type: "orders"; action: "created" | "updated" };
 
 export function emitAdminEvent(payload: AdminEventPayload): void {
   adminEvents.emit("event", payload);

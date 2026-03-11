@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
 
 // ── GET /api/products ────────────────────────────────────────────────────────
 // Query params: sort (newest|popular), category, search, store_id, page, limit
@@ -201,6 +202,7 @@ export async function POST(req: NextRequest) {
       }
 
       await client.query("COMMIT");
+      emitAdminEvent({ type: "products", action: "created" });
       return ok({ product }, 201);
     } catch (e) {
       await client.query("ROLLBACK");

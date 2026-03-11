@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, X, Heart, Loader2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { fetchProducts, fetchCategories, toggleFavorite, getApiToken, type ApiPr
 import { TELEGRAM_ROUTES } from '../../src/shared/config/constants';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { cn } from '../../src/shared/lib/utils';
+import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 
 export default function TgHomePage() {
     const router = useRouter();
@@ -18,7 +19,7 @@ export default function TgHomePage() {
     const [loading, setLoading] = useState(true);
     const [favs, setFavs] = useState<Set<string>>(new Set());
 
-    useEffect(() => {
+    const loadData = useCallback(() => {
         Promise.all([
             fetchProducts({ limit: 100 }),
             fetchCategories(),
@@ -27,6 +28,10 @@ export default function TgHomePage() {
             setCategories(c);
         }).catch(() => {}).finally(() => setLoading(false));
     }, []);
+
+    useEffect(() => { loadData(); }, [loadData]);
+
+    useSSERefetch(['products', 'stores'], loadData);
 
     const filtered = useMemo(() => {
         let list = products;

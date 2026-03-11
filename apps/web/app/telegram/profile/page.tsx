@@ -37,10 +37,19 @@ export default function TelegramProfilePage() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Load token from localStorage
+    // Load token from localStorage, and silently refresh if initData is available
     useEffect(() => {
-        setToken(getApiToken());
-    }, []);
+        if (!isReady) return;
+        const initData = WebApp?.initData;
+        if (initData) {
+            // Always refresh token from Telegram initData to get latest role
+            telegramWebAppAuth(initData)
+                .then(newToken => { setApiToken(newToken); setToken(newToken); })
+                .catch(() => setToken(getApiToken()));
+        } else {
+            setToken(getApiToken());
+        }
+    }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Fetch /api/auth/me when token changes
     useEffect(() => {

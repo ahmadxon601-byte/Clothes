@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
+import { emitAdminEvent } from "@/src/lib/events";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -75,6 +76,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       `UPDATE stores SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, name, description, phone, address, image_url, created_at`,
       values
     );
+    emitAdminEvent({ type: "stores", action: "updated" });
     return ok({ store: result.rows[0] });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
@@ -102,6 +104,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (jwtUser.role === "seller") {
       await query("UPDATE users SET role = 'user', updated_at = NOW() WHERE id = $1", [jwtUser.userId]);
     }
+    emitAdminEvent({ type: "stores", action: "deleted" });
     return ok({ message: "Store deactivated" });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

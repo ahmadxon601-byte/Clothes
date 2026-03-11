@@ -10,6 +10,7 @@ import { SITE_ROUTES } from '../../../src/shared/config/constants';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 
 const CATEGORIES = ['All', 'Shirts', 'Shoes', 'Pants', 'Jackets', 'Accessories'] as const;
 
@@ -57,6 +58,8 @@ export default function FavoritesPage() {
         if (!authLoading) fetchFavorites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authLoading, user]);
+
+    useSSERefetch(['products'], fetchFavorites);
 
     const toggleFav = async (productId: string) => {
         if (!user) { setAuthModal(true); return; }

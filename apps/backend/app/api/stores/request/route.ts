@@ -86,3 +86,29 @@ export async function POST(req: NextRequest) {
     return fail("Internal server error", 500);
   }
 }
+
+// ── DELETE /api/stores/request?id=<requestId>  (auth required, own request only) ──
+export async function DELETE(req: NextRequest) {
+  try {
+    const jwtUser = requireAuth(req);
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) return fail("id required", 400);
+
+    const result = await query(
+      `DELETE FROM seller_requests
+       WHERE id = $1 AND user_id = $2 AND status != 'approved'
+       RETURNING id`,
+      [id, jwtUser.userId]
+    );
+
+    if (result.rows.length === 0)
+      return fail("Ariza topilmadi yoki o'chirib bo'lmaydi", 404);
+
+    emitAdminEvent({ type: "seller_requests", action: "updated" });
+    return ok({ message: "Ariza o'chirildi" });
+  } catch (e) {
+    if (e instanceof AuthError) return fail(e.message, e.status);
+    console.error("[stores/request DELETE]", e);
+    return fail("Internal server error", 500);
+  }
+}
