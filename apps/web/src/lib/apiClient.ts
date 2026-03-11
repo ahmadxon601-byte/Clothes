@@ -103,19 +103,28 @@ export async function fetchProductById(id: string): Promise<ApiProductDetail> {
 }
 
 export async function fetchProducts(params?: {
-    category?: string;   // category UUID
+    category?: string;
     search?: string;
-    sort?: 'newest' | 'popular';
+    sort?: 'newest' | 'popular' | 'price_asc' | 'price_desc';
     limit?: number;
     page?: number;
+    min_price?: number;
+    max_price?: number;
+    on_sale?: boolean;
+    size?: string;
 }): Promise<{ products: ApiProduct[]; pagination: Pagination }> {
-    return apiGet('/products', {
-        ...(params?.category ? { category: params.category } : {}),
-        ...(params?.search ? { search: params.search } : {}),
-        ...(params?.sort ? { sort: params.sort } : {}),
+    const p: Record<string, string> = {
         limit: String(params?.limit ?? 50),
         page: String(params?.page ?? 1),
-    });
+    };
+    if (params?.category) p.category = params.category;
+    if (params?.search) p.search = params.search;
+    if (params?.sort) p.sort = params.sort;
+    if (params?.min_price != null) p.min_price = String(params.min_price);
+    if (params?.max_price != null) p.max_price = String(params.max_price);
+    if (params?.on_sale) p.on_sale = 'true';
+    if (params?.size) p.size = params.size;
+    return apiGet('/products', p);
 }
 
 // ── Categories ────────────────────────────────────────────────────────────────

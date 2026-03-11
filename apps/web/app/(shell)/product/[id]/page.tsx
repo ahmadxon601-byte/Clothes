@@ -205,9 +205,22 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <h1 className="mt-1.5 text-[28px] font-black leading-tight text-[#111111] dark:text-white md:text-[34px]">
               {product.name}
             </h1>
-            <p className="mt-3 text-[32px] font-black text-[#00c853]">
-              {Number(displayPrice).toLocaleString()} so&apos;m
-            </p>
+            {/* Price block */}
+            <div className="mt-3 flex flex-wrap items-baseline gap-2">
+              <p className="text-[32px] font-black text-[#00c853]">
+                {Number(displayPrice).toLocaleString()} so&apos;m
+              </p>
+              {displayPrice < product.base_price && (
+                <>
+                  <p className="text-[18px] font-semibold text-[#9ca3af] line-through">
+                    {Number(product.base_price).toLocaleString()} so&apos;m
+                  </p>
+                  <span className="inline-flex items-center rounded-full bg-red-500 px-2.5 py-0.5 text-[12px] font-black text-white">
+                    −{Math.round((1 - displayPrice / product.base_price) * 100)}%
+                  </span>
+                </>
+              )}
+            </div>
 
             {product.description && (
               <p className="mt-4 text-[14px] leading-relaxed text-[#6b7280]">

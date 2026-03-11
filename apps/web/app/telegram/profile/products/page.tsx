@@ -69,7 +69,11 @@ export default function ProfileProductsPage() {
 
     // Create form
     const [name, setName] = useState('');
-    const [price, setPrice] = useState('');
+    const [originalPrice, setOriginalPrice] = useState('');
+    const [discount, setDiscount] = useState('');
+    const [currentPrice, setCurrentPrice] = useState('');
+    const [size, setSize] = useState('');
+    const [stock, setStock] = useState('1');
     const [desc, setDesc] = useState('');
     const [storeId, setStoreId] = useState('');
     const [categoryId, setCategoryId] = useState('');
@@ -88,9 +92,13 @@ export default function ProfileProductsPage() {
         onConfirm: () => {},
     });
 
-    // Edit form (reuse same fields)
+    // Edit form
     const [editName, setEditName] = useState('');
-    const [editPrice, setEditPrice] = useState('');
+    const [editOriginalPrice, setEditOriginalPrice] = useState('');
+    const [editDiscount, setEditDiscount] = useState('');
+    const [editCurrentPrice, setEditCurrentPrice] = useState('');
+    const [editSize, setEditSize] = useState('');
+    const [editStock, setEditStock] = useState('1');
     const [editDesc, setEditDesc] = useState('');
     const [editCategoryId, setEditCategoryId] = useState('');
     const [editImages, setEditImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
@@ -133,13 +141,27 @@ export default function ProfileProductsPage() {
 
     useSSERefetch(['products'], fetchAll);
 
+    // Price auto-calculation helpers
+    const calcCurrentPrice = (op: string, disc: string) => {
+        const o = Number(op); const d = Number(disc);
+        if (!o || isNaN(o) || isNaN(d)) return '';
+        return String(Math.round(o * (1 - d / 100)));
+    };
+    const calcDiscount = (op: string, cp: string) => {
+        const o = Number(op); const c = Number(cp);
+        if (!o || !c || isNaN(o) || isNaN(c)) return '';
+        return String(Math.round((1 - c / o) * 100));
+    };
+
     const handleCreate = async () => {
         const errors: Record<string, boolean> = {};
         if (!name.trim()) errors.name = true;
-        if (!price || isNaN(Number(price)) || Number(price) <= 0) errors.price = true;
+        if (!originalPrice || isNaN(Number(originalPrice)) || Number(originalPrice) <= 0) errors.originalPrice = true;
         if (!storeId) errors.store = true;
         if (Object.keys(errors).length > 0) { setCreateErrors(errors); return; }
         setCreateErrors({});
+
+        const finalPrice = currentPrice ? Number(currentPrice) : Number(originalPrice);
 
         setSubmitting(true); setError('');
         try {
@@ -150,15 +172,16 @@ export default function ProfileProductsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
-                    name: name.trim(), base_price: Number(price),
+                    name: name.trim(), base_price: Number(originalPrice),
                     description: desc || undefined, store_id: storeId,
                     category_id: categoryId || undefined, images: uploadedImages,
-                    variants: [{ price: Number(price), stock: 10 }],
+                    variants: [{ size: size || undefined, price: finalPrice, stock: Number(stock) || 1 }],
                 }),
             });
             const json = await res.json();
             if (!res.ok) { setError(json.error ?? 'Xatolik'); return; }
-            setName(''); setPrice(''); setDesc(''); setCategoryId(''); setImages([]);
+            setName(''); setOriginalPrice(''); setDiscount(''); setCurrentPrice('');
+            setSize(''); setStock('1'); setDesc(''); setCategoryId(''); setImages([]);
             await fetchAll();
             setView('list');
         } catch (e) {
@@ -169,16 +192,33 @@ export default function ProfileProductsPage() {
     const handleEditOpen = async (product: MyProduct) => {
         setEditProduct(product);
         setEditName(product.name);
-        setEditPrice(String(product.base_price));
+        setEditOriginalPrice(String(product.base_price));
+        setEditDiscount('');
+        setEditCurrentPrice(String(product.base_price));
+        setEditSize('');
+        setEditStock('1');
         setEditDesc(product.description ?? '');
         setEditCategoryId(product.category_id ?? '');
         setEditErrors({});
-        // Load existing images
+        // Load existing images and variant data
         try {
             const res = await fetch(`/api/products/${product.id}`);
             const json = await res.json();
-            const imgs: { url: string; sort_order: number }[] = json.data?.product?.images ?? json.product?.images ?? [];
-            setEditImages(imgs.sort((a, b) => a.sort_order - b.sort_order).map(i => ({ preview: i.url, url: i.url })));
+            const p = json.data?.product ?? json.product;
+            const imgs: { url: string; sort_order: number }[] = p?.images ?? [];
+            setEditImages(imgs.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order).map((i: { url: string }) => ({ preview: i.url, url: i.url })));
+            const variants: { size?: string; price?: number; stock?: number }[] = p?.variants ?? [];
+            if (variants.length > 0) {
+                const v = variants[0];
+                if (v.size) setEditSize(v.size);
+                if (v.stock != null) setEditStock(String(v.stock));
+                if (v.price != null) {
+                    setEditCurrentPrice(String(v.price));
+                    if (product.base_price && v.price !== product.base_price) {
+                        setEditDiscount(String(Math.round((1 - v.price / product.base_price) * 100)));
+                    }
+                }
+            }
         } catch {
             setEditImages(product.thumbnail ? [{ preview: product.thumbnail, url: product.thumbnail }] : []);
         }
@@ -190,13 +230,14 @@ export default function ProfileProductsPage() {
         if (!editProduct) return;
         const errors: Record<string, boolean> = {};
         if (!editName.trim()) errors.name = true;
-        if (!editPrice || isNaN(Number(editPrice)) || Number(editPrice) <= 0) errors.price = true;
+        if (!editOriginalPrice || isNaN(Number(editOriginalPrice)) || Number(editOriginalPrice) <= 0) errors.originalPrice = true;
         if (Object.keys(errors).length > 0) { setEditErrors(errors); return; }
         setEditErrors({});
 
+        const finalPrice = editCurrentPrice ? Number(editCurrentPrice) : Number(editOriginalPrice);
+
         setSubmitting(true); setError('');
         try {
-            // Upload new images (those with file), keep existing (those with url only)
             const finalImages = await Promise.all(
                 editImages.map(async (img, i) => {
                     if (img.file) {
@@ -210,10 +251,11 @@ export default function ProfileProductsPage() {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
-                    name: editName.trim(), base_price: Number(editPrice),
+                    name: editName.trim(), base_price: Number(editOriginalPrice),
                     description: editDesc || undefined,
                     category_id: editCategoryId || null,
                     images: finalImages,
+                    variants: [{ size: editSize || undefined, price: finalPrice, stock: Number(editStock) || 1 }],
                 }),
             });
             const json = await res.json();
@@ -325,17 +367,69 @@ export default function ProfileProductsPage() {
                             />
                             {createErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                         </div>
+                        <input
+                            value={size}
+                            onChange={e => setSize(e.target.value)}
+                            placeholder="O'lcham (S, M, L, XL ...)"
+                            className={`${inputCls} border-[var(--color-border)]`}
+                        />
                         <div>
                             <input
-                                value={price}
-                                onChange={e => { setPrice(e.target.value); if (createErrors.price) setCreateErrors(p => ({ ...p, price: false })); }}
-                                placeholder="Narx (UZS) *"
+                                value={originalPrice}
+                                onChange={e => {
+                                    const v = e.target.value;
+                                    setOriginalPrice(v);
+                                    if (createErrors.originalPrice) setCreateErrors(p => ({ ...p, originalPrice: false }));
+                                    setCurrentPrice(calcCurrentPrice(v, discount));
+                                }}
+                                placeholder="Asl narx (UZS) *"
                                 type="number"
                                 inputMode="numeric"
-                                className={`${inputCls} ${createErrors.price ? 'border-red-500' : 'border-[var(--color-border)]'}`}
+                                className={`${inputCls} ${createErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
-                            {createErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
+                            {createErrors.originalPrice && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
                         </div>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <input
+                                    value={discount}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        setDiscount(v);
+                                        setCurrentPrice(calcCurrentPrice(originalPrice, v));
+                                    }}
+                                    placeholder="Aksiya %"
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    max="100"
+                                    className={`${inputCls} border-[var(--color-border)]`}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <input
+                                    value={currentPrice}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        setCurrentPrice(v);
+                                        setDiscount(calcDiscount(originalPrice, v));
+                                    }}
+                                    placeholder="Hozir narxi (UZS)"
+                                    type="number"
+                                    inputMode="numeric"
+                                    className={`${inputCls} border-[var(--color-border)]`}
+                                />
+                            </div>
+                        </div>
+                        <input
+                            value={stock}
+                            onChange={e => setStock(e.target.value)}
+                            placeholder="Soni (dona)"
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            className={`${inputCls} border-[var(--color-border)]`}
+                        />
                         <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
                         <div>
                             <select
@@ -401,17 +495,69 @@ export default function ProfileProductsPage() {
                             />
                             {editErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                         </div>
+                        <input
+                            value={editSize}
+                            onChange={e => setEditSize(e.target.value)}
+                            placeholder="O'lcham (S, M, L, XL ...)"
+                            className={`${inputCls} border-[var(--color-border)]`}
+                        />
                         <div>
                             <input
-                                value={editPrice}
-                                onChange={e => { setEditPrice(e.target.value); if (editErrors.price) setEditErrors(p => ({ ...p, price: false })); }}
-                                placeholder="Narx (UZS) *"
+                                value={editOriginalPrice}
+                                onChange={e => {
+                                    const v = e.target.value;
+                                    setEditOriginalPrice(v);
+                                    if (editErrors.originalPrice) setEditErrors(p => ({ ...p, originalPrice: false }));
+                                    setEditCurrentPrice(calcCurrentPrice(v, editDiscount));
+                                }}
+                                placeholder="Asl narx (UZS) *"
                                 type="number"
                                 inputMode="numeric"
-                                className={`${inputCls} ${editErrors.price ? 'border-red-500' : 'border-[var(--color-border)]'}`}
+                                className={`${inputCls} ${editErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
-                            {editErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
+                            {editErrors.originalPrice && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
                         </div>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <input
+                                    value={editDiscount}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        setEditDiscount(v);
+                                        setEditCurrentPrice(calcCurrentPrice(editOriginalPrice, v));
+                                    }}
+                                    placeholder="Aksiya %"
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    max="100"
+                                    className={`${inputCls} border-[var(--color-border)]`}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <input
+                                    value={editCurrentPrice}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        setEditCurrentPrice(v);
+                                        setEditDiscount(calcDiscount(editOriginalPrice, v));
+                                    }}
+                                    placeholder="Hozir narxi (UZS)"
+                                    type="number"
+                                    inputMode="numeric"
+                                    className={`${inputCls} border-[var(--color-border)]`}
+                                />
+                            </div>
+                        </div>
+                        <input
+                            value={editStock}
+                            onChange={e => setEditStock(e.target.value)}
+                            placeholder="Soni (dona)"
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            className={`${inputCls} border-[var(--color-border)]`}
+                        />
                         <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
                         <select value={editCategoryId} onChange={e => setEditCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
                             <option value="">Kategoriya</option>

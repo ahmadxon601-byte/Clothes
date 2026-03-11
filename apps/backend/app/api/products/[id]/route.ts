@@ -63,6 +63,13 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // ── PUT /api/products/[id]  (seller — own products, or admin) ─────────────────
+const updateVariantSchema = z.object({
+  size: z.string().max(20).optional(),
+  color: z.string().max(50).optional(),
+  price: z.number().positive(),
+  stock: z.number().int().min(0),
+});
+
 const updateSchema = z.object({
   name: z.string().min(2).max(255).optional(),
   description: z.string().optional(),
@@ -72,7 +79,15 @@ const updateSchema = z.object({
   images: z
     .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
     .optional(),
+  variants: z.array(updateVariantSchema).optional(),
 });
+
+function genVariantSku(productSku: string, size?: string, color?: string): string {
+  const s = (size ?? "UNI").slice(0, 3).toUpperCase();
+  const c = (color ?? "STD").slice(0, 3).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
+  return `${productSku}-${s}-${c}-${rand}`;
+}
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
@@ -94,7 +109,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const { images, ...rest } = parsed.data;
+    const { images, variants, ...rest } = parsed.data;
 
     const fields: string[] = [];
     const vals: unknown[] = [];
@@ -131,6 +146,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
           await client.query(
             "INSERT INTO product_images (product_id, url, sort_order) VALUES ($1, $2, $3)",
             [id, img.url, img.sort_order]
+          );
+        }
+      }
+
+      if (variants !== undefined) {
+        await client.query("DELETE FROM product_variants WHERE product_id = $1", [id]);
+        const sku = (product as { sku?: string }).sku ?? "PRD";
+        for (const v of variants) {
+          const vSku = genVariantSku(sku, v.size, v.color);
+          await client.query(
+            `INSERT INTO product_variants (product_id, size, color, price, stock, sku) VALUES ($1, $2, $3, $4, $5, $6)`,
+            [id, v.size ?? null, v.color ?? null, v.price, v.stock, vSku]
           );
         }
       }

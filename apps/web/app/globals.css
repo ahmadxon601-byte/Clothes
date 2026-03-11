@@ -8,10 +8,10 @@
     --color-bg: var(--tg-theme-bg-color, #f8f8f8);
     --color-surface: var(--tg-theme-secondary-bg-color, #ffffff);
     --color-surface2: #f2f2f2;
-    --color-text: var(--tg-theme-text-color, #121417);
-    --color-muted: #909499;
-    --color-hint: var(--tg-theme-hint-color, #b0b3b8);
-    --color-border: rgba(0, 0, 0, 0.05);
+    --color-text: var(--tg-theme-text-color, #0d0f12);
+    --color-muted: #5c6068;
+    --color-hint: var(--tg-theme-hint-color, #6b7280);
+    --color-border: rgba(0, 0, 0, 0.08);
     --color-header-bg: rgba(248, 248, 248, 0.56);
     --color-header-border: rgba(0, 0, 0, 0.06);
 
@@ -62,7 +62,7 @@
     --admin-card: #FFFFFF;
     --admin-pill: #F1F3F5;
     --admin-text: #0F172A;
-    --admin-muted: #64748B;
+    --admin-muted: #475569;
     --admin-border: rgba(15, 23, 42, 0.08);
     --admin-accent: #22C55E;
     --admin-accent-hover: #16A34A;

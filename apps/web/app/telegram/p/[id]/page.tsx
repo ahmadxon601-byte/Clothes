@@ -97,23 +97,48 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
             <div className="bg-[var(--color-surface)] -mt-6 rounded-t-[28px] p-5 relative z-10 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
                 <p className="text-[10px] font-bold text-[var(--color-hint)] uppercase tracking-widest">{product.category_name || ''}</p>
                 <h1 className="text-[18px] font-bold text-[var(--color-text)] leading-tight mt-1">{product.name}</h1>
-                <p className="text-[22px] font-black text-[var(--color-primary)] mt-1">{formatPrice(product.base_price, 'UZS')}</p>
+
+                {/* Price block */}
+                {(() => {
+                    const v = product.variants?.[0];
+                    const currentPrice = v?.price ?? product.base_price;
+                    const basePrice = product.base_price;
+                    const hasDiscount = currentPrice < basePrice;
+                    const discountPct = hasDiscount ? Math.round((1 - currentPrice / basePrice) * 100) : 0;
+                    return (
+                        <div className="mt-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[24px] font-black text-[var(--color-primary)]">{formatPrice(currentPrice, 'UZS')}</span>
+                                {hasDiscount && (
+                                    <>
+                                        <span className="text-[14px] text-[var(--color-hint)] line-through">{formatPrice(basePrice, 'UZS')}</span>
+                                        <span className="px-2 py-0.5 bg-red-500 text-white text-[11px] font-bold rounded-full">−{discountPct}%</span>
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {v?.size && (
+                                    <span className="px-3 py-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
+                                        O&apos;lcham: {v.size}
+                                    </span>
+                                )}
+                                {v?.stock != null && (
+                                    <span className={cn(
+                                        'px-3 py-1 rounded-full text-[12px] font-medium border',
+                                        v.stock > 0
+                                            ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20 text-[var(--color-primary)]'
+                                            : 'bg-red-500/10 border-red-500/20 text-red-500'
+                                    )}>
+                                        {v.stock > 0 ? `${v.stock} dona mavjud` : 'Tugagan'}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {product.description && (
                     <p className="mt-4 text-[13px] text-[var(--color-hint)] leading-relaxed">{product.description}</p>
-                )}
-
-                {product.variants?.length > 0 && (
-                    <div className="mt-4">
-                        <p className="text-[12px] font-bold text-[var(--color-text)] mb-2">Variantlar</p>
-                        <div className="flex flex-wrap gap-2">
-                            {product.variants.map(v => (
-                                <span key={v.id} className="px-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
-                                    {[v.size, v.color].filter(Boolean).join(' / ')} — {formatPrice(v.price, 'UZS')}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
                 )}
 
                 {/* Store link */}

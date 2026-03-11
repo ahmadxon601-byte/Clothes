@@ -17,6 +17,7 @@ interface Product {
   views: number;
   created_at: string;
   category_name: string | null;
+  category_id: string | null;
   store_id: string;
   store_name: string;
   thumbnail: string | null;
@@ -60,10 +61,25 @@ export default function MyProductsPage() {
   const [form, setForm] = useState({
     name: '',
     base_price: '',
+    discount: '',
+    current_price: '',
+    size: '',
+    stock: '1',
     description: '',
     category_id: '',
     store_id: '',
   });
+
+  const calcCurrentPrice = (base: string, disc: string) => {
+    const b = Number(base); const d = Number(disc);
+    if (!b || isNaN(b) || isNaN(d)) return '';
+    return String(Math.round(b * (1 - d / 100)));
+  };
+  const calcDiscount = (base: string, cur: string) => {
+    const b = Number(base); const c = Number(cur);
+    if (!b || !c || isNaN(b) || isNaN(c)) return '';
+    return String(Math.round((1 - c / b) * 100));
+  };
   const [formImages, setFormImages] = useState<string[]>([]);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [formError, setFormError] = useState('');
@@ -115,7 +131,7 @@ export default function MyProductsPage() {
   useSSERefetch(['products'], loadProducts);
 
   const openCreate = () => {
-    setForm({ name: '', base_price: '', description: '', category_id: '', store_id: stores[0]?.id ?? '' });
+    setForm({ name: '', base_price: '', discount: '', current_price: '', size: '', stock: '1', description: '', category_id: '', store_id: stores[0]?.id ?? '' });
     setFormImages([]);
     setFormError('');
     setFormErrors({});
@@ -123,12 +139,16 @@ export default function MyProductsPage() {
     setCreateOpen(true);
   };
 
-  const openEdit = (p: Product) => {
+  const openEdit = async (p: Product) => {
     setForm({
       name: p.name,
       base_price: String(p.base_price),
+      discount: '',
+      current_price: String(p.base_price),
+      size: '',
+      stock: '1',
       description: '',
-      category_id: '',
+      category_id: p.category_id ?? '',
       store_id: p.store_id,
     });
     setFormImages(p.thumbnail ? [p.thumbnail] : []);
@@ -136,6 +156,27 @@ export default function MyProductsPage() {
     setFormErrors({});
     setEditProduct(p);
     setCreateOpen(true);
+    // Load variant data
+    try {
+      const res = await fetch(`/api/products/${p.id}`);
+      const json = await res.json();
+      const detail = json.data?.product ?? json.product;
+      const imgs: { url: string; sort_order: number }[] = detail?.images ?? [];
+      if (imgs.length > 0) setFormImages(imgs.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order).map((i: { url: string }) => i.url));
+      const variants: { size?: string; price?: number; stock?: number }[] = detail?.variants ?? [];
+      if (variants.length > 0) {
+        const v = variants[0];
+        setForm(prev => ({
+          ...prev,
+          size: v.size ?? '',
+          stock: v.stock != null ? String(v.stock) : '1',
+          current_price: v.price != null ? String(v.price) : prev.base_price,
+          discount: v.price != null && v.price < p.base_price
+            ? String(Math.round((1 - v.price / p.base_price) * 100))
+            : '',
+        }));
+      }
+    } catch { /* noop */ }
   };
 
   const handleImageUpload = async (files: FileList | null) => {
@@ -169,6 +210,8 @@ export default function MyProductsPage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setFormErrors({});
     setSaving(true);
+    const finalPrice = form.current_price ? Number(form.current_price) : Number(form.base_price);
+    const variantPayload = { variants: [{ size: form.size || undefined, price: finalPrice, stock: Number(form.stock) || 1 }] };
     try {
       let res: Response;
       const imagePayload = formImages.length > 0
@@ -182,8 +225,9 @@ export default function MyProductsPage() {
             name: form.name.trim(),
             base_price: Number(form.base_price),
             ...(form.description.trim() && { description: form.description.trim() }),
-            ...(form.category_id && { category_id: form.category_id }),
+            category_id: form.category_id || null,
             ...imagePayload,
+            ...variantPayload,
           }),
         });
       } else {
@@ -197,6 +241,7 @@ export default function MyProductsPage() {
             ...(form.category_id && { category_id: form.category_id }),
             ...(form.store_id && { store_id: form.store_id }),
             ...imagePayload,
+            ...variantPayload,
           }),
         });
       }
@@ -419,16 +464,71 @@ export default function MyProductsPage() {
                   {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Narxi (so&apos;m)</span>
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">O'lcham</span>
+                  <input
+                    value={form.size}
+                    onChange={(e) => setForm((p) => ({ ...p, size: e.target.value }))}
+                    className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                    placeholder="S, M, L, XL ..."
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Asl narx (so&apos;m) *</span>
                   <input
                     type="number"
                     min="0"
                     value={form.base_price}
-                    onChange={(e) => { setForm((p) => ({ ...p, base_price: e.target.value })); if (formErrors.price) setFormErrors(p => ({ ...p, price: false })); }}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (formErrors.price) setFormErrors(p => ({ ...p, price: false }));
+                      setForm((p) => ({ ...p, base_price: v, current_price: calcCurrentPrice(v, p.discount) }));
+                    }}
                     className={`w-full rounded-xl border px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:bg-[#111111] dark:text-white ${formErrors.price ? 'border-red-500' : 'border-black/12 dark:border-white/10'}`}
                     placeholder="50000"
                   />
                   {formErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Aksiya %</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={form.discount}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setForm((p) => ({ ...p, discount: v, current_price: calcCurrentPrice(p.base_price, v) }));
+                      }}
+                      className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                      placeholder="0"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Hozir narxi</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.current_price}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setForm((p) => ({ ...p, current_price: v, discount: calcDiscount(p.base_price, v) }));
+                      }}
+                      className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                      placeholder="50000"
+                    />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Soni (dona)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.stock}
+                    onChange={(e) => setForm((p) => ({ ...p, stock: e.target.value }))}
+                    className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                    placeholder="1"
+                  />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Kategoriya</span>

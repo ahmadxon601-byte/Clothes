@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     const result = await query(
       `SELECT
-         p.id, p.name, p.base_price, p.sku, p.is_active, p.views, p.created_at,
+         p.id, p.name, p.base_price, p.category_id, p.sku, p.is_active, p.views, p.created_at,
          c.name AS category_name,
          st.id AS store_id, st.name AS store_name,
          (SELECT pi.url FROM product_images pi

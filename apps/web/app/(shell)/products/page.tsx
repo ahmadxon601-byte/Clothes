@@ -1,127 +1,253 @@
-﻿'use client';
+'use client';
 
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ChevronRight, MapPin, Search, Store as StoreIcon } from 'lucide-react';
-import { mockApi } from '../../../src/services/mockServer';
-import type { Product, Store } from '../../../src/shared/types';
-import { useAppRoutes } from '../../../src/shared/config/useAppRoutes';
-import { Skeleton } from '../../../src/shared/ui/Skeleton';
-import { useTranslation } from '../../../src/shared/lib/i18n';
+import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
+import { fetchProducts, fetchCategories, type ApiProduct, type ApiCategory } from '../../../src/lib/apiClient';
 import { cn } from '../../../src/shared/lib/utils';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 
-const CATEGORIES = ['All', 'Jackets', 'Shirts', 'Pants', 'Shoes', 'Accessories'] as const;
-type Category = (typeof CATEGORIES)[number];
+type SortType = 'newest' | 'popular' | 'price_asc' | 'price_desc';
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const SORT_OPTIONS: { value: SortType; label: string }[] = [
+    { value: 'newest', label: 'Yangi' },
+    { value: 'popular', label: 'Mashhur' },
+    { value: 'price_asc', label: 'Narx ↑' },
+    { value: 'price_desc', label: 'Narx ↓' },
+];
 
-export default function StoresPage() {
-    const [stores, setStores] = useState<Store[]>([]);
-    const [allProducts, setAllProducts] = useState<Product[]>([]);
+export default function ProductsPage() {
+    const [products, setProducts] = useState<ApiProduct[]>([]);
+    const [categories, setCategories] = useState<ApiCategory[]>([]);
+    const [search, setSearch] = useState('');
+    const [activeCat, setActiveCat] = useState('');
     const [loading, setLoading] = useState(true);
-    const [category, setCategory] = useState<Category>('All');
-    const { t } = useTranslation();
-    const routes = useAppRoutes();
-    const categoryLabels: Record<Category, string> = {
-        All: t.all,
-        Jackets: t.cat_jackets,
-        Shirts: t.cat_shirts,
-        Pants: t.cat_pants,
-        Shoes: t.cat_shoes,
-        Accessories: t.cat_accessories,
-    };
 
-    useEffect(() => {
-        let active = true;
-        Promise.all([mockApi.listStores(), mockApi.listProducts()]).then(([storesData, productData]) => {
-            if (!active) return;
-            setStores(storesData);
-            setAllProducts(productData);
-            setLoading(false);
-        });
-        return () => {
-            active = false;
-        };
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [sort, setSort] = useState<SortType>('newest');
+    const [minPrice, setMinPrice] = useState('');
+    const [maxPrice, setMaxPrice] = useState('');
+    const [sizeFilter, setSizeFilter] = useState('');
+    const [onSale, setOnSale] = useState(false);
+
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const activeFilterCount =
+        (sort !== 'newest' ? 1 : 0) +
+        (minPrice ? 1 : 0) +
+        (maxPrice ? 1 : 0) +
+        (sizeFilter ? 1 : 0) +
+        (onSale ? 1 : 0);
+
+    const loadProducts = useCallback((params: {
+        search: string; category: string; sort: SortType;
+        minPrice: string; maxPrice: string; sizeFilter: string; onSale: boolean;
+    }) => {
+        setLoading(true);
+        fetchProducts({
+            limit: 100,
+            search: params.search || undefined,
+            category: params.category || undefined,
+            sort: params.sort,
+            min_price: params.minPrice ? Number(params.minPrice) : undefined,
+            max_price: params.maxPrice ? Number(params.maxPrice) : undefined,
+            on_sale: params.onSale || undefined,
+            size: params.sizeFilter || undefined,
+        }).then(r => setProducts(r.products))
+          .catch(() => {})
+          .finally(() => setLoading(false));
     }, []);
 
-    const filteredStores =
-        category === 'All'
-            ? stores
-            : stores.filter((store) =>
-                allProducts.some((p) => p.storeId === store.id && p.category === category)
-            );
+    const triggerFetch = useCallback((immediate = false) => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        const go = () => loadProducts({ search, category: activeCat, sort, minPrice, maxPrice, sizeFilter, onSale });
+        if (immediate) go();
+        else debounceRef.current = setTimeout(go, 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, activeCat, sort, minPrice, maxPrice, sizeFilter, onSale, loadProducts]);
+
+    useEffect(() => {
+        fetchCategories().then(setCategories).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        triggerFetch(false);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [triggerFetch]);
+
+    useSSERefetch(['products', 'stores'], () => triggerFetch(true));
+
+    const clearFilters = () => {
+        setSort('newest'); setMinPrice(''); setMaxPrice(''); setSizeFilter(''); setOnSale(false);
+    };
 
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-5 py-3 md:px-8 lg:px-10">
-            <div className="pt-1 pb-0.5">
-                <Link href={routes.PRODUCTS} className="flex items-center h-[42px] w-full bg-[var(--color-surface)] rounded-full px-4 gap-3 shadow-sm text-[var(--color-hint)]">
-                    <Search size={16} className="opacity-40" />
-                    <span className="text-[13px]">{t.search}</span>
-                </Link>
-            </div>
+        <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
+            <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-8">
+                <h1 className="text-[24px] font-black text-[#111111] dark:text-white mb-5">Mahsulotlar</h1>
 
-            <div className="flex gap-2.5 py-2 overflow-x-auto no-scrollbar mb-2">
-                {CATEGORIES.map((cat) => (
+                {/* Search + filter button */}
+                <div className="flex gap-2 mb-3">
+                    <div className="relative flex-1">
+                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Mahsulot qidirish..."
+                            className="h-11 w-full bg-white dark:bg-[#1a1a1a] rounded-full pl-10 pr-10 text-[13px] text-[#111111] dark:text-white placeholder:text-[#9ca3af] border border-black/8 dark:border-white/8 outline-none focus:ring-2 ring-[#00c853]/20"
+                        />
+                        {search && (
+                            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-black/5 rounded-full">
+                                <X size={13} className="text-[#9ca3af]" />
+                            </button>
+                        )}
+                    </div>
                     <button
-                        key={cat}
-                        onClick={() => setCategory(cat)}
+                        onClick={() => setFilterOpen(o => !o)}
                         className={cn(
-                            "px-5 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap shadow-sm border",
-                            category === cat
-                                ? "bg-[var(--color-text)] text-[var(--color-bg)] border-transparent"
-                                : "bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-hint)]/30"
+                            'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
+                            filterOpen || activeFilterCount > 0
+                                ? 'bg-[#00c853] border-[#00c853] text-white'
+                                : 'bg-white dark:bg-[#1a1a1a] border-black/8 dark:border-white/8 text-[#9ca3af] hover:border-[#00c853]/40'
                         )}
                     >
-                        {categoryLabels[cat] || cat}
+                        <SlidersHorizontal size={18} />
+                        {activeFilterCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                                {activeFilterCount}
+                            </span>
+                        )}
                     </button>
-                ))}
-            </div>
+                </div>
 
-            {loading ? (
-                <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-                            <Skeleton className="w-full h-36 rounded-2xl" />
-                            <Skeleton className="h-5 w-1/2 mt-3" />
-                            <Skeleton className="h-4 w-2/3 mt-2" />
+                {/* Filter dropdown */}
+                {filterOpen && (
+                    <div className="mb-4 bg-white dark:bg-[#1a1a1a] rounded-[20px] border border-black/8 dark:border-white/8 p-5 space-y-5">
+                        {/* Sort */}
+                        <div>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Saralash</p>
+                            <div className="flex flex-wrap gap-2">
+                                {SORT_OPTIONS.map(opt => (
+                                    <button key={opt.value} onClick={() => setSort(opt.value)}
+                                        className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all',
+                                            sort === opt.value
+                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                        )}>
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    ))}
-                </div>
-            ) : filteredStores.length > 0 ? (
-                <div className="space-y-3 pb-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:space-y-0">
-                    {filteredStores.map((store) => (
-                        <Link
-                            key={store.id}
-                            href={routes.STORE(store.id)}
-                            className="block rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 active:scale-[0.99] transition-transform shadow-sm"
-                        >
-                            <div className="relative w-full h-36 rounded-2xl overflow-hidden">
-                                <img src={store.photoUrl} alt={store.name} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
-                                <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold bg-black/35 text-white backdrop-blur-sm">
-                                    <StoreIcon size={12} />
-                                    STORE
-                                </div>
-                            </div>
 
-                            <div className="pt-3 px-1">
-                                <div className="flex items-start justify-between gap-3">
-                                    <h3 className="text-[16px] font-bold text-[var(--color-text)] leading-tight line-clamp-1">{store.name}</h3>
-                                    <ChevronRight size={17} className="text-[var(--color-hint)] shrink-0 mt-0.5" />
-                                </div>
-                                <div className="mt-1.5 flex items-center text-[12px] text-[var(--color-hint)]">
-                                    <MapPin size={13} className="mr-1.5 shrink-0" />
-                                    <span className="line-clamp-1">{store.addressText}</span>
-                                </div>
+                        {/* Price range */}
+                        <div>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Narx oralig&apos;i</p>
+                            <div className="flex gap-3">
+                                <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min narx"
+                                    type="number"
+                                    className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
+                                <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Max narx"
+                                    type="number"
+                                    className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
                             </div>
-                        </Link>
+                        </div>
+
+                        {/* Size */}
+                        <div>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">O&apos;lcham</p>
+                            <div className="flex flex-wrap gap-2">
+                                {SIZES.map(s => (
+                                    <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
+                                        className={cn('w-11 h-11 rounded-xl text-[13px] font-bold border transition-all',
+                                            sizeFilter === s
+                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                        )}>
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* On sale + clear */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <p className="text-[14px] font-semibold text-[#111111] dark:text-white">Faqat aksiyada</p>
+                                <button onClick={() => setOnSale(o => !o)}
+                                    className={cn('w-11 h-6 rounded-full border transition-all relative',
+                                        onSale ? 'bg-[#00c853] border-[#00c853]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
+                                    )}>
+                                    <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all',
+                                        onSale ? 'left-[calc(100%-22px)]' : 'left-0.5')} />
+                                </button>
+                            </div>
+                            {activeFilterCount > 0 && (
+                                <button onClick={clearFilters}
+                                    className="px-4 py-1.5 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all">
+                                    Tozalash
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Category chips */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
+                    <button onClick={() => setActiveCat('')}
+                        className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                            !activeCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                        )}>Barchasi</button>
+                    {categories.map(cat => (
+                        <button key={cat.id} onClick={() => setActiveCat(activeCat === cat.id ? '' : cat.id)}
+                            className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                                activeCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                            )}>
+                            {cat.name}
+                        </button>
                     ))}
                 </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center h-56 text-center text-[var(--color-hint)]">
-                    <StoreIcon size={38} className="opacity-30 mb-3" />
-                    <p className="text-[14px] font-medium">{t.no_results}</p>
-                </div>
-            )}
+
+                {/* Products grid */}
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <Loader2 size={32} className="animate-spin text-[#00c853]" />
+                    </div>
+                ) : products.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#9ca3af]">
+                        <Package size={40} className="opacity-40" />
+                        <p className="text-[15px] font-medium">Hech narsa topilmadi</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                        {products.map(p => (
+                            <Link
+                                key={p.id}
+                                href={`/product/${p.id}`}
+                                className="group overflow-hidden rounded-[20px] border border-black/8 bg-white dark:border-white/8 dark:bg-[#1a1a1a] transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                            >
+                                <div className="aspect-[3/4] w-full overflow-hidden bg-[#f3f4f6] dark:bg-[#111111]">
+                                    {p.thumbnail ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center">
+                                            <Package size={28} className="text-[#d1d5db]" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-3">
+                                    <p className="text-[10px] text-[#9ca3af] font-medium truncate">{p.store_name}</p>
+                                    <h3 className="text-[13px] font-bold text-[#111111] dark:text-white line-clamp-2 mt-0.5">{p.name}</h3>
+                                    <p className="text-[14px] font-black text-[#00c853] mt-1">
+                                        {Number(p.base_price).toLocaleString()} so&apos;m
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
-
