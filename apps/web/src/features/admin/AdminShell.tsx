@@ -120,7 +120,7 @@ function MobileBottomNav({ onMore }: { onMore: () => void }) {
   const mobileItems = primaryNav.filter((item) => item.mobile);
 
   return (
-    <nav className='fixed inset-x-0 bottom-0 z-50 border-t border-[var(--admin-border)] bg-[var(--admin-card)]/95 px-2 py-2 backdrop-blur xl:hidden'>
+    <nav className='fixed inset-x-0 bottom-0 z-50 border-t border-[var(--admin-border)] bg-[var(--admin-card)]/95 px-2 py-2 backdrop-blur min-[1000px]:hidden'>
       <div className='grid grid-cols-5 gap-1'>
         {mobileItems.map((item) => {
           const Icon = item.icon;
@@ -186,13 +186,13 @@ export function AdminShell({ title, children, actions }: { title: string; childr
 
   return (
     <div className='min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]'>
-      {/* Desktop sidebar */}
-      <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 xl:flex xl:flex-col'>
+      {/* Sidebar — md+ dan doim ko'rinadi */}
+      <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 min-[1000px]:flex'>
         <div className='mb-4 rounded-2xl bg-[var(--admin-pill)] p-3'>
           <p className='text-xl font-extrabold'>Clothes MP</p>
           <p className='text-xs text-[var(--admin-muted)]'>Admin Panel</p>
         </div>
-        <div className='space-y-1 overflow-y-auto pr-1'>
+        <div className='flex-1 space-y-1 overflow-y-auto pr-1'>
           {primaryNav.map((item) => (
             <NavLink key={item.href} item={item} />
           ))}
@@ -208,13 +208,13 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             logout();
             router.replace('/admin/login');
           }}
-          className='mt-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3 text-left text-sm text-[var(--admin-muted)] transition hover:-translate-y-0.5'
+          className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
         >
           {t('layout.logout')}
         </button>
       </aside>
 
-      {/* Tablet drawer */}
+      {/* Mobile drawer — faqat md dan kichik ekranlar uchun */}
       <AnimatePresence>
         {drawerOpen ? (
           <>
@@ -222,7 +222,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='fixed inset-0 z-[60] bg-black/50 xl:hidden'
+              className='fixed inset-0 z-[60] bg-black/50 min-[1000px]:hidden'
               onClick={() => setDrawerOpen(false)}
             />
             <motion.aside
@@ -230,7 +230,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.2 }}
-              className='fixed inset-y-0 left-0 z-[61] w-[260px] border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 xl:hidden'
+              className='fixed inset-y-0 left-0 z-[61] flex w-[260px] flex-col border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 min-[1000px]:hidden'
             >
               <div className='mb-4 flex items-center justify-between'>
                 <p className='text-lg font-bold'>Clothes MP</p>
@@ -238,7 +238,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                   <X className='size-4' />
                 </button>
               </div>
-              <div className='space-y-1'>
+              <div className='flex-1 space-y-1 overflow-y-auto'>
                 {primaryNav.map((item) => (
                   <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
                 ))}
@@ -247,22 +247,31 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                   <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
                 ))}
               </div>
+              <button
+                onClick={() => {
+                  logout();
+                  router.replace('/admin/login');
+                }}
+                className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400'
+              >
+                {t('layout.logout')}
+              </button>
             </motion.aside>
           </>
         ) : null}
       </AnimatePresence>
 
-      <div className='xl:pl-[260px]'>
-        <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur md:px-6'>
+      <div className='min-[1000px]:pl-[260px]'>
+        <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur min-[1000px]:px-6'>
           <button
             onClick={() => setDrawerOpen(true)}
-            className='rounded-xl border border-[var(--admin-border)] p-2 xl:hidden'
+            className='rounded-xl border border-[var(--admin-border)] p-2 min-[1000px]:hidden'
           >
             <Menu className='size-4' />
           </button>
           <div className='min-w-0'>
             <h1 className='truncate text-lg font-bold'>{title}</h1>
-            <p className='hidden text-xs text-[var(--admin-muted)] md:block'>{subtitle}</p>
+            <p className='hidden text-xs text-[var(--admin-muted)] min-[1000px]:block'>{subtitle}</p>
           </div>
 
           <div className='ml-auto flex items-center gap-2'>
@@ -330,7 +339,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className='px-4 pb-24 pt-4 md:px-6 xl:pb-6'
+          className='px-4 pb-24 pt-4 min-[1000px]:px-6 min-[1000px]:pb-6'
         >
           {children}
         </motion.main>

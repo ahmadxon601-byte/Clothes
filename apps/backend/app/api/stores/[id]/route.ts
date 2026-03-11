@@ -35,6 +35,7 @@ const updateSchema = z.object({
   description: z.string().optional(),
   phone: z.string().max(50).optional(),
   address: z.string().optional(),
+  image_url: z.string().nullable().optional(),
 });
 
 // ── PATCH /api/stores/[id] ────────────────────────────────────────────────────
@@ -64,13 +65,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (parsed.data.description !== undefined) { fields.push(`description = $${idx++}`); values.push(parsed.data.description); }
     if (parsed.data.phone !== undefined) { fields.push(`phone = $${idx++}`); values.push(parsed.data.phone); }
     if (parsed.data.address !== undefined) { fields.push(`address = $${idx++}`); values.push(parsed.data.address); }
+    if (parsed.data.image_url !== undefined) { fields.push(`image_url = $${idx++}`); values.push(parsed.data.image_url); }
 
     if (fields.length === 0) return fail("Nothing to update", 422);
     fields.push(`updated_at = NOW()`);
     values.push(id);
 
     const result = await query(
-      `UPDATE stores SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, name, description, phone, address, created_at`,
+      `UPDATE stores SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, name, description, phone, address, image_url, created_at`,
       values
     );
     return ok({ store: result.rows[0] });

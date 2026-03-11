@@ -95,11 +95,11 @@ export default function FavoritesPage() {
                 <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
                 <section className="mx-auto w-full max-w-[1280px] px-4 py-16 md:px-8 md:py-24 text-center">
                     <div className="mx-auto max-w-md">
-                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f4f6]">
+                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f4f6] dark:bg-[#1f1f1f]">
                             <Heart size={36} className="text-[#9ca3af]" />
                         </div>
-                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111]">Sevimlilar</h1>
-                        <p className="mt-3 text-[15px] text-[#6b7280]">Sevimli mahsulotlarni saqlash uchun avval kirish yoki ro'yxatdan o'ting.</p>
+                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111] dark:text-white">Sevimlilar</h1>
+                        <p className="mt-3 text-[15px] text-[#6b7280] dark:text-[#9ca3af]">Sevimli mahsulotlarni saqlash uchun avval kirish yoki ro'yxatdan o'ting.</p>
                         <button
                             onClick={() => setAuthModal(true)}
                             className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
@@ -114,24 +114,24 @@ export default function FavoritesPage() {
 
     return (
         <section className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-12">
-            <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-[linear-gradient(145deg,#fbfffc_0%,#f2f8ff_52%,#f7faff_100%)] p-6 md:p-8">
+            <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-[linear-gradient(145deg,#fbfffc_0%,#f2f8ff_52%,#f7faff_100%)] p-6 dark:border-white/10 dark:bg-[linear-gradient(145deg,#111_0%,#0d1a12_52%,#0f1520_100%)] md:p-8">
                 <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#00c853]/15 blur-3xl" />
                 <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#5aa6ff]/20 blur-3xl" />
                 <div className="relative">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Wishlist</p>
-                    <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,4.6vw,3.4rem)] font-black leading-none text-[#111111]">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645] dark:text-[#00c853]">Wishlist</p>
+                    <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,4.6vw,3.4rem)] font-black leading-none text-[#111111] dark:text-white">
                         Sevimli Mahsulotlar
                     </h1>
-                    <p className="mt-2 max-w-xl text-[14px] text-[#5b6472]">
+                    <p className="mt-2 max-w-xl text-[14px] text-[#5b6472] dark:text-[#9ca3af]">
                         Yoqqan mahsulotlarni saqlang va istagan vaqt qaytib keling.
                     </p>
-                    <div className="mt-6 flex h-12 items-center gap-3 rounded-full border border-black/10 bg-white px-4 shadow-[0_16px_34px_-26px_rgba(0,0,0,0.45)]">
-                        <Search size={16} className="text-[#97a0b0]" />
+                    <div className="mt-6 flex h-12 items-center gap-3 rounded-full border border-black/10 bg-white px-4 shadow-[0_16px_34px_-26px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
+                        <Search size={16} className="text-[#97a0b0] dark:text-[#6b7280]" />
                         <input
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Sevimlilar ichida qidirish..."
-                            className="h-full w-full bg-transparent text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af]"
+                            className="h-full w-full bg-transparent text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:text-white dark:placeholder:text-[#6b7280]"
                         />
                     </div>
                 </div>
@@ -145,8 +145,8 @@ export default function FavoritesPage() {
                         className={cn(
                             'shrink-0 rounded-full border px-5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all',
                             category === cat
-                                ? 'border-transparent bg-[#111111] text-white shadow'
-                                : 'border-black/10 bg-white text-[#6b7280] hover:border-black/20 hover:text-[#111111]',
+                                ? 'border-transparent bg-[#111111] text-white dark:bg-white dark:text-[#111111]'
+                                : 'border-black/10 bg-white text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-[#9ca3af] dark:hover:border-white/25 dark:hover:text-white',
                         )}
                     >
                         {tc(cat)}
@@ -158,7 +158,7 @@ export default function FavoritesPage() {
                 {loading ? (
                     <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
                         {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="rounded-3xl border border-black/8 bg-white p-3">
+                            <div key={i} className="rounded-3xl border border-black/8 bg-white p-3 dark:border-white/8 dark:bg-[#1a1a1a]">
                                 <Skeleton className="aspect-[3/4] w-full rounded-2xl" />
                                 <Skeleton className="mt-3 h-4 w-2/3" />
                                 <Skeleton className="mt-2 h-4 w-1/3" />
@@ -179,9 +179,9 @@ export default function FavoritesPage() {
                                 <Link
                                     key={product.id}
                                     href={SITE_ROUTES.PRODUCT(product.product_id)}
-                                    className="group rounded-3xl border border-black/8 bg-white p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_50px_-24px_rgba(0,0,0,0.24)]"
+                                    className="group rounded-3xl border border-black/8 bg-white p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_50px_-24px_rgba(0,0,0,0.24)] dark:border-white/8 dark:bg-[#1a1a1a] dark:hover:shadow-[0_26px_50px_-24px_rgba(0,0,0,0.6)]"
                                 >
-                                    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#f5f6f8]">
+                                    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#f5f6f8] dark:bg-[#252525]">
                                         <img src={img} alt={product.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                         <span className="absolute left-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 text-[10px] font-black text-white">-{off}%</span>
                                         <button
@@ -193,16 +193,16 @@ export default function FavoritesPage() {
                                         </button>
                                     </div>
                                     <div className="px-1 pb-1 pt-4">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{product.brand}</p>
-                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111]">{product.title}</h3>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af] dark:text-[#6b7280]">{product.brand}</p>
+                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.title}</h3>
                                         <div className="mt-1.5 flex items-center gap-0.5">
                                             {Array.from({ length: 5 }, (_, i) => (
-                                                <Star key={`${product.id}-star-${i}`} size={11} className={i < rating ? 'fill-[#00c853] text-[#00c853]' : 'text-[#e5e7eb]'} />
+                                                <Star key={`${product.id}-star-${i}`} size={11} className={i < rating ? 'fill-[#00c853] text-[#00c853]' : 'text-[#e5e7eb] dark:text-[#3a3a3a]'} />
                                             ))}
                                         </div>
                                         <div className="mt-2.5 flex items-end gap-2">
-                                            <span className="text-[17px] font-black text-[#111111]">{formatPrice(product.base_price, 'UZS')}</span>
-                                            <span className="text-[12px] text-[#c4c9d4] line-through">{formatPrice(oldPrice, 'UZS')}</span>
+                                            <span className="text-[17px] font-black text-[#111111] dark:text-white">{formatPrice(product.base_price, 'UZS')}</span>
+                                            <span className="text-[12px] text-[#c4c9d4] line-through dark:text-[#4a4a4a]">{formatPrice(oldPrice, 'UZS')}</span>
                                         </div>
                                     </div>
                                 </Link>
@@ -210,15 +210,15 @@ export default function FavoritesPage() {
                         })}
                     </div>
                 ) : (
-                    <div className="rounded-3xl border border-black/10 bg-white px-6 py-14 text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#111111]/5 text-[#111111]/45">
+                    <div className="rounded-3xl border border-black/10 bg-white px-6 py-14 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#111111]/5 text-[#111111]/45 dark:bg-white/5 dark:text-white/45">
                             <Heart size={28} />
                         </div>
-                        <h3 className="mt-4 text-[24px] font-black text-[#111111]">Hali sevimlilar yo'q</h3>
-                        <p className="mt-2 text-[14px] text-[#6b7280]">Yoqqan mahsulotlarni saqlashni boshlang.</p>
+                        <h3 className="mt-4 text-[24px] font-black text-[#111111] dark:text-white">Hali sevimlilar yo'q</h3>
+                        <p className="mt-2 text-[14px] text-[#6b7280] dark:text-[#9ca3af]">Yoqqan mahsulotlarni saqlashni boshlang.</p>
                         <Link
                             href="/clothing"
-                            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
+                            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90 dark:bg-white dark:text-[#111111]"
                         >
                             Kiyimlarni Ko'rish
                         </Link>

@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     params.push(limit, offset);
     const dataResult = await query(
       `SELECT
-         st.id, st.name, st.description, st.phone, st.address, st.created_at,
+         st.id, st.name, st.description, st.phone, st.address, st.image_url, st.created_at,
          u.id AS owner_id, u.name AS owner_name,
          (SELECT COUNT(*) FROM products p WHERE p.store_id = st.id AND p.is_active = TRUE) AS product_count
        FROM stores st

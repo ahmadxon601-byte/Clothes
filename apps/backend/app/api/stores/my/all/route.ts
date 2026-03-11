@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     const [storesResult, requestsResult] = await Promise.all([
       query(
-        `SELECT id, name, description, phone, address, created_at
+        `SELECT id, name, description, phone, address, image_url, created_at
          FROM stores
          WHERE owner_id = $1 AND is_active = TRUE
          ORDER BY created_at DESC`,

@@ -79,7 +79,7 @@ const paged = <T extends z.ZodTypeAny>(key: string, item: T) =>
   }) as z.ZodType<{ [K in typeof key]: z.infer<T>[] } & { pagination: Pagination }>;
 
 export const adminApi = {
-  getMe: () => request<AdminUser>('/api/auth/me', {}, adminUserSchema),
+  getMe: (signal?: AbortSignal) => request<AdminUser>('/api/auth/me', { signal }, adminUserSchema),
   login: (email: string, password: string) =>
     request(
       '/api/auth/login',

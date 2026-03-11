@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark, Settings, Store, Check, Loader2 } from 'lucide-react';
+import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
-import { getApiToken } from '../../../src/lib/apiClient';
-import { useAppRoutes } from '../../../src/shared/config/useAppRoutes';
+import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
+import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 
 interface MeUser {
@@ -17,55 +17,85 @@ interface MeUser {
     telegram_id: number | null;
 }
 
-interface StoreStatus {
-    status: 'approved' | 'pending' | 'rejected' | 'none';
-    store?: { id: string; name: string };
-    request?: { store_name: string; status: string };
-}
-
-async function apiFetch<T>(path: string): Promise<T> {
-    const token = getApiToken();
-    const res = await fetch(path, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error(`${res.status}`);
-    const json = await res.json();
-    return (json.data ?? json) as T;
-}
-
 export default function TelegramProfilePage() {
-    const { user: tgUser } = useTelegram();
+    const { WebApp, user: tgUser, isReady } = useTelegram();
     const { t } = useTranslation();
-    const routes = useAppRoutes();
 
     const [me, setMe] = useState<MeUser | null>(null);
-    const [storeStatus, setStoreStatus] = useState<StoreStatus | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loggingIn, setLoggingIn] = useState(false);
+    const [isDesktop, setIsDesktop] = useState(false);
 
+    // Detect desktop (no Telegram WebApp initData after SDK is given time to load)
     useEffect(() => {
-        Promise.all([
-            apiFetch<MeUser>('/api/auth/me').catch(() => null),
-            apiFetch<StoreStatus>('/api/stores/my').catch(() => ({ status: 'none' as const })),
-        ]).then(([meData, statusData]) => {
-            setMe(meData);
-            setStoreStatus(statusData);
-        }).finally(() => setLoading(false));
+        if (typeof window === 'undefined') return;
+        const timer = setTimeout(() => {
+            const hasWebApp = Boolean(window.Telegram?.WebApp?.initData);
+            if (!hasWebApp) setIsDesktop(true);
+        }, 2500);
+        return () => clearTimeout(timer);
     }, []);
 
+    // Load token from localStorage
+    useEffect(() => {
+        setToken(getApiToken());
+    }, []);
+
+    // Fetch /api/auth/me when token changes
+    useEffect(() => {
+        if (!token) { setLoading(false); return; }
+        setLoading(true);
+        fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : null)
+            .then(json => setMe(json?.data ?? json ?? null))
+            .catch(() => setMe(null))
+            .finally(() => setLoading(false));
+    }, [token]);
+
+    const handleLogin = async () => {
+        const initData = WebApp?.initData;
+        if (!initData) return;
+        setLoggingIn(true);
+        try {
+            const newToken = await telegramWebAppAuth(initData);
+            setApiToken(newToken);
+            setToken(newToken);
+        } catch {
+            // ignore
+        } finally {
+            setLoggingIn(false);
+        }
+    };
+
+    const handleLogout = () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('marketplace_token');
+        }
+        setToken(null);
+        setMe(null);
+    };
+
     const displayName = me?.name || tgUser?.first_name || '';
-    const username = tgUser?.username
-        ? `@${tgUser.username}`
-        : tgUser?.id
-            ? `ID: ${tgUser.id}`
-            : '';
-    const phone = me?.phone || '';
+    const username = tgUser?.username ? `@${tgUser.username}` : tgUser?.id ? `ID: ${tgUser.id}` : '';
 
-    const menuItems = [
-        { label: t.favorites, sub: t.saved_products, icon: Bookmark, href: routes.FAVORITES },
-        { label: t.settings, sub: t.language_theme_security, icon: Settings, href: routes.SETTINGS },
-    ];
+    // Desktop block
+    if (isDesktop) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-[var(--color-surface2)] border border-[var(--color-border)] flex items-center justify-center mb-4">
+                    <Smartphone size={28} className="text-[var(--color-hint)]" />
+                </div>
+                <h2 className="text-[20px] font-bold text-[var(--color-text)]">Faqat Telegram orqali</h2>
+                <p className="mt-2 text-[14px] text-[var(--color-hint)] leading-relaxed max-w-xs">
+                    Bu sahifa faqat Telegram Mini App orqali ochiladi. Iltimos, Telegram botdan foydalaning.
+                </p>
+            </div>
+        );
+    }
 
-    if (loading) {
+    // Loading
+    if (loading || (!isReady && !me && !isDesktop)) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
                 <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
@@ -73,9 +103,40 @@ export default function TelegramProfilePage() {
         );
     }
 
+    // Not logged in
+    if (!token || !me) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+                <div className="w-20 h-20 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center mb-5 overflow-hidden">
+                    {tgUser?.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={tgUser.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                        <span className="text-[32px] text-[var(--color-hint)]">👤</span>
+                    )}
+                </div>
+                <h2 className="text-[20px] font-bold text-[var(--color-text)]">
+                    {tgUser?.first_name ? `Salom, ${tgUser.first_name}!` : 'Kirish kerak'}
+                </h2>
+                <p className="mt-2 text-[14px] text-[var(--color-hint)] leading-relaxed max-w-xs">
+                    Profilingizni ko&apos;rish uchun Telegram orqali kiring.
+                </p>
+                <button
+                    onClick={handleLogin}
+                    disabled={loggingIn || !WebApp?.initData}
+                    className="mt-6 h-12 px-8 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center gap-2 disabled:opacity-50 active:scale-95 transition-all shadow-[0_4px_14px_rgba(26,229,80,0.3)]"
+                >
+                    {loggingIn ? <Loader2 size={18} className="animate-spin" /> : null}
+                    Telegram orqali kirish
+                </button>
+            </div>
+        );
+    }
+
+    // Logged in
     return (
-        <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
-            <div className="px-6 space-y-4">
+        <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-6">
+            <div className="px-4 space-y-3">
                 {/* Avatar + name */}
                 <div className="bg-[var(--color-surface)] rounded-[28px] p-5 shadow-sm border border-[var(--color-border)] flex flex-col items-center">
                     <div className="relative">
@@ -92,24 +153,22 @@ export default function TelegramProfilePage() {
                                 />
                             )}
                         </div>
-                        <div className="absolute bottom-0 right-0 w-5 h-5 bg-[var(--color-primary)] border-2 border-[var(--color-surface)] rounded-full flex items-center justify-center text-white">
-                            <Check size={11} strokeWidth={4} />
+                        <div className="absolute bottom-0 right-0 w-5 h-5 bg-[var(--color-primary)] border-2 border-[var(--color-surface)] rounded-full flex items-center justify-center">
+                            <Check size={11} strokeWidth={4} className="text-white" />
                         </div>
                     </div>
-
                     <h2 className="mt-3 text-[19px] font-bold text-[var(--color-text)] text-center leading-tight">
                         {displayName || t.user}
                     </h2>
-                    <p className="text-[13px] text-[var(--color-hint)] font-medium">{t.user}</p>
-
-                    <div className="mt-4 flex flex-wrap justify-center gap-2">
-                        {phone && (
-                            <span className="px-4 py-2 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)]">
-                                {phone}
+                    <p className="text-[12px] text-[var(--color-hint)] font-medium mt-0.5 capitalize">{me.role}</p>
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
+                        {me.phone && (
+                            <span className="px-3 py-1.5 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
+                                {me.phone}
                             </span>
                         )}
                         {username && (
-                            <span className="px-4 py-2 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-full text-[13px] font-medium text-[var(--color-text)]">
+                            <span className="px-3 py-1.5 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
                                 {username}
                             </span>
                         )}
@@ -118,9 +177,12 @@ export default function TelegramProfilePage() {
 
                 {/* Menu */}
                 <div className="space-y-2">
-                    {menuItems.map((item) => (
+                    {[
+                        { label: t.favorites, sub: t.saved_products, icon: Bookmark, href: TELEGRAM_ROUTES.FAVORITES },
+                        { label: t.settings, sub: t.language_theme_security, icon: Settings, href: TELEGRAM_ROUTES.SETTINGS },
+                    ].map((item) => (
                         <Link
-                            key={item.label}
+                            key={item.href}
                             href={item.href}
                             className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"
                         >
@@ -138,57 +200,52 @@ export default function TelegramProfilePage() {
                     ))}
                 </div>
 
-                {/* Store section */}
-                <div className="bg-[var(--color-surface)] rounded-[28px] p-6 shadow-sm border border-[var(--color-border)]">
-                    {storeStatus?.status === 'approved' && storeStatus.store ? (
-                        <>
-                            <h3 className="text-[17px] font-bold text-[var(--color-text)]">Mening do&apos;konim</h3>
-                            <p className="mt-1 text-[14px] font-semibold text-[var(--color-primary)]">{storeStatus.store.name}</p>
-                            <Link
-                                href={routes.STORE_STATUS}
-                                className="mt-4 flex h-12 items-center justify-center bg-[var(--color-primary)] text-white rounded-full text-[14px] font-bold shadow-[0_4px_12px_rgba(26,229,80,0.25)] active:scale-95 transition-all"
-                            >
-                                <Settings size={16} className="mr-2" />
-                                {t.seller_panel}
-                            </Link>
-                        </>
-                    ) : storeStatus?.status === 'pending' ? (
-                        <>
-                            <h3 className="text-[17px] font-bold text-[var(--color-text)]">{t.is_store_owner}</h3>
-                            <p className="mt-1.5 text-[13px] text-amber-500 font-medium">
-                                Arizangiz ko&apos;rib chiqilmoqda...
-                            </p>
-                            <Link
-                                href={routes.STORE_STATUS}
-                                className="mt-4 flex h-12 items-center justify-center bg-[var(--color-surface2)] border border-[var(--color-border)] text-[var(--color-text)] rounded-full text-[14px] font-bold active:scale-95 transition-all"
-                            >
-                                Holatni ko&apos;rish
-                            </Link>
-                        </>
-                    ) : (
-                        <>
-                            <h3 className="text-[17px] font-bold text-[var(--color-text)]">{t.is_store_owner}</h3>
-                            <p className="mt-1.5 text-[13px] text-[var(--color-hint)] font-medium leading-relaxed">
-                                {t.list_products_manage_stock}
-                            </p>
-                            <div className="mt-5 flex gap-2.5">
-                                <Link
-                                    href={routes.STORE_APPLY}
-                                    className="flex-1 h-12 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full text-[14px] font-bold shadow-[0_4px_12px_rgba(26,229,80,0.25)] active:scale-95 transition-all"
-                                >
-                                    <Store size={16} className="mr-2" />
-                                    {t.add_store}
-                                </Link>
-                                <Link
-                                    href={routes.STORE_STATUS}
-                                    className="flex-1 h-12 flex items-center justify-center bg-[var(--color-surface2)] border border-[var(--color-border)] text-[var(--color-text)] rounded-full text-[14px] font-bold active:scale-95 transition-all"
-                                >
-                                    <Settings size={16} className="mr-2" />
-                                    {t.seller_panel}
-                                </Link>
+                {/* 3 main action buttons */}
+                <div className="space-y-2 pt-1">
+                    <Link
+                        href="/telegram/profile/stores"
+                        className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"
+                    >
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                                <Store size={20} />
                             </div>
-                        </>
-                    )}
+                            <div>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">Mening do&apos;konim</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">Do&apos;konlarni boshqarish</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
+                    </Link>
+
+                    <Link
+                        href="/telegram/profile/products"
+                        className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"
+                    >
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                                <Package size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">Mening mahsulotlarim</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">Mahsulotlarni boshqarish</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
+                    </Link>
+
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-red-50 dark:bg-red-950/30 rounded-[20px] border border-red-200 dark:border-red-900/40 active:scale-[0.98] transition-all"
+                    >
+                        <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/30 text-red-500">
+                            <LogOut size={20} />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-[15px] font-bold text-red-600 dark:text-red-400 leading-tight">Chiqish</p>
+                            <p className="text-[11px] text-red-400 dark:text-red-500 font-medium">Hisobdan chiqish</p>
+                        </div>
+                    </button>
                 </div>
             </div>
         </div>

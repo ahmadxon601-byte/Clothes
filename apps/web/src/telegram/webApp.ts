@@ -17,6 +17,7 @@ export interface TelegramWebApp {
         subtitle_text_color?: string;
         destructive_text_color?: string;
     };
+    initData?: string;
     initDataUnsafe?: {
         user?: {
             id?: number;

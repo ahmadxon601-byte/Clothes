@@ -109,7 +109,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                     center={[pin?.lat ?? initialLat, pin?.lng ?? initialLng]}
                     zoom={14}
                     attributionControl={false}
-                    whenReady={(e) => { mapRef.current = e.target; }}
+                    ref={(map) => { if (map) mapRef.current = map; }}
                     style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer
@@ -160,7 +160,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                     center={[pin?.lat ?? initialLat, pin?.lng ?? initialLng]}
                     zoom={13}
                     attributionControl={false}
-                    whenReady={(e) => { mapRef.current = e.target; }}
+                    ref={(map) => { if (map) mapRef.current = map; }}
                     style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer

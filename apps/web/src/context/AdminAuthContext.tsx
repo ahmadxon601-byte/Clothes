@@ -24,8 +24,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
       try {
-        const admin = (await adminApi.getMe()) as AdminUser;
+        const admin = (await adminApi.getMe(controller.signal)) as AdminUser;
         if (admin.role !== 'admin') {
           localStorage.removeItem(TOKEN_STORAGE_KEY);
           setUser(null);
@@ -36,6 +39,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         setUser(null);
       } finally {
+        clearTimeout(timeout);
         setLoading(false);
       }
     }
