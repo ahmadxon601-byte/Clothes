@@ -64,7 +64,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         const baseLinks = [
             { href: WEB_LINKS.HOME, label: w.navbar.home },
             { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
-            { href: WEB_LINKS.CLOTHING, label: 'Mahsulotlar' },
+            { href: WEB_LINKS.CLOTHING, label: w.navbar.clothing },
         ];
 
         const links = baseLinks;
@@ -230,7 +230,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#00c853] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
                                     >
                                         <UserPlus size={13} />
-                                        Ro'yxat
+                                        Ro&apos;yxat
                                     </button>
                                 </div>
                             )}

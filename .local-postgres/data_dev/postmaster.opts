@@ -1,1 +1,1 @@
-C:/Program Files/PostgreSQL/16/bin/postgres.exe "-D" "D:/Clothes/.local-postgres/data_dev" "-p" "55432"
+C:/Program Files/PostgreSQL/16/bin/postgres.exe "-D" "d:/Clothes/.local-postgres/data_dev" "-p" "55433"

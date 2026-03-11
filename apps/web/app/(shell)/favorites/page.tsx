@@ -31,7 +31,7 @@ function getToken() {
 
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useWebAuth();
-    const { tc } = useWebI18n();
+    const { tc, w } = useWebI18n();
     const [products, setProducts] = useState<FavProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState<(typeof CATEGORIES)[number]>('All');
@@ -101,13 +101,13 @@ export default function FavoritesPage() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f4f6] dark:bg-[#1f1f1f]">
                             <Heart size={36} className="text-[#9ca3af]" />
                         </div>
-                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111] dark:text-white">Sevimlilar</h1>
-                        <p className="mt-3 text-[15px] text-[#6b7280] dark:text-[#9ca3af]">Sevimli mahsulotlarni saqlash uchun avval kirish yoki ro'yxatdan o'ting.</p>
+                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111] dark:text-white">{w.favorites.authTitle}</h1>
+                        <p className="mt-3 text-[15px] text-[#6b7280] dark:text-[#9ca3af]">{w.favorites.authDesc}</p>
                         <button
                             onClick={() => setAuthModal(true)}
                             className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                         >
-                            Kirish / Ro'yxat
+                            {w.favorites.authAction}
                         </button>
                     </div>
                 </section>
@@ -121,19 +121,19 @@ export default function FavoritesPage() {
                 <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#00c853]/15 blur-3xl" />
                 <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#5aa6ff]/20 blur-3xl" />
                 <div className="relative">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645] dark:text-[#00c853]">Wishlist</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645] dark:text-[#00c853]">{w.favorites.badge}</p>
                     <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,4.6vw,3.4rem)] font-black leading-none text-[#111111] dark:text-white">
-                        Sevimli Mahsulotlar
+                        {w.favorites.title}
                     </h1>
                     <p className="mt-2 max-w-xl text-[14px] text-[#5b6472] dark:text-[#9ca3af]">
-                        Yoqqan mahsulotlarni saqlang va istagan vaqt qaytib keling.
+                        {w.favorites.subtitle}
                     </p>
                     <div className="mt-6 flex h-12 items-center gap-3 rounded-full border border-black/10 bg-white px-4 shadow-[0_16px_34px_-26px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
                         <Search size={16} className="text-[#97a0b0] dark:text-[#6b7280]" />
                         <input
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Sevimlilar ichida qidirish..."
+                            placeholder={w.favorites.searchPlaceholder}
                             className="h-full w-full bg-transparent text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:text-white dark:placeholder:text-[#6b7280]"
                         />
                     </div>
@@ -217,13 +217,13 @@ export default function FavoritesPage() {
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#111111]/5 text-[#111111]/45 dark:bg-white/5 dark:text-white/45">
                             <Heart size={28} />
                         </div>
-                        <h3 className="mt-4 text-[24px] font-black text-[#111111] dark:text-white">Hali sevimlilar yo'q</h3>
-                        <p className="mt-2 text-[14px] text-[#6b7280] dark:text-[#9ca3af]">Yoqqan mahsulotlarni saqlashni boshlang.</p>
+                        <h3 className="mt-4 text-[24px] font-black text-[#111111] dark:text-white">{w.favorites.emptyTitle}</h3>
+                        <p className="mt-2 text-[14px] text-[#6b7280] dark:text-[#9ca3af]">{w.favorites.emptyDesc}</p>
                         <Link
                             href="/clothing"
                             className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#111111] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90 dark:bg-white dark:text-[#111111]"
                         >
-                            Kiyimlarni Ko'rish
+                            {w.favorites.emptyAction}
                         </Link>
                     </div>
                 )}

@@ -18,10 +18,20 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
     const [imgIdx, setImgIdx] = useState(0);
     const [isFav, setIsFav] = useState(false);
     const [favLoading, setFavLoading] = useState(false);
+    const [storeAddress, setStoreAddress] = useState<string>('');
 
     useEffect(() => {
         fetchProductById(id).then(p => {
             setProduct(p);
+            if (p.store_id) {
+                fetch(`/api/stores/${p.store_id}`)
+                    .then(r => r.json())
+                    .then(sj => {
+                        const addr = sj?.data?.store?.address ?? sj?.store?.address ?? '';
+                        if (addr) setStoreAddress(String(addr).replace(/\s*Coordinates:.*$/i, '').trim());
+                    })
+                    .catch(() => {});
+            }
             if (p.category_id) {
                 fetchProducts({ category: p.category_id, limit: 9 }).then(r => {
                     setSimilar(r.products.filter(x => x.id !== p.id).slice(0, 6));
@@ -149,9 +159,9 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-[var(--color-text)] truncate">{product.store_name}</p>
-                        {product.location?.address && (
+                        {(storeAddress || product.location?.address) && (
                             <p className="text-[11px] text-[var(--color-hint)] mt-0.5 flex items-center gap-1">
-                                <MapPin size={10} /> {product.location.address}
+                                <MapPin size={10} /> {storeAddress || product.location?.address}
                             </p>
                         )}
                     </div>

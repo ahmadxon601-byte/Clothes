@@ -206,6 +206,12 @@
         font-family: var(--font-inter), sans-serif;
         -webkit-tap-highlight-color: transparent;
     }
+
+    /* Hide browser-native password reveal icons (Edge/IE), keep custom eye toggle only. */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+        display: none;
+    }
 }
 
 @layer utilities {

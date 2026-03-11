@@ -121,7 +121,7 @@ export const translations = {
         back: "Назад",
         save: "Сохранить",
         add: "Добавить",
-        buy: "Купить",
+        buy: "View",
         send: "Отправить",
         loading: "Загрузка...",
         no_results: "Ничего не найдено",
