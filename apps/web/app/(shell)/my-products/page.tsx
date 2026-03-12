@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 interface Product {
   id: string;
   name: string;
+  description: string | null;
   base_price: number;
   sku: string;
   is_active: boolean;
@@ -147,7 +148,7 @@ export default function MyProductsPage() {
       current_price: String(p.base_price),
       size: '',
       stock: '1',
-      description: '',
+      description: p.description ?? '',
       category_id: p.category_id ?? '',
       store_id: p.store_id,
     });
@@ -164,18 +165,22 @@ export default function MyProductsPage() {
       const imgs: { url: string; sort_order: number }[] = detail?.images ?? [];
       if (imgs.length > 0) setFormImages(imgs.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order).map((i: { url: string }) => i.url));
       const variants: { size?: string; price?: number; stock?: number }[] = detail?.variants ?? [];
-      if (variants.length > 0) {
-        const v = variants[0];
-        setForm(prev => ({
-          ...prev,
-          size: v.size ?? '',
-          stock: v.stock != null ? String(v.stock) : '1',
-          current_price: v.price != null ? String(v.price) : prev.base_price,
-          discount: v.price != null && v.price < p.base_price
-            ? String(Math.round((1 - v.price / p.base_price) * 100))
-            : '',
-        }));
-      }
+      setForm(prev => {
+        const base: typeof prev = { ...prev, description: detail?.description ?? '' };
+        if (variants.length > 0) {
+          const v = variants[0];
+          return {
+            ...base,
+            size: v.size ?? '',
+            stock: v.stock != null ? String(v.stock) : '1',
+            current_price: v.price != null ? String(v.price) : prev.base_price,
+            discount: v.price != null && v.price < p.base_price
+              ? String(Math.round((1 - v.price / p.base_price) * 100))
+              : '',
+          };
+        }
+        return base;
+      });
     } catch { /* noop */ }
   };
 
@@ -426,7 +431,7 @@ export default function MyProductsPage() {
       {/* Create / Edit modal */}
       {createOpen && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-sm overflow-y-auto rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
+          <div className="relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
             <button
               onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); }}
               className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-[#6b7280] hover:text-[#111111] dark:border-white/10 dark:hover:text-white"

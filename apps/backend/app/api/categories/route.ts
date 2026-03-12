@@ -4,7 +4,7 @@ import { ok, fail } from "@/src/lib/auth";
 export async function GET() {
   try {
     const result = await query(
-      "SELECT id, name, slug, created_at FROM categories ORDER BY name ASC"
+      "SELECT id, name, name_uz, name_ru, name_en, slug, created_at FROM categories ORDER BY name ASC"
     );
     return ok({ categories: result.rows });
   } catch (e) {

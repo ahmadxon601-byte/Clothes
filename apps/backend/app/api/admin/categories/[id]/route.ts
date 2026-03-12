@@ -8,10 +8,12 @@ type Params = { params: Promise<{ id: string }> };
 
 const updateSchema = z.object({
   name: z.string().min(1).max(255).optional(),
+  name_uz: z.string().optional(),
+  name_ru: z.string().optional(),
+  name_en: z.string().optional(),
   slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/).optional(),
 });
 
-// ── PATCH /api/admin/categories/[id] ─────────────────────────────────────────
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");
@@ -23,14 +25,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const fields: string[] = [];
     const vals: unknown[] = [];
 
-    if (parsed.data.name) { vals.push(parsed.data.name); fields.push(`name = $${vals.length}`); }
-    if (parsed.data.slug) { vals.push(parsed.data.slug); fields.push(`slug = $${vals.length}`); }
+    const d = parsed.data;
+    if (d.name)     { vals.push(d.name);     fields.push(`name = $${vals.length}`); }
+    if (d.name_uz)  { vals.push(d.name_uz);  fields.push(`name_uz = $${vals.length}`); }
+    if (d.name_ru)  { vals.push(d.name_ru);  fields.push(`name_ru = $${vals.length}`); }
+    if (d.name_en)  { vals.push(d.name_en);  fields.push(`name_en = $${vals.length}`); }
+    if (d.slug)     { vals.push(d.slug);     fields.push(`slug = $${vals.length}`); }
     if (!fields.length) return fail("No fields to update", 422);
 
     vals.push(id);
     const result = await query(
       `UPDATE categories SET ${fields.join(", ")} WHERE id = $${vals.length}
-       RETURNING id, name, slug, created_at`,
+       RETURNING id, name, name_uz, name_ru, name_en, slug, created_at`,
       vals
     );
     if (result.rows.length === 0) return fail("Category not found", 404);
@@ -45,7 +51,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 }
 
-// ── DELETE /api/admin/categories/[id] ────────────────────────────────────────
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");

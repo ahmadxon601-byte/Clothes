@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
               p.name AS title, p.base_price,
               (SELECT pi.url FROM product_images pi
                WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS image_url,
+              (SELECT MIN(pv.price) FROM product_variants pv
+               WHERE pv.product_id = p.id) AS sale_price,
               s.name AS brand
        FROM favorites f
        JOIN products p ON p.id = f.product_id

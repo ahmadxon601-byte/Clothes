@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Trash2, X, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
@@ -9,7 +9,33 @@ import { AdminPageSection, EmptyState, SkeletonRows } from '../../../src/feature
 import { adminApi } from '../../../src/lib/adminApi';
 import { useToast } from '../../../src/shared/ui/useToast';
 
-interface Category { id: string; name: string; slug: string; created_at: string; }
+interface Category {
+  id: string;
+  name: string;
+  name_uz: string | null;
+  name_ru: string | null;
+  name_en: string | null;
+  slug: string;
+  created_at: string;
+}
+
+type Lang = 'uz' | 'ru' | 'en';
+
+const LANG_LABELS: Record<Lang, string> = { uz: "O'zbekcha", ru: 'Русский', en: 'English' };
+const LANG_CODES: Record<Lang, string> = { uz: 'uz', ru: 'ru', en: 'en' };
+const ALL_LANGS: Lang[] = ['uz', 'ru', 'en'];
+
+async function translateText(text: string, from: Lang, to: Lang): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${LANG_CODES[from]}|${LANG_CODES[to]}`
+    );
+    const data = await res.json();
+    return data?.responseData?.translatedText || text;
+  } catch {
+    return text;
+  }
+}
 
 function useCategories() {
   return useQuery({
@@ -29,17 +55,55 @@ export default function CategoriesPage() {
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [deleteCat, setDeleteCat] = useState<Category | null>(null);
   const [name, setName] = useState('');
+  const [lang, setLang] = useState<Lang>('uz');
   const [slug, setSlug] = useState('');
+  const [translating, setTranslating] = useState(false);
   const [formError, setFormError] = useState('');
 
+  const autoSlug = (n: string) => n.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  const buildTranslations = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    setTranslating(true);
+    const others = ALL_LANGS.filter(l => l !== lang);
+    const results: Record<Lang, string> = { uz: '', ru: '', en: '' };
+    results[lang] = trimmed;
+    await Promise.all(others.map(async (to) => {
+      results[to] = await translateText(trimmed, lang, to);
+    }));
+    setTranslating(false);
+    return results;
+  };
+
   const createMut = useMutation({
-    mutationFn: () => adminApi.createCategory({ name: name.trim(), slug: slug.trim() }),
+    mutationFn: async () => {
+      const tr = await buildTranslations();
+      if (!tr) throw new Error('Nom kiriting');
+      return adminApi.createCategory({
+        name: tr[lang],
+        name_uz: tr.uz,
+        name_ru: tr.ru,
+        name_en: tr.en,
+        slug: slug.trim(),
+      });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); closeForm(); showToast({ message: "Yaratildi", type: 'success' }); },
     onError: (e: Error) => setFormError(e.message),
   });
 
   const updateMut = useMutation({
-    mutationFn: () => adminApi.updateCategory(editCat!.id, { name: name.trim(), slug: slug.trim() }),
+    mutationFn: async () => {
+      const tr = await buildTranslations();
+      if (!tr) throw new Error('Nom kiriting');
+      return adminApi.updateCategory(editCat!.id, {
+        name: tr[lang],
+        name_uz: tr.uz,
+        name_ru: tr.ru,
+        name_en: tr.en,
+        slug: slug.trim() || undefined,
+      });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); closeForm(); showToast({ message: "Yangilandi", type: 'success' }); },
     onError: (e: Error) => setFormError(e.message),
   });
@@ -49,13 +113,22 @@ export default function CategoriesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); setDeleteCat(null); showToast({ message: "O'chirildi", type: 'error' }); },
   });
 
-  const openCreate = () => { setName(''); setSlug(''); setFormError(''); setEditCat(null); setFormOpen(true); };
-  const openEdit = (cat: Category) => { setName(cat.name); setSlug(cat.slug); setFormError(''); setEditCat(cat); setFormOpen(true); };
-  const closeForm = () => { setFormOpen(false); setEditCat(null); };
+  const openCreate = () => { setName(''); setLang('uz'); setSlug(''); setFormError(''); setEditCat(null); setFormOpen(true); };
+  const openEdit = (cat: Category) => {
+    // Prefill with the first available translation
+    const existing = cat.name_uz || cat.name_ru || cat.name_en || cat.name;
+    const existingLang: Lang = cat.name_uz ? 'uz' : cat.name_ru ? 'ru' : 'en';
+    setName(existing);
+    setLang(existingLang);
+    setSlug(cat.slug);
+    setFormError('');
+    setEditCat(cat);
+    setFormOpen(true);
+  };
+  const closeForm = () => { setFormOpen(false); setEditCat(null); setTranslating(false); };
 
-  const autoSlug = (n: string) => n.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-  const isPending = createMut.isPending || updateMut.isPending;
+  const isPending = createMut.isPending || updateMut.isPending || translating;
+  const canSubmit = name.trim() && slug.trim();
 
   return (
     <AdminShell
@@ -78,23 +151,20 @@ export default function CategoriesPage() {
             {categories.map((cat) => (
               <li key={cat.id} className="flex items-center justify-between rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3">
                 <div>
-                  <p className="font-semibold">{cat.name}</p>
+                  <p className="font-semibold">{cat.name_uz || cat.name}</p>
+                  {(cat.name_ru || cat.name_en) && (
+                    <p className="text-xs text-[var(--admin-muted)]">
+                      {[cat.name_ru && `RU: ${cat.name_ru}`, cat.name_en && `EN: ${cat.name_en}`].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   <p className="text-xs text-[var(--admin-muted)]">{cat.slug}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <p className="mr-2 text-xs text-[var(--admin-muted)]">{new Date(cat.created_at).toLocaleDateString()}</p>
-                  <button
-                    onClick={() => openEdit(cat)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-blue-500 transition-colors"
-                    title="Tahrirlash"
-                  >
+                  <button onClick={() => openEdit(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-blue-500 transition-colors" title="Tahrirlash">
                     <Pencil size={14} />
                   </button>
-                  <button
-                    onClick={() => setDeleteCat(cat)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-rose-500 transition-colors"
-                    title="O'chirish"
-                  >
+                  <button onClick={() => setDeleteCat(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-rose-500 transition-colors" title="O'chirish">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -111,10 +181,30 @@ export default function CategoriesPage() {
             <button onClick={closeForm} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)]">
               <X size={14} />
             </button>
-            <h2 className="mb-4 text-base font-bold">{editCat ? 'Tahrirlash' : "Yangi kategoriya"}</h2>
+            <h2 className="mb-4 text-base font-bold">{editCat ? 'Tahrirlash' : 'Yangi kategoriya'}</h2>
             <div className="space-y-3">
+              {/* Language selector */}
+              <div>
+                <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Til</span>
+                <div className="flex gap-1.5">
+                  {ALL_LANGS.map(l => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLang(l)}
+                      className={`flex-1 rounded-lg py-1.5 text-xs font-bold border transition-all ${lang === l ? 'bg-[var(--admin-accent)] text-white border-[var(--admin-accent)]' : 'border-[var(--admin-border)] text-[var(--admin-muted)] hover:border-[var(--admin-accent)]/50'}`}
+                    >
+                      {LANG_LABELS[l]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Single name input */}
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Nomi</span>
+                <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">
+                  Nomi ({LANG_LABELS[lang]})
+                </span>
                 <input
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (!editCat) setSlug(autoSlug(e.target.value)); }}
@@ -122,6 +212,7 @@ export default function CategoriesPage() {
                   placeholder="Masalan: Kiyimlar"
                 />
               </label>
+
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Slug</span>
                 <input
@@ -131,16 +222,23 @@ export default function CategoriesPage() {
                   placeholder="masalan: kiyimlar"
                 />
               </label>
+
+              {translating && (
+                <p className="flex items-center gap-1.5 text-xs text-[var(--admin-muted)]">
+                  <Loader2 size={12} className="animate-spin" /> Boshqa tillarga tarjima qilinmoqda...
+                </p>
+              )}
             </div>
+
             {formError && <p className="mt-2 text-xs text-rose-500">{formError}</p>}
             <div className="mt-5 flex gap-2">
               <button onClick={closeForm} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>
               <button
-                disabled={isPending || !name.trim() || !slug.trim()}
+                disabled={isPending || !canSubmit}
                 onClick={() => editCat ? updateMut.mutate() : createMut.mutate()}
-                className="flex-1 rounded-full bg-[var(--admin-accent)] py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-[var(--admin-accent)] py-2 text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                {isPending ? '...' : 'Saqlash'}
+                {isPending ? <><Loader2 size={13} className="animate-spin" /> ...</> : 'Saqlash'}
               </button>
             </div>
           </div>
@@ -156,7 +254,7 @@ export default function CategoriesPage() {
             </div>
             <h2 className="text-base font-bold">Kategoriyani o&apos;chirish</h2>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
-              <span className="font-semibold text-[var(--admin-fg)]">{deleteCat.name}</span> o&apos;chirilsinmi?
+              <span className="font-semibold text-[var(--admin-fg)]">{deleteCat.name_uz || deleteCat.name}</span> o&apos;chirilsinmi?
             </p>
             <div className="mt-5 flex gap-2">
               <button onClick={() => setDeleteCat(null)} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>

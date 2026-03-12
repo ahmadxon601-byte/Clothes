@@ -52,6 +52,7 @@ export interface ApiProduct {
     id: string;
     name: string;
     base_price: number;
+    sale_price: number | null;
     sku: string;
     views: number;
     created_at: string;
@@ -65,6 +66,9 @@ export interface ApiProduct {
 export interface ApiCategory {
     id: string;
     name: string;
+    name_uz: string | null;
+    name_ru: string | null;
+    name_en: string | null;
     slug: string;
 }
 

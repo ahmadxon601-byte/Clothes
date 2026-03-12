@@ -15,7 +15,7 @@ const buildRoutes = (base: string) => {
         PROFILE: withBase('/profile'),
         SEARCH: withBase('/search'),
         SETTINGS: withBase('/settings'),
-        PRODUCT: (id: string) => withBase(`/p/${id}`),
+        PRODUCT: (id: string) => withBase(`/product/${id}`),
         STORE: (id: string) => withBase(`/store/${id}`),
         STORE_APPLY: withBase('/store/apply'),
         STORE_STATUS: withBase('/store/status'),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -29,7 +29,6 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
     const [addressLabel, setAddressLabel] = useState('');
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const mapRef = useRef<L.Map | null>(null);
     const [mapKey] = useState(() => `${embedded ? 'embedded' : 'modal'}-${Math.random().toString(36).slice(2)}`);
 
     useEffect(() => {
@@ -40,12 +39,6 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
         });
         setMounted(true);
-        return () => {
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
-        };
     }, []);
 
     const handlePick = async (lat: number, lng: number) => {
@@ -109,8 +102,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                     center={[pin?.lat ?? initialLat, pin?.lng ?? initialLng]}
                     zoom={14}
                     attributionControl={false}
-                    ref={(map) => { if (map) mapRef.current = map; }}
-                    style={{ height: '100%', width: '100%' }}
+                                        style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -160,8 +152,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                     center={[pin?.lat ?? initialLat, pin?.lng ?? initialLng]}
                     zoom={13}
                     attributionControl={false}
-                    ref={(map) => { if (map) mapRef.current = map; }}
-                    style={{ height: '100%', width: '100%' }}
+                                        style={{ height: '100%', width: '100%' }}
                 >
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

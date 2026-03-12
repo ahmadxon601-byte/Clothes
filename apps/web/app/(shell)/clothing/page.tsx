@@ -1,14 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Heart, Loader2, Package, Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
+import { useSettingsStore } from '../../../src/features/settings/model';
+const BannerCarousel = dynamic(() => import('../../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
 interface Product {
   id: string;
   name: string;
   base_price: number;
+  sale_price: number | null;
   thumbnail: string | null;
   category_name: string | null;
   store_name: string;
@@ -90,7 +94,8 @@ function getToken() {
 
 export default function ClothingPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null }[]>([]);
+  const lang = useSettingsStore((s) => s.settings.language);
   const [activeCategory, setActiveCategory] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -343,11 +348,15 @@ export default function ClothingPage() {
               onClick={() => setActiveCategory(cat.id)}
               className={`shrink-0 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
             >
-              {cat.name}
+              {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
             </button>
           ))}
         </div>
       )}
+
+      <div className="mb-6">
+        <BannerCarousel variant="desktop" />
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-24">
@@ -397,9 +406,27 @@ export default function ClothingPage() {
                 <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.name}</h3>
                 <p className="mt-0.5 text-[11px] text-[#9ca3af]">{product.store_name}</p>
                 <div className="mt-2.5">
-                  <span className="text-[17px] font-black text-[#111111] dark:text-white">
-                    {Number(product.base_price).toLocaleString()} so&apos;m
-                  </span>
+                  {(() => {
+                    const bp = Number(product.base_price);
+                    const sp = product.sale_price != null ? Number(product.sale_price) : null;
+                    const cur = sp != null && sp < bp ? sp : bp;
+                    const hasDis = cur < bp;
+                    const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
+                    const fmt = (n: number) => n.toLocaleString('ru-RU');
+                    return (
+                      <>
+                        <span className="text-[17px] font-black text-[#00c853]">
+                          {fmt(cur)} so&apos;m
+                        </span>
+                        {hasDis && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[12px] text-[#9ca3af] line-through">{fmt(bp)} so&apos;m</span>
+                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </Link>

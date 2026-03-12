@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Search, X, Heart, Loader2, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { fetchProducts, fetchCategories, toggleFavorite, getApiToken, type ApiProduct, type ApiCategory } from '../../src/lib/apiClient';
@@ -10,6 +11,7 @@ import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { cn } from '../../src/shared/lib/utils';
 import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 import { useTranslation } from '../../src/shared/lib/i18n';
+const BannerCarousel = dynamic(() => import('../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
@@ -120,6 +122,9 @@ export default function TgHomePage() {
     const clearFiltersLabel = language === 'en' ? 'Clear filters' : language === 'ru' ? 'Очистить фильтры' : 'Filtrlarni tozalash';
 
     const categoryLabel = (cat: ApiCategory) => {
+        if (language === 'ru' && cat.name_ru) return cat.name_ru;
+        if (language === 'en' && cat.name_en) return cat.name_en;
+        if (cat.name_uz) return cat.name_uz;
         const key = (cat.slug || cat.name || '').toLowerCase();
         if (key.includes('accessor')) return t.cat_accessories;
         if (key.includes('dress')) return language === 'uz' ? 'Ko\'ylaklar' : language === 'ru' ? 'Платья' : 'Dresses';
@@ -337,6 +342,10 @@ export default function TgHomePage() {
                 ))}
             </div>
 
+            <div className="mb-3">
+                <BannerCarousel variant="telegram" productRoute={(id) => TELEGRAM_ROUTES.PRODUCT(id)} />
+            </div>
+
             {loading ? (
                 <div className="flex justify-center py-16">
                     <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
@@ -363,7 +372,24 @@ export default function TgHomePage() {
                             <div className="p-3">
                                 <p className="text-[10px] text-[var(--color-hint)] font-medium truncate">{p.store_name}</p>
                                 <h3 className="text-[13px] font-bold text-[var(--color-text)] line-clamp-2 mt-0.5">{p.name}</h3>
-                                <p className="text-[14px] font-black text-[var(--color-primary)] mt-1">{formatPrice(p.base_price, 'UZS')}</p>
+                                {(() => {
+                                    const bp = Number(p.base_price);
+                                    const sp = p.sale_price != null ? Number(p.sale_price) : null;
+                                    const cur = sp != null && sp < bp ? sp : bp;
+                                    const hasDis = cur < bp;
+                                    const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
+                                    return (
+                                        <div className="mt-1">
+                                            <p className="text-[14px] font-black text-[var(--color-primary)]">{formatPrice(cur, 'UZS')}</p>
+                                            {hasDis && (
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(bp, 'UZS')}</span>
+                                                    <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </Link>
                     ))}

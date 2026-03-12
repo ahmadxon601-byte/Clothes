@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Heart, Search, Star, Loader2, X } from 'lucide-react';
-import { cn } from '../../../src/shared/lib/utils';
-import { formatPrice } from '../../../src/shared/lib/formatPrice';
+import { Heart, Search, Loader2, X } from 'lucide-react';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { getApiToken } from '../../../src/lib/apiClient';
 
@@ -13,6 +11,7 @@ interface FavProduct {
     product_id: string;
     title: string;
     base_price: number;
+    sale_price: number | null;
     image_url: string | null;
     brand: string;
     created_at: string;
@@ -109,8 +108,11 @@ export default function TgFavoritesPage() {
 
             <div className="grid grid-cols-2 gap-3 pb-4">
                 {filtered.map(product => {
-                    const seed = product.product_id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-                    const rating = 3 + (seed % 3);
+                    const bp = Number(product.base_price);
+                    const sp = product.sale_price != null ? Number(product.sale_price) : null;
+                    const cur = sp != null && sp < bp ? sp : bp;
+                    const hasDis = cur < bp;
+                    const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
                     const isBusy = toggling.has(product.product_id);
                     return (
                         <Link key={product.id} href={TELEGRAM_ROUTES.PRODUCT(product.product_id)}
@@ -126,12 +128,15 @@ export default function TgFavoritesPage() {
                             <div className="p-2.5">
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-hint)] truncate">{product.brand}</p>
                                 <h3 className="text-[13px] font-bold text-[var(--color-text)] line-clamp-2 mt-0.5">{product.title}</h3>
-                                <div className="flex items-center gap-0.5 mt-1">
-                                    {Array.from({ length: 5 }, (_, i) => (
-                                        <Star key={i} size={10} className={cn(i < rating ? 'fill-[var(--color-primary)] text-[var(--color-primary)]' : 'text-[var(--color-border)]')} />
-                                    ))}
+                                <div className="mt-1">
+                                    <p className="text-[14px] font-black text-[var(--color-primary)]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
+                                    {hasDis && (
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                            <span className="text-[11px] text-[var(--color-hint)] line-through">{bp.toLocaleString('ru-RU')} so&apos;m</span>
+                                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-[14px] font-black text-[var(--color-primary)] mt-1">{formatPrice(product.base_price, 'UZS')}</p>
                             </div>
                         </Link>
                     );
