@@ -7,17 +7,25 @@ declare global {
 
 function getPool(): Pool {
   if (!globalThis._pgPool) {
-    globalThis._pgPool = new Pool({
-      host: process.env.DB_HOST || "127.0.0.1",
-      port: Number(process.env.DB_PORT) || 55433,
-      database: process.env.DB_NAME || "pos",
-      user: process.env.DB_USER || "postgres",
-      // Keep empty password as valid local-dev value instead of undefined.
-      password: process.env.DB_PASSWORD ?? "",
-      max: 10,
-      idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 3_000,
-    });
+    const connectionString = process.env.DATABASE_URL?.trim();
+    globalThis._pgPool = connectionString
+      ? new Pool({
+          connectionString,
+          max: 10,
+          idleTimeoutMillis: 30_000,
+          connectionTimeoutMillis: 3_000,
+        })
+      : new Pool({
+          host: process.env.DB_HOST || "127.0.0.1",
+          port: Number(process.env.DB_PORT) || 5432,
+          database: process.env.DB_NAME || "pos",
+          user: process.env.DB_USER || "postgres",
+          // Keep empty password as valid local-dev value instead of undefined.
+          password: process.env.DB_PASSWORD ?? "",
+          max: 10,
+          idleTimeoutMillis: 30_000,
+          connectionTimeoutMillis: 3_000,
+        });
   }
   return globalThis._pgPool;
 }

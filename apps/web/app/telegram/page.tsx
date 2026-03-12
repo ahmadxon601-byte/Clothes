@@ -17,14 +17,14 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
 const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
 const FALLBACK_CATEGORIES: ApiCategory[] = [
-    { id: 'accessories', name: 'Accessories', slug: 'accessories' },
-    { id: 'dresses', name: 'Dresses', slug: 'dresses' },
-    { id: 'outerwear', name: 'Outerwear', slug: 'outerwear' },
-    { id: 'pants', name: 'Pants', slug: 'pants' },
-    { id: 'shirts', name: 'Shirts', slug: 'shirts' },
-    { id: 'shoes', name: 'Shoes', slug: 'shoes' },
-    { id: 'sportswear', name: 'Sportswear', slug: 'sportswear' },
-    { id: 'jackets', name: 'Jackets', slug: 'jackets' },
+    { id: 'accessories', name: 'Accessories', name_uz: null, name_ru: null, name_en: 'Accessories', slug: 'accessories' },
+    { id: 'dresses', name: 'Dresses', name_uz: null, name_ru: null, name_en: 'Dresses', slug: 'dresses' },
+    { id: 'outerwear', name: 'Outerwear', name_uz: null, name_ru: null, name_en: 'Outerwear', slug: 'outerwear' },
+    { id: 'pants', name: 'Pants', name_uz: null, name_ru: null, name_en: 'Pants', slug: 'pants' },
+    { id: 'shirts', name: 'Shirts', name_uz: null, name_ru: null, name_en: 'Shirts', slug: 'shirts' },
+    { id: 'shoes', name: 'Shoes', name_uz: null, name_ru: null, name_en: 'Shoes', slug: 'shoes' },
+    { id: 'sportswear', name: 'Sportswear', name_uz: null, name_ru: null, name_en: 'Sportswear', slug: 'sportswear' },
+    { id: 'jackets', name: 'Jackets', name_uz: null, name_ru: null, name_en: 'Jackets', slug: 'jackets' },
 ];
 
 function formatDateLabel(iso: string) {

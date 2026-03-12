@@ -117,7 +117,7 @@ export default function StoreApplyPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.phone ?? 'Telefon raqam'}</label>
+                    <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">Telefon raqam</label>
                     <Input
                         placeholder="+998 90 000 00 00"
                         type="tel"
@@ -130,7 +130,7 @@ export default function StoreApplyPage() {
                 <div>
                     <label className="block text-sm font-medium text-[var(--color-hint)] mb-2 ml-1">{t.description ?? 'Tavsif'}</label>
                     <textarea
-                        placeholder={t.store_description ?? "Do'kon haqida qisqacha..."}
+                        placeholder="Do'kon haqida qisqacha..."
                         value={formData.description}
                         onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
                         disabled={loading}

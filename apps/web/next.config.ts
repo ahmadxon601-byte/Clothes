@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
+const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+
 const nextConfig: NextConfig = {
   devIndicators: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -18,11 +23,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3001/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:3001/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ];
   },

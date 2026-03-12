@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.dev ni qayta yoqing.'); process.exit(1)\"",
-    "dev:real": "next dev --port 3001 & tsx scripts/telegram-polling.ts",
+    "dev": "npm run dev:real",
+    "dev:real": "next dev --hostname 127.0.0.1 --port 3001",
     "build": "next build",
-    "start": "node -e \"console.error('Backend vaqtincha o`chirib qo`yilgan. Yangi backend tayyor bo`lganda scripts.start ni qayta yoqing.'); process.exit(1)\"",
+    "start": "npm run start:real",
     "start:real": "next start",
     "lint": "next lint",
     "bot:dev": "tsx scripts/telegram-polling.ts"
@@ -22,6 +22,7 @@
     "pg": "^8.13.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "zustand": "^5.0.11",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
-import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
+import { ok, fail, requireAuth, paginate, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 
 // ── GET /api/products ────────────────────────────────────────────────────────
@@ -154,7 +154,11 @@ function genVariantSku(productSku: string, size?: string, color?: string): strin
 
 export async function POST(req: NextRequest) {
   try {
-    const jwtUser = requireRole(req, "seller", "admin");
+    const jwtUser = requireAuth(req);
+    const roleResult = await query("SELECT role FROM users WHERE id = $1", [jwtUser.userId]);
+    if (roleResult.rows.length === 0) return fail("Unauthorized", 401);
+    const actualRole = roleResult.rows[0].role as string;
+    if (!["seller", "admin"].includes(actualRole)) return fail("Forbidden", 403);
 
     const body = await req.json();
     const parsed = createSchema.safeParse(body);

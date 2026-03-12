@@ -335,10 +335,10 @@ export default function ClothingPage() {
 
       {/* Category chips */}
       {categories.length > 0 && (
-        <div className="no-scrollbar mb-8 flex flex-nowrap gap-2 overflow-x-auto pb-1">
+        <div className="mb-8 flex flex-wrap gap-2 pb-1">
           <button
             onClick={() => setActiveCategory('')}
-            className={`shrink-0 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
           >
             Barchasi
           </button>
@@ -346,7 +346,7 @@ export default function ClothingPage() {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`shrink-0 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
             >
               {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
             </button>

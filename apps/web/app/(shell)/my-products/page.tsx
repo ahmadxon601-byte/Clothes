@@ -7,6 +7,7 @@ import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
+import { useSettingsStore } from '../../../src/features/settings/model';
 
 interface Product {
   id: string;
@@ -32,6 +33,9 @@ interface Store {
 interface Category {
   id: string;
   name: string;
+  name_uz: string | null;
+  name_ru: string | null;
+  name_en: string | null;
   slug: string;
 }
 
@@ -45,6 +49,7 @@ const authHeader = () => ({
 
 export default function MyProductsPage() {
   const { user, loading } = useWebAuth();
+  const language = useSettingsStore((s) => s.settings.language);
   const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({
     open: false,
     tab: 'login',
@@ -86,6 +91,19 @@ export default function MyProductsPage() {
   const [formError, setFormError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+
+  const getCategoryLabel = (cat: Category) => {
+    if (language === 'ru') return cat.name_ru || cat.name;
+    if (language === 'en') return cat.name_en || cat.name;
+    return cat.name_uz || cat.name;
+  };
+
+  const categoryPlaceholder =
+    language === 'ru'
+      ? '— Категория не выбрана —'
+      : language === 'en'
+        ? '— No category selected —'
+        : '— Kategoriya tanlanmagan —';
 
   const loadProducts = async () => {
     try {
@@ -186,25 +204,50 @@ export default function MyProductsPage() {
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setUploadingImg(true);
+
     const token = getToken();
-    const urls: string[] = [];
-    for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      if (res.ok) {
-        const json = await res.json();
+    if (!token) {
+      setFormError("Sessiya topilmadi. Qayta login qiling.");
+      return;
+    }
+
+    setFormError('');
+    setUploadingImg(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        if (file.size > 4 * 1024 * 1024) {
+          throw new Error(`${file.name}: 4MB dan kichik rasm tanlang`);
+        }
+
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error ?? 'Rasm yuklashda xatolik');
+        }
+
         const url = json.data?.url ?? json.url;
         if (url) urls.push(url);
       }
+
+      if (urls.length === 0) {
+        throw new Error('Rasm yuklanmadi');
+      }
+
+      setFormImages((prev) => [...prev, ...urls]);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Rasm yuklashda xatolik');
+    } finally {
+      setUploadingImg(false);
     }
-    setFormImages((prev) => [...prev, ...urls]);
-    setUploadingImg(false);
   };
 
   const handleSave = async () => {
@@ -381,7 +424,12 @@ export default function MyProductsPage() {
                   <p className="line-clamp-1 text-[14px] font-bold text-[#111111] dark:text-white">{p.name}</p>
                   <p className="mt-0.5 text-[12px] text-[#6b7280]">{p.store_name}</p>
                   {p.category_name && (
-                    <p className="mt-0.5 text-[11px] text-[#9ca3af]">{p.category_name}</p>
+                    <p className="mt-0.5 text-[11px] text-[#9ca3af]">
+                      {(() => {
+                        const matched = categories.find((c) => c.id === p.category_id);
+                        return matched ? getCategoryLabel(matched) : p.category_name;
+                      })()}
+                    </p>
                   )}
                   <p className="mt-2 text-[16px] font-black text-[#00c853]">
                     {Number(p.base_price).toLocaleString()} so&apos;m
@@ -548,9 +596,9 @@ export default function MyProductsPage() {
                     onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
                     className="w-full rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                   >
-                    <option value="">— Kategoriya tanlanmagan —</option>
+                    <option value="">{categoryPlaceholder}</option>
                     {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>{getCategoryLabel(c)}</option>
                     ))}
                   </select>
                 </label>

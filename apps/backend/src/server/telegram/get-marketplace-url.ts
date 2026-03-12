@@ -1,6 +1,11 @@
 const DEFAULT_LOCAL_MARKETPLACE_URL = "http://localhost:3010";
 
 export const getMarketplaceUrl = (): string => {
+  const explicitWebAppUrl = process.env.TELEGRAM_WEBAPP_URL?.trim();
+  if (explicitWebAppUrl) {
+    return explicitWebAppUrl;
+  }
+
   const directUrl = process.env.URL?.trim();
   if (directUrl) {
     return directUrl;

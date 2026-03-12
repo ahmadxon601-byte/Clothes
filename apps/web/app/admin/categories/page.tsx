@@ -45,7 +45,7 @@ function useCategories() {
 }
 
 export default function CategoriesPage() {
-  const { t } = useAdminI18n();
+  const { t, locale } = useAdminI18n();
   const qc = useQueryClient();
   const { showToast } = useToast();
   const { data, isLoading } = useCategories();
@@ -61,6 +61,12 @@ export default function CategoriesPage() {
   const [formError, setFormError] = useState('');
 
   const autoSlug = (n: string) => n.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  const getLocalizedName = (cat: Category, l: Lang) => {
+    if (l === 'uz') return cat.name_uz || cat.name || cat.name_ru || cat.name_en || '';
+    if (l === 'ru') return cat.name_ru || cat.name || cat.name_uz || cat.name_en || '';
+    return cat.name_en || cat.name || cat.name_uz || cat.name_ru || '';
+  };
 
   const buildTranslations = async () => {
     const trimmed = name.trim();
@@ -115,9 +121,14 @@ export default function CategoriesPage() {
 
   const openCreate = () => { setName(''); setLang('uz'); setSlug(''); setFormError(''); setEditCat(null); setFormOpen(true); };
   const openEdit = (cat: Category) => {
-    // Prefill with the first available translation
-    const existing = cat.name_uz || cat.name_ru || cat.name_en || cat.name;
-    const existingLang: Lang = cat.name_uz ? 'uz' : cat.name_ru ? 'ru' : 'en';
+    const existing = getLocalizedName(cat, locale);
+    const existingLang: Lang =
+      locale === 'uz' && cat.name_uz ? 'uz'
+      : locale === 'ru' && cat.name_ru ? 'ru'
+      : locale === 'en' && cat.name_en ? 'en'
+      : cat.name_uz ? 'uz'
+      : cat.name_ru ? 'ru'
+      : 'en';
     setName(existing);
     setLang(existingLang);
     setSlug(cat.slug);
@@ -151,16 +162,16 @@ export default function CategoriesPage() {
             {categories.map((cat) => (
               <li key={cat.id} className="flex items-center justify-between rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3">
                 <div>
-                  <p className="font-semibold">{cat.name_uz || cat.name}</p>
+                  <p className="font-semibold">{getLocalizedName(cat, locale)}</p>
                   {(cat.name_ru || cat.name_en) && (
                     <p className="text-xs text-[var(--admin-muted)]">
-                      {[cat.name_ru && `RU: ${cat.name_ru}`, cat.name_en && `EN: ${cat.name_en}`].filter(Boolean).join(' · ')}
+                      {[cat.name_uz && `UZ: ${cat.name_uz}`, cat.name_ru && `RU: ${cat.name_ru}`, cat.name_en && `EN: ${cat.name_en}`].filter(Boolean).join(' · ')}
                     </p>
                   )}
                   <p className="text-xs text-[var(--admin-muted)]">{cat.slug}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="mr-2 text-xs text-[var(--admin-muted)]">{new Date(cat.created_at).toLocaleDateString()}</p>
+                  <p className="mr-2 text-xs text-[var(--admin-muted)]">{new Date(cat.created_at).toLocaleDateString(locale)}</p>
                   <button onClick={() => openEdit(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-blue-500 transition-colors" title="Tahrirlash">
                     <Pencil size={14} />
                   </button>
@@ -254,7 +265,7 @@ export default function CategoriesPage() {
             </div>
             <h2 className="text-base font-bold">Kategoriyani o&apos;chirish</h2>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
-              <span className="font-semibold text-[var(--admin-fg)]">{deleteCat.name_uz || deleteCat.name}</span> o&apos;chirilsinmi?
+              <span className="font-semibold text-[var(--admin-fg)]">{getLocalizedName(deleteCat, locale)}</span> o&apos;chirilsinmi?
             </p>
             <div className="mt-5 flex gap-2">
               <button onClick={() => setDeleteCat(null)} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>

@@ -8,8 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w web",
-"dev:backend": "npm run dev:real -w backend",
+    "predev": "powershell -ExecutionPolicy Bypass -File .\\scripts\\kill-dev-ports.ps1",
+    "dev": "npx concurrently -k -n backend,web -c yellow,cyan \"npm run dev -w backend\" \"npm run dev -w web\"",
+    "dev:backend": "npm run dev:real -w backend",
     "dev:backend:real": "npm run dev:real -w backend",
     "lint": "npm run lint -w backend",
     "build": "npm run build -w backend",
