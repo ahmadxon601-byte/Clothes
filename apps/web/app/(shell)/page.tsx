@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Heart, Star } from 'lucide-react';
+import { ArrowRight, Heart } from 'lucide-react';
 import { SITE_ROUTES } from '../../src/shared/config/constants';
 import { fetchProducts } from '../../src/lib/apiClient';
 import type { ApiProduct } from '../../src/lib/apiClient';
@@ -330,52 +330,57 @@ export default function WebsiteHomePage() {
 
                     <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
                         {featuredProducts.map((product) => {
-                            const seed = product.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-                            const off = 10 + (seed % 30);
-                            const oldPrice = Math.round((product.base_price * 1.2) / 1000) * 1000;
-                            const rating = 3 + (seed % 3);
+                            const bp = Number(product.base_price);
+                            const sp = product.sale_price != null ? Number(product.sale_price) : null;
+                            const cur = sp != null && sp < bp ? sp : bp;
+                            const hasDis = cur < bp;
+                            const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
                             const primaryImage = product.thumbnail || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product';
                             const inWish = wishlist.has(product.id);
 
                             return (
                                 <div
                                     key={product.id}
-                                    className="group rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.25)] dark:border-white/5 dark:bg-[#1a1a1a]"
+                                    className="group relative rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.25)] dark:border-white/5 dark:bg-[#1a1a1a]"
                                 >
-                                    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
-                                        <img
-                                            src={primaryImage}
-                                            alt={product.name}
-                                            className="absolute inset-0 h-full w-full object-cover"
-                                        />
-                                        <span className="absolute left-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 text-[10px] font-black text-white">
-                                            -{off}%
-                                        </span>
-                                        <button
-                                            onClick={() => toggleWishlist(product.id)}
-                                            className={cn(
-                                                'absolute right-3 top-3 rounded-full p-2.5 backdrop-blur-md transition-all duration-300',
-                                                inWish
-                                                    ? 'bg-[#00c853] text-[#06200f]'
-                                                    : 'border border-white/30 bg-white/15 text-white hover:bg-white/25',
+                                    <Link href={`/product/${product.id}`} className="block">
+                                        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
+                                            <img
+                                                src={primaryImage}
+                                                alt={product.name}
+                                                className="absolute inset-0 h-full w-full object-cover"
+                                            />
+                                            {hasDis && (
+                                                <span className="absolute left-3 top-3 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-black text-white">
+                                                    −{pct}%
+                                                </span>
                                             )}
-                                        >
-                                            <Heart size={13} className={inWish ? 'fill-current' : ''} />
-                                        </button>
-                                    </div>
-                                    <div className="px-1 pt-4 pb-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{tc(product.category_name ?? '')}</p>
-                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.name}</h3>
-                                        <div className="mt-1.5 flex items-center gap-0.5">
-                                            {Array.from({ length: 5 }, (_, i) => (
-                                                <Star key={i} size={11} className={i < rating ? 'fill-[#00c853] text-[#00c853]' : 'text-[#e5e7eb]'} />
-                                            ))}
                                         </div>
-                                        <div className="mt-2.5 flex items-end gap-2">
-                                            <span className="text-[17px] font-black text-[#111111] dark:text-white">{formatPrice(product.base_price, 'UZS')}</span>
-                                            <span className="text-[12px] text-[#c4c9d4] line-through">{formatPrice(oldPrice, 'UZS')}</span>
+                                        <div className="px-1 pt-4 pb-1">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{tc(product.category_name ?? '')}</p>
+                                            <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.name}</h3>
+                                            <p className="mt-0.5 text-[11px] text-[#9ca3af]">{product.store_name}</p>
+                                            <div className="mt-2.5">
+                                                <span className="text-[17px] font-black text-[#00c853]">{formatPrice(cur, 'UZS')}</span>
+                                                {hasDis && (
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(bp, 'UZS')}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Link>
+                                    <button
+                                        onClick={() => toggleWishlist(product.id)}
+                                        className={cn(
+                                            'absolute right-5 top-5 rounded-full p-2.5 backdrop-blur-md transition-all duration-300',
+                                            inWish
+                                                ? 'bg-[#00c853] text-[#06200f]'
+                                                : 'border border-white/30 bg-white/15 text-white hover:bg-white/25',
+                                        )}
+                                    >
+                                        <Heart size={13} className={inWish ? 'fill-current' : ''} />
+                                    </button>
                                 </div>
                             );
                         })}

@@ -14,6 +14,7 @@ interface Product {
   name: string;
   description: string | null;
   base_price: number;
+  sale_price: number | null;
   sku: string;
   is_active: boolean;
   views: number;
@@ -431,9 +432,24 @@ export default function MyProductsPage() {
                       })()}
                     </p>
                   )}
-                  <p className="mt-2 text-[16px] font-black text-[#00c853]">
-                    {Number(p.base_price).toLocaleString()} so&apos;m
-                  </p>
+                  {(() => {
+                    const bp = Number(p.base_price);
+                    const sp = p.sale_price != null ? Number(p.sale_price) : null;
+                    const cur = sp != null && sp < bp ? sp : bp;
+                    const hasDis = cur < bp;
+                    const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
+                    return (
+                      <div className="mt-2">
+                        <p className="text-[16px] font-black text-[#00c853]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
+                        {hasDis && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[12px] text-[#9ca3af] line-through">{bp.toLocaleString('ru-RU')} so&apos;m</span>
+                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </Link>
 

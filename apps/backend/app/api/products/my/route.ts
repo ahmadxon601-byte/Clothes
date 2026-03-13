@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
          c.name AS category_name,
          st.id AS store_id, st.name AS store_name,
          (SELECT pi.url FROM product_images pi
-          WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail
+          WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail,
+         (SELECT MIN(pv.price) FROM product_variants pv
+          WHERE pv.product_id = p.id) AS sale_price
        FROM products p
        LEFT JOIN categories c ON c.id = p.category_id
        JOIN stores st ON st.id = p.store_id
