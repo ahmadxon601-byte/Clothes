@@ -99,7 +99,12 @@ export default function ClothingPage() {
   const [activeCategory, setActiveCategory] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [favIds, setFavIds] = useState<Set<string>>(new Set());
+  const [favIds, setFavIds] = useState<Set<string>>(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('fav_ids_cache') : null;
+      return cached ? new Set<string>(JSON.parse(cached)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
   const [toggling, setToggling] = useState<Set<string>>(new Set());
 
   const [filterOpen, setFilterOpen] = useState(false);
@@ -126,7 +131,9 @@ export default function ClothingPage() {
       .then((r) => r.json())
       .then((json) => {
         const rows: { product_id: string }[] = json?.data ?? json ?? [];
-        setFavIds(new Set(rows.map((r) => r.product_id)));
+        const ids = rows.map((r) => r.product_id);
+        setFavIds(new Set(ids));
+        try { localStorage.setItem('fav_ids_cache', JSON.stringify(ids)); } catch { /* noop */ }
       })
       .catch(() => {});
   }, []);
@@ -148,6 +155,7 @@ export default function ClothingPage() {
         setFavIds((prev) => {
           const s = new Set(prev);
           favorited ? s.add(productId) : s.delete(productId);
+          try { localStorage.setItem('fav_ids_cache', JSON.stringify([...s])); } catch { /* noop */ }
           return s;
         });
       }

@@ -22,7 +22,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "O'chirish"
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-4" onClick={onCancel}>
+        <div className="fixed inset-0 z-[1500] flex items-end sm:items-center justify-center px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]" onClick={onCancel}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div
                 className="relative w-full max-w-sm rounded-[24px] bg-[var(--color-surface,#fff)] dark:bg-[#1a1a1a] p-6 shadow-2xl"
