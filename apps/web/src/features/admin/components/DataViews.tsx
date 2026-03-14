@@ -86,8 +86,8 @@ export function TD({ children, className }: { children: ReactNode; className?: s
   return <td className={cn('px-4 py-3 align-middle text-[var(--admin-text)]', className)}>{children}</td>;
 }
 
-export function TR({ children }: { children: ReactNode }) {
-  return <tr className='border-t border-[var(--admin-border)] transition-colors hover:bg-[var(--admin-pill)]'>{children}</tr>;
+export function TR({ children, className }: { children: ReactNode; className?: string }) {
+  return <tr className={cn('border-t border-[var(--admin-border)] transition-colors hover:bg-[var(--admin-pill)]', className)}>{children}</tr>;
 }
 
 export function MobileCardList({ children }: { children: ReactNode }) {

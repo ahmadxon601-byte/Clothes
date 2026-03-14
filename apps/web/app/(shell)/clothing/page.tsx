@@ -393,17 +393,18 @@ export default function ClothingPage() {
                   </div>
                 )}
                 <button
+                  type="button"
                   onClick={(e) => toggleFav(e, product.id)}
                   disabled={toggling.has(product.id)}
-                  className={`absolute right-3 top-3 rounded-full p-2.5 backdrop-blur-md border transition-all disabled:opacity-60 ${
+                  className={`absolute right-3 top-3 z-10 rounded-full p-2.5 backdrop-blur-md border transition-all disabled:opacity-60 ${
                     favIds.has(product.id)
-                      ? 'border-[#00c853]/40 bg-[#00c853] text-[#06200f]'
-                      : 'border-white/30 bg-white/15 text-white hover:bg-[#00c853] hover:text-[#06200f]'
+                      ? 'border-red-200 bg-white/92 text-red-500'
+                      : 'border-white/30 bg-white/15 text-white hover:bg-white/90 hover:text-[#111111]'
                   }`}
                 >
                   {toggling.has(product.id)
                     ? <Loader2 size={13} className="animate-spin" />
-                    : <Heart size={13} className={favIds.has(product.id) ? 'fill-current' : ''} />
+                    : <Heart size={13} className={favIds.has(product.id) ? 'fill-current text-red-500' : ''} />
                   }
                 </button>
               </div>

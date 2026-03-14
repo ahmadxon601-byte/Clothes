@@ -41,7 +41,7 @@ export default function UsersPage() {
   const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'user' });
   const [createError, setCreateError] = useState('');
 
-  const query = useUsers({ page, limit: 16, search, role });
+  const query = useUsers({ page, limit: 16, search, role, exclude_role: 'admin' });
   const mutation = useUserMutation();
   const { showToast } = useToast();
 
@@ -93,7 +93,6 @@ export default function UsersPage() {
           <option value=''>{t('common.allRoles')}</option>
           <option value='user'>{t('roles.user')}</option>
           <option value='seller'>Seller</option>
-          <option value='admin'>Admin</option>
         </select>
       </FilterBar>
 
@@ -118,7 +117,7 @@ export default function UsersPage() {
                 {query.data?.users.map((item) => {
                   const banned = Boolean(item.is_banned);
                   return (
-                    <TR key={item.id}>
+                    <TR key={item.id} className='hover:bg-transparent'>
                       <TD>
                         <p className='font-semibold'>{item.name || '-'}</p>
                         <p className='text-xs text-[var(--admin-muted)]'>{item.email}</p>
@@ -142,27 +141,27 @@ export default function UsersPage() {
                           <button
                             title="Tahrirlash"
                             onClick={() => openEdit(item)}
-                            className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors'
+                            className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
                           >
-                            <Pencil size={14} />
+                            Tahrirlash
                           </button>
                           {/* Ban/Unban */}
                           <button
                             title={banned ? t('common.unban') : t('common.ban')}
                             disabled={item.role === 'admin'}
                             onClick={() => setTargetUser({ id: item.id, banned })}
-                            className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-amber-500 disabled:opacity-40 transition-colors'
+                            className='rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none disabled:opacity-40'
                           >
-                            {banned ? <Shield size={14} /> : <ShieldOff size={14} />}
+                            {banned ? t('common.unban') : t('common.ban')}
                           </button>
                           {/* Delete */}
                           <button
                             title="O'chirish"
                             disabled={item.role === 'admin'}
                             onClick={() => setDeleteUser(item)}
-                            className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-rose-500 disabled:opacity-40 transition-colors'
+                            className='rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none disabled:opacity-40'
                           >
-                            <Trash2 size={14} />
+                            O&apos;chirish
                           </button>
                         </div>
                       </TD>

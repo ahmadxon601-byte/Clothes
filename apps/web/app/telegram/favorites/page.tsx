@@ -6,6 +6,8 @@ import { Heart, Search, Loader2, X } from 'lucide-react';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { getApiToken } from '../../../src/lib/apiClient';
 
+const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
+
 interface FavProduct {
     id: string;
     product_id: string;
@@ -23,6 +25,13 @@ export default function TgFavoritesPage() {
     const [query, setQuery] = useState('');
     const [toggling, setToggling] = useState<Set<string>>(new Set());
 
+    const syncFavCache = (ids: string[]) => {
+        try {
+            localStorage.setItem(TG_FAVORITES_CACHE_KEY, JSON.stringify(ids));
+            window.dispatchEvent(new CustomEvent('tg-favorites-updated', { detail: ids }));
+        } catch { /* ignore */ }
+    };
+
     const fetchFavorites = async () => {
         const token = getApiToken();
         if (!token) { setLoading(false); return; }
@@ -31,7 +40,9 @@ export default function TgFavoritesPage() {
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
                 const data = json?.data ?? json ?? [];
-                setProducts(Array.isArray(data) ? data : []);
+                const nextProducts = Array.isArray(data) ? data : [];
+                setProducts(nextProducts);
+                syncFavCache(nextProducts.map((item: FavProduct) => item.product_id));
             }
         } catch { /* ignore */ } finally { setLoading(false); }
     };
@@ -48,7 +59,13 @@ export default function TgFavoritesPage() {
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ product_id: productId }),
             });
-            if (res.ok) setProducts(prev => prev.filter(p => p.product_id !== productId));
+            if (res.ok) {
+                setProducts(prev => {
+                    const nextProducts = prev.filter(p => p.product_id !== productId);
+                    syncFavCache(nextProducts.map((item) => item.product_id));
+                    return nextProducts;
+                });
+            }
         } catch { /* ignore */ } finally {
             setToggling(p => { const s = new Set(p); s.delete(productId); return s; });
         }
@@ -121,8 +138,8 @@ export default function TgFavoritesPage() {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={product.image_url || 'https://placehold.co/400x533/f5f5f5/ccc?text=No+Image'} alt={product.title} className="w-full h-full object-cover" />
                                 <button onClick={e => { e.preventDefault(); toggleFav(product.product_id); }} disabled={isBusy}
-                                    className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--color-primary)] text-white backdrop-blur-sm disabled:opacity-50">
-                                    {isBusy ? <Loader2 size={13} className="animate-spin" /> : <Heart size={13} className="fill-current" />}
+                                    className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--color-surface)]/80 text-red-500 backdrop-blur-sm disabled:opacity-50">
+                                    {isBusy ? <Loader2 size={13} className="animate-spin" /> : <Heart size={13} className="fill-current text-red-500" />}
                                 </button>
                             </div>
                             <div className="p-2.5">

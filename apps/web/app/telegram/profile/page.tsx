@@ -22,10 +22,11 @@ export default function TelegramProfilePage() {
     const { t } = useTranslation();
 
     const [me, setMe] = useState<MeUser | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [token, setToken] = useState<string | null>(() => getApiToken());
     const [loading, setLoading] = useState(true);
     const [loggingIn, setLoggingIn] = useState(false);
     const [isDesktop, setIsDesktop] = useState(false);
+    const [authResolved, setAuthResolved] = useState(false);
 
     // Detect desktop (no Telegram WebApp initData after SDK is given time to load)
     useEffect(() => {
@@ -45,14 +46,17 @@ export default function TelegramProfilePage() {
             // Always refresh token from Telegram initData to get latest role
             telegramWebAppAuth(initData)
                 .then(newToken => { setApiToken(newToken); setToken(newToken); })
-                .catch(() => setToken(getApiToken()));
+                .catch(() => setToken(getApiToken()))
+                .finally(() => setAuthResolved(true));
         } else {
             setToken(getApiToken());
+            setAuthResolved(true);
         }
     }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Fetch /api/auth/me when token changes
     useEffect(() => {
+        if (!authResolved) return;
         if (!token) { setLoading(false); return; }
         setLoading(true);
         fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
@@ -60,7 +64,7 @@ export default function TelegramProfilePage() {
             .then(json => setMe(json?.data ?? json ?? null))
             .catch(() => setMe(null))
             .finally(() => setLoading(false));
-    }, [token]);
+    }, [authResolved, token]);
 
     const handleLogin = async () => {
         const initData = WebApp?.initData;
@@ -104,7 +108,7 @@ export default function TelegramProfilePage() {
     }
 
     // Loading
-    if (loading || (!isReady && !me && !isDesktop)) {
+    if (loading || !authResolved || (!isReady && !me && !isDesktop)) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
                 <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />

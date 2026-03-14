@@ -3,37 +3,50 @@ import { useEffect, useRef } from 'react';
 
 export function useSSERefetch(watchTypes: string[], refetch: () => void) {
   const refetchRef = useRef(refetch);
+  const watchTypesRef = useRef(watchTypes);
   refetchRef.current = refetch;
+  watchTypesRef.current = watchTypes;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
+
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const sseUrl = isLocalHost
+      ? `${window.location.protocol}//${window.location.hostname}:3001/api/events`
+      : '/api/events';
 
     const connect = () => {
+      if (disposed) return;
       if (es) { try { es.close(); } catch {} }
-      es = new EventSource('/api/events');
+      es = new EventSource(sseUrl);
 
       es.onmessage = (e) => {
         try {
           const payload = JSON.parse(e.data) as { type?: string };
           if (!payload.type || payload.type === 'connected') return;
-          if (watchTypes.includes(payload.type)) refetchRef.current();
+          if (watchTypesRef.current.includes(payload.type)) refetchRef.current();
         } catch {}
       };
 
       es.onerror = () => {
+        if (disposed) return;
         try { es?.close(); } catch {}
         es = null;
         // Reconnect after 3s
-        reconnectTimer = setTimeout(connect, 3000);
+        reconnectTimer = setTimeout(() => {
+          if (!disposed) connect();
+        }, 3000);
       };
     };
 
     connect();
 
     return () => {
+      disposed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       try { es?.close(); } catch {}
     };

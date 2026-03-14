@@ -87,7 +87,7 @@ function getToken() {
 
 export default function WebsiteHomePage() {
     const { w, tc } = useWebI18n();
-    const { user } = useWebAuth();
+    const { user, loading: authLoading } = useWebAuth();
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
@@ -100,7 +100,32 @@ export default function WebsiteHomePage() {
         fetchProducts({ limit: 50 }).then(({ products: data }) => setProducts(data)).catch(() => {});
     }, []);
 
+    const loadWishlist = useCallback(async () => {
+        const token = getToken();
+        if (!token) {
+            setWishlist(new Set());
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) return;
+            const data = json?.data ?? json ?? [];
+            const ids = Array.isArray(data)
+                ? data
+                    .map((item: { product_id?: string }) => item.product_id)
+                    .filter((id: string | undefined): id is string => Boolean(id))
+                : [];
+            setWishlist(new Set(ids));
+        } catch { /* ignore */ }
+    }, []);
+
     useEffect(() => { loadProducts(); }, [loadProducts]);
+    useEffect(() => {
+        if (authLoading) return;
+        void loadWishlist();
+    }, [authLoading, loadWishlist, user]);
 
     useSSERefetch(['products', 'banners'], loadProducts);
 
@@ -117,23 +142,41 @@ export default function WebsiteHomePage() {
         [featuredBanner.title],
     );
 
-    const toggleWishlist = async (id: string) => {
+    const toggleWishlist = async (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+        event.preventDefault();
+        event.stopPropagation();
         if (!user) { setAuthModal(true); return; }
         const token = getToken();
         if (!token) { setAuthModal(true); return; }
-        // Optimistic toggle
+        const wasInWish = wishlist.has(id);
         setWishlist((prev) => {
             const next = new Set(prev);
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
         });
         try {
-            await fetch('/api/favorites', {
+            const res = await fetch('/api/favorites', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ product_id: id }),
             });
-        } catch { /* ignore */ }
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json?.error ?? 'Favorites request failed');
+            const favorited = json?.data?.favorited ?? json?.favorited;
+            if (typeof favorited === 'boolean') {
+                setWishlist((prev) => {
+                    const next = new Set(prev);
+                    favorited ? next.add(id) : next.delete(id);
+                    return next;
+                });
+            }
+        } catch {
+            setWishlist((prev) => {
+                const next = new Set(prev);
+                wasInWish ? next.add(id) : next.delete(id);
+                return next;
+            });
+        }
     };
 
     return (
@@ -371,15 +414,16 @@ export default function WebsiteHomePage() {
                                         </div>
                                     </Link>
                                     <button
-                                        onClick={() => toggleWishlist(product.id)}
+                                        type="button"
+                                        onClick={(event) => toggleWishlist(event, product.id)}
                                         className={cn(
-                                            'absolute right-5 top-5 rounded-full p-2.5 backdrop-blur-md transition-all duration-300',
+                                            'absolute right-5 top-5 z-10 rounded-full border p-2.5 backdrop-blur-md shadow-[0_10px_24px_-16px_rgba(0,0,0,0.45)] transition-all duration-300',
                                             inWish
-                                                ? 'bg-[#00c853] text-[#06200f]'
-                                                : 'border border-white/30 bg-white/15 text-white hover:bg-white/25',
+                                                ? 'border-red-200 bg-white/92 text-red-500'
+                                                : 'border-black/10 bg-white/88 text-[#111111] hover:bg-white',
                                         )}
                                     >
-                                        <Heart size={13} className={inWish ? 'fill-current' : ''} />
+                                        <Heart size={13} className={inWish ? 'fill-current text-red-500' : ''} />
                                     </button>
                                 </div>
                             );

@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const s = req.nextUrl.searchParams;
     const search = s.get("search")?.trim() || null;
     const role = s.get("role") || null;
+    const excludeRole = s.get("exclude_role") || null;
     const { page, limit, offset } = paginate(s.get("page"), s.get("limit"));
 
     const conditions: string[] = [];
@@ -26,6 +27,10 @@ export async function GET(req: NextRequest) {
     if (role) {
       params.push(role);
       conditions.push(`role = $${params.length}`);
+    }
+    if (excludeRole) {
+      params.push(excludeRole);
+      conditions.push(`role <> $${params.length}`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

@@ -13,6 +13,8 @@ import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 import { useTranslation } from '../../src/shared/lib/i18n';
 const BannerCarousel = dynamic(() => import('../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
+const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
+
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
 const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
@@ -119,6 +121,13 @@ export default function TgHomePage() {
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const syncFavCache = useCallback((ids: string[]) => {
+        try {
+            localStorage.setItem(TG_FAVORITES_CACHE_KEY, JSON.stringify(ids));
+            window.dispatchEvent(new CustomEvent('tg-favorites-updated', { detail: ids }));
+        } catch { /* ignore */ }
+    }, []);
+
     const clearFiltersLabel = language === 'en' ? 'Clear filters' : language === 'ru' ? 'Очистить фильтры' : 'Filtrlarni tozalash';
 
     const categoryLabel = (cat: ApiCategory) => {
@@ -181,6 +190,43 @@ export default function TgHomePage() {
     }, []);
 
     useEffect(() => {
+        try {
+            const cached = localStorage.getItem(TG_FAVORITES_CACHE_KEY);
+            if (cached) {
+                const ids = JSON.parse(cached);
+                if (Array.isArray(ids)) setFavs(new Set(ids));
+            }
+        } catch { /* ignore */ }
+
+        const token = getApiToken();
+        if (!token) return;
+
+        fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } })
+            .then((res) => res.json().catch(() => ({})))
+            .then((json) => {
+                const data = json?.data ?? json ?? [];
+                if (!Array.isArray(data)) return;
+                const ids = data
+                    .map((item: { product_id?: string }) => item.product_id)
+                    .filter((id: string | undefined): id is string => Boolean(id));
+                setFavs(new Set(ids));
+                syncFavCache(ids);
+            })
+            .catch(() => {});
+    }, [syncFavCache]);
+
+    useEffect(() => {
+        const handleFavoritesUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<string[]>;
+            if (!Array.isArray(customEvent.detail)) return;
+            setFavs(new Set(customEvent.detail));
+        };
+
+        window.addEventListener('tg-favorites-updated', handleFavoritesUpdated as EventListener);
+        return () => window.removeEventListener('tg-favorites-updated', handleFavoritesUpdated as EventListener);
+    }, []);
+
+    useEffect(() => {
         triggerFetch(false);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [triggerFetch]);
@@ -192,7 +238,12 @@ export default function TgHomePage() {
         if (!getApiToken()) { router.push(TELEGRAM_ROUTES.PROFILE); return; }
         try {
             const r = await toggleFavorite(id);
-            setFavs(prev => { const next = new Set(prev); r.favorited ? next.add(id) : next.delete(id); return next; });
+            setFavs(prev => {
+                const next = new Set(prev);
+                r.favorited ? next.add(id) : next.delete(id);
+                syncFavCache([...next]);
+                return next;
+            });
         } catch { /* ignore */ }
     };
 
@@ -364,9 +415,11 @@ export default function TgHomePage() {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={p.thumbnail || 'https://placehold.co/400x533/f5f5f5/ccc?text=No+Image'} alt={p.name} className="w-full h-full object-cover" />
                                 <button onClick={e => handleFav(e, p.id)}
-                                    className={cn('absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--color-surface)]/80 backdrop-blur-sm',
-                                        favs.has(p.id) ? 'text-red-500' : 'text-[var(--color-hint)]')}>
-                                    <Heart size={14} className={cn(favs.has(p.id) && 'fill-current')} />
+                                    className={cn('absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full border backdrop-blur-sm',
+                                        favs.has(p.id)
+                                          ? 'border-red-200 bg-white/92 text-red-500'
+                                          : 'border-white/30 bg-[var(--color-surface)]/80 text-[var(--color-hint)]')}>
+                                    <Heart size={14} className={cn(favs.has(p.id) && 'fill-current text-red-500')} />
                                 </button>
                             </div>
                             <div className="p-3">

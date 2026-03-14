@@ -92,7 +92,7 @@ export default function ApplicationsPage() {
               </THead>
               <tbody>
                 {query.data?.requests.map((item) => (
-                  <TR key={item.id}>
+                  <TR key={item.id} className='hover:bg-transparent'>
                     <TD>
                       <p className='font-semibold'>{item.store_name}</p>
                       <p className='text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
@@ -105,12 +105,12 @@ export default function ApplicationsPage() {
                     <TD className='text-right'>
                       <div className='inline-flex gap-2'>
                         <button
-                          className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
+                          className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
                           onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
                         >
                           {t('applications.approve')}
                         </button>
-                        <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white' onClick={() => setRejectId(item.id)}>
+                        <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
                           {t('applications.reject')}
                         </button>
                       </div>
@@ -134,12 +134,12 @@ export default function ApplicationsPage() {
                 <p className='mt-2 text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
                 <div className='mt-3 flex gap-2'>
                   <button
-                    className='flex-1 rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
+                    className='flex-1 rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
                     onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
                   >
                     {t('applications.approve')}
                   </button>
-                  <button className='flex-1 rounded-full bg-rose-500 py-2 text-xs font-semibold text-white' onClick={() => setRejectId(item.id)}>
+                  <button className='flex-1 rounded-full bg-rose-500 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
                     {t('applications.reject')}
                   </button>
                 </div>

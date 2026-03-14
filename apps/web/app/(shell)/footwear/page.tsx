@@ -60,8 +60,8 @@ export default function FootwearPage() {
                                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white">
                                     <img src={img1} alt={product.title} className="absolute inset-0 h-full w-full object-cover" />
                                     <span className="absolute left-3 top-3 rounded-full bg-[#111111] px-2.5 py-1 text-[10px] font-black text-white">-{off}%</span>
-                                    <button onClick={() => toggle(product.id)} className={cn('absolute right-3 top-3 rounded-full p-2.5 backdrop-blur-md transition-all', inWish ? 'bg-[#00c853] text-[#06200f]' : 'border border-white/30 bg-white/15 text-white')}>
-                                        <Heart size={13} className={inWish ? 'fill-current' : ''} />
+                                    <button onClick={() => toggle(product.id)} className={cn('absolute right-3 top-3 rounded-full border p-2.5 backdrop-blur-md transition-all', inWish ? 'border-red-200 bg-white/92 text-red-500' : 'border-white/30 bg-white/15 text-white')}>
+                                        <Heart size={13} className={inWish ? 'fill-current text-red-500' : ''} />
                                     </button>
                                 </div>
                                 <div className="px-1 pt-4 pb-1">

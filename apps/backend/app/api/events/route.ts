@@ -4,6 +4,7 @@ import { adminEvents } from "@/src/lib/events";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const origin = req.headers.get("origin") ?? "*";
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
@@ -29,6 +30,8 @@ export async function GET(req: NextRequest) {
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
+      "Access-Control-Allow-Origin": origin,
+      Vary: "Origin",
     },
   });
 }
