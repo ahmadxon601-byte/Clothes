@@ -14,6 +14,7 @@ interface MyProduct {
     id: string;
     name: string;
     base_price: number;
+    sale_price: number | null;
     description: string | null;
     category_id: string | null;
     category_name: string | null;
@@ -356,10 +357,11 @@ export default function ProfileProductsPage() {
                             inputId="tg-img-create"
                         />
                         <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Mahsulot nomi *</p>
                             <input
                                 value={name}
                                 onChange={e => { setName(e.target.value); if (createErrors.name) setCreateErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Mahsulot nomi *"
+                                placeholder="Masalan: Futbolka"
                                 className={`${inputCls} ${createErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
                             {createErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
@@ -377,6 +379,7 @@ export default function ProfileProductsPage() {
                             </div>
                         </div>
                         <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Asl narx (UZS) *</p>
                             <input
                                 value={originalPrice}
                                 onChange={e => {
@@ -385,7 +388,7 @@ export default function ProfileProductsPage() {
                                     if (createErrors.originalPrice) setCreateErrors(p => ({ ...p, originalPrice: false }));
                                     setCurrentPrice(calcCurrentPrice(v, discount));
                                 }}
-                                placeholder="Asl narx (UZS) *"
+                                placeholder="0"
                                 type="number"
                                 inputMode="numeric"
                                 className={`${inputCls} ${createErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
@@ -394,6 +397,7 @@ export default function ProfileProductsPage() {
                         </div>
                         <div className="flex gap-2">
                             <div className="flex-1">
+                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Aksiya %</p>
                                 <input
                                     value={discount}
                                     onChange={e => {
@@ -401,7 +405,7 @@ export default function ProfileProductsPage() {
                                         setDiscount(v);
                                         setCurrentPrice(calcCurrentPrice(originalPrice, v));
                                     }}
-                                    placeholder="Aksiya %"
+                                    placeholder="0"
                                     type="number"
                                     inputMode="numeric"
                                     min="0"
@@ -410,6 +414,7 @@ export default function ProfileProductsPage() {
                                 />
                             </div>
                             <div className="flex-1">
+                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Hozirgi narx (UZS)</p>
                                 <input
                                     value={currentPrice}
                                     onChange={e => {
@@ -417,24 +422,31 @@ export default function ProfileProductsPage() {
                                         setCurrentPrice(v);
                                         setDiscount(calcDiscount(originalPrice, v));
                                     }}
-                                    placeholder="Hozir narxi (UZS)"
+                                    placeholder="0"
                                     type="number"
                                     inputMode="numeric"
                                     className={`${inputCls} border-[var(--color-border)]`}
                                 />
                             </div>
                         </div>
-                        <input
-                            value={stock}
-                            onChange={e => setStock(e.target.value)}
-                            placeholder="Soni (dona)"
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            className={`${inputCls} border-[var(--color-border)]`}
-                        />
-                        <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
                         <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Soni (dona)</p>
+                            <input
+                                value={stock}
+                                onChange={e => setStock(e.target.value)}
+                                placeholder="1"
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                className={`${inputCls} border-[var(--color-border)]`}
+                            />
+                        </div>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Tavsif</p>
+                            <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Mahsulot haqida..." rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
+                        </div>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Do&apos;kon *</p>
                             <select
                                 value={storeId}
                                 onChange={e => { setStoreId(e.target.value); if (createErrors.store) setCreateErrors(p => ({ ...p, store: false })); }}
@@ -444,10 +456,13 @@ export default function ProfileProductsPage() {
                             </select>
                             {createErrors.store && <p className="mt-1 text-[12px] text-red-500">Do&apos;kon tanlang</p>}
                         </div>
-                        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
-                            <option value="">Kategoriya</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Kategoriya</p>
+                            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
+                                <option value="">Tanlang</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
                         {stores.length === 0 && (
                             <div className="p-3 rounded-[14px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
                                 <p className="text-[13px] text-amber-600 dark:text-amber-400">
@@ -490,10 +505,11 @@ export default function ProfileProductsPage() {
                             inputId="tg-img-edit"
                         />
                         <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Mahsulot nomi *</p>
                             <input
                                 value={editName}
                                 onChange={e => { setEditName(e.target.value); if (editErrors.name) setEditErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Mahsulot nomi *"
+                                placeholder="Masalan: Futbolka"
                                 className={`${inputCls} ${editErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
                             {editErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
@@ -511,6 +527,7 @@ export default function ProfileProductsPage() {
                             </div>
                         </div>
                         <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Asl narx (UZS) *</p>
                             <input
                                 value={editOriginalPrice}
                                 onChange={e => {
@@ -519,7 +536,7 @@ export default function ProfileProductsPage() {
                                     if (editErrors.originalPrice) setEditErrors(p => ({ ...p, originalPrice: false }));
                                     setEditCurrentPrice(calcCurrentPrice(v, editDiscount));
                                 }}
-                                placeholder="Asl narx (UZS) *"
+                                placeholder="0"
                                 type="number"
                                 inputMode="numeric"
                                 className={`${inputCls} ${editErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
@@ -528,6 +545,7 @@ export default function ProfileProductsPage() {
                         </div>
                         <div className="flex gap-2">
                             <div className="flex-1">
+                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Aksiya %</p>
                                 <input
                                     value={editDiscount}
                                     onChange={e => {
@@ -535,7 +553,7 @@ export default function ProfileProductsPage() {
                                         setEditDiscount(v);
                                         setEditCurrentPrice(calcCurrentPrice(editOriginalPrice, v));
                                     }}
-                                    placeholder="Aksiya %"
+                                    placeholder="0"
                                     type="number"
                                     inputMode="numeric"
                                     min="0"
@@ -544,6 +562,7 @@ export default function ProfileProductsPage() {
                                 />
                             </div>
                             <div className="flex-1">
+                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Hozirgi narx (UZS)</p>
                                 <input
                                     value={editCurrentPrice}
                                     onChange={e => {
@@ -551,27 +570,36 @@ export default function ProfileProductsPage() {
                                         setEditCurrentPrice(v);
                                         setEditDiscount(calcDiscount(editOriginalPrice, v));
                                     }}
-                                    placeholder="Hozir narxi (UZS)"
+                                    placeholder="0"
                                     type="number"
                                     inputMode="numeric"
                                     className={`${inputCls} border-[var(--color-border)]`}
                                 />
                             </div>
                         </div>
-                        <input
-                            value={editStock}
-                            onChange={e => setEditStock(e.target.value)}
-                            placeholder="Soni (dona)"
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            className={`${inputCls} border-[var(--color-border)]`}
-                        />
-                        <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        <select value={editCategoryId} onChange={e => setEditCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
-                            <option value="">Kategoriya</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Soni (dona)</p>
+                            <input
+                                value={editStock}
+                                onChange={e => setEditStock(e.target.value)}
+                                placeholder="1"
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                className={`${inputCls} border-[var(--color-border)]`}
+                            />
+                        </div>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Tavsif</p>
+                            <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Mahsulot haqida..." rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
+                        </div>
+                        <div>
+                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Kategoriya</p>
+                            <select value={editCategoryId} onChange={e => setEditCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
+                                <option value="">Tanlang</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
                         {error && <p className="text-red-500 text-[13px]">{error}</p>}
                         <button onClick={handleUpdate} disabled={submitting} className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
                             {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
@@ -618,7 +646,24 @@ export default function ProfileProductsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[14px] font-bold text-[var(--color-text)] truncate">{product.name}</p>
-                                        <p className="text-[12px] font-semibold text-[var(--color-primary)]">{formatPrice(product.base_price, 'UZS')}</p>
+                                        {(() => {
+                                            const bp = Number(product.base_price);
+                                            const sp = product.sale_price != null ? Number(product.sale_price) : null;
+                                            const cur = sp != null && sp < bp ? sp : bp;
+                                            const hasDis = cur < bp;
+                                            const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
+                                            return (
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <p className="text-[13px] font-bold text-[var(--color-primary)]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
+                                                    {hasDis && (
+                                                        <>
+                                                            <span className="text-[11px] text-[var(--color-hint)] line-through">{bp.toLocaleString('ru-RU')}</span>
+                                                            <span className="px-1 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                         <p className="text-[11px] text-[var(--color-hint)] truncate">{product.store_name}{product.category_name ? ` · ${product.category_name}` : ''}</p>
                                     </div>
                                 </div>
