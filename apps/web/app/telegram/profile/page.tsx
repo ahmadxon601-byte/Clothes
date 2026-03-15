@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Monitor, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
@@ -83,44 +83,6 @@ export default function TelegramProfilePage() {
         }
         setToken(null);
         setMe(null);
-    };
-
-    // Web credentials state
-    const isTelegramOnlyEmail = me?.email?.endsWith('@t.me') ?? false;
-    const [credOpen, setCredOpen] = useState(false);
-    const [credEmail, setCredEmail] = useState('');
-    const [credPass, setCredPass] = useState('');
-    const [credShowPass, setCredShowPass] = useState(false);
-    const [credSaving, setCredSaving] = useState(false);
-    const [credError, setCredError] = useState('');
-    const [credSuccess, setCredSuccess] = useState(false);
-
-    const handleSetCredentials = async () => {
-        setCredError('');
-        if (!credEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credEmail)) {
-            setCredError("To'g'ri email kiriting"); return;
-        }
-        if (credPass.length < 6) {
-            setCredError('Parol kamida 6 ta belgi'); return;
-        }
-        setCredSaving(true);
-        try {
-            const res = await fetch('/api/auth/set-credentials', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ email: credEmail.trim(), password: credPass }),
-            });
-            const json = await res.json();
-            if (!res.ok) { setCredError(json.error ?? 'Xatolik'); return; }
-            setCredSuccess(true);
-            setCredOpen(false);
-            // Update displayed email
-            if (me) setMe({ ...me, email: credEmail.trim() });
-        } catch {
-            setCredError('Tarmoq xatosi');
-        } finally {
-            setCredSaving(false);
-        }
     };
 
     const displayName = me?.name || tgUser?.first_name || '';
@@ -280,77 +242,6 @@ export default function TelegramProfilePage() {
                         </div>
                         <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
                     </Link>
-
-                    {/* Web kirish sozlamalari */}
-                    <div className="bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] overflow-hidden">
-                        <button
-                            onClick={() => { setCredOpen(o => !o); setCredError(''); setCredSuccess(false); }}
-                            className="w-full flex items-center justify-between px-4 py-3.5 active:scale-[0.98] transition-all"
-                        >
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500">
-                                    <Monitor size={20} />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">Web&apos;da kirish</p>
-                                    <p className="text-[11px] font-medium mt-0.5">
-                                        {credSuccess || !isTelegramOnlyEmail
-                                            ? <span className="text-[var(--color-primary)]">✓ {me?.email}</span>
-                                            : <span className="text-amber-500">Sozlanmagan</span>
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-                            <ChevronRight size={18} className={`text-[var(--color-hint)] opacity-30 transition-transform ${credOpen ? 'rotate-90' : ''}`} />
-                        </button>
-
-                        {credOpen && (
-                            <div className="px-4 pb-4 space-y-3 border-t border-[var(--color-border)]">
-                                <p className="pt-3 text-[13px] text-[var(--color-hint)] leading-relaxed">
-                                    Email va parol o&apos;rnating — keyin <strong>clothes.uz</strong> saytiga oddiy kirish orqali ham hisobingizga kirishingiz mumkin.
-                                </p>
-                                <div>
-                                    <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Email</p>
-                                    <input
-                                        value={credEmail}
-                                        onChange={e => { setCredEmail(e.target.value); setCredError(''); }}
-                                        placeholder="sizning@email.com"
-                                        type="email"
-                                        inputMode="email"
-                                        className="w-full h-12 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)]"
-                                    />
-                                </div>
-                                <div>
-                                    <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Parol (kamida 6 belgi)</p>
-                                    <div className="relative">
-                                        <input
-                                            value={credPass}
-                                            onChange={e => { setCredPass(e.target.value); setCredError(''); }}
-                                            placeholder="••••••••"
-                                            type={credShowPass ? 'text' : 'password'}
-                                            className="w-full h-12 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 pr-11 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)]"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setCredShowPass(p => !p)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-hint)]"
-                                        >
-                                            {credShowPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                {credError && <p className="text-[13px] text-red-500">{credError}</p>}
-                                <button
-                                    onClick={handleSetCredentials}
-                                    disabled={credSaving}
-                                    className="w-full h-11 rounded-full bg-indigo-500 text-white font-bold text-[14px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
-                                >
-                                    {credSaving ? <Loader2 size={16} className="animate-spin" /> : null}
-                                    Saqlash
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
                     <button
                         onClick={handleLogout}
