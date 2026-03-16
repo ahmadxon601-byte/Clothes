@@ -25,6 +25,7 @@ type WebAuthContextType = {
     storeStatus: StoreStatus | null;
     login: (email: string, password: string) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
+    loginByKey: (key: string) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
     refreshStore: () => Promise<void>;
@@ -119,6 +120,24 @@ export function WebAuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const loginByKey = async (key: string) => {
+        const { ok, json } = await apiFetch('/auth/login-by-key', {
+            method: 'POST',
+            body: JSON.stringify({ key }),
+        });
+        if (!ok) throw new Error(json?.error ?? json?.message ?? "Kalit so'z noto'g'ri");
+        const token = json?.data?.token ?? json?.token;
+        if (!token) throw new Error('No token returned');
+        saveToken(token);
+        const userData = json?.data?.user ?? json?.user;
+        if (userData) {
+            setUser(userData as AuthUser);
+            await refreshStore();
+        } else {
+            await refreshUser();
+        }
+    };
+
     const register = async (name: string, email: string, password: string) => {
         const { ok, json } = await apiFetch('/auth/register', {
             method: 'POST',
@@ -144,7 +163,7 @@ export function WebAuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <WebAuthContext.Provider value={{ user, loading, storeStatus, login, register, logout, refreshUser, refreshStore }}>
+        <WebAuthContext.Provider value={{ user, loading, storeStatus, login, register, loginByKey, logout, refreshUser, refreshStore }}>
             {children}
         </WebAuthContext.Provider>
     );

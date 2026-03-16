@@ -3,13 +3,14 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
+import { generateAccessKey } from "@/src/lib/accessKey";
 
 export async function GET(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
 
     const result = await query(
-      "SELECT id, name, email, role, phone, telegram_id, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, role, phone, telegram_id, created_at, access_key FROM users WHERE id = $1",
       [jwtUser.userId]
     );
 
@@ -17,7 +18,16 @@ export async function GET(req: NextRequest) {
       return fail("User not found", 404);
     }
 
-    return ok(result.rows[0]);
+    const user = result.rows[0];
+
+    // Lazily generate access_key for existing users
+    if (!user.access_key) {
+      const key = generateAccessKey();
+      await query("UPDATE users SET access_key = $1 WHERE id = $2", [key, user.id]);
+      user.access_key = key;
+    }
+
+    return ok(user);
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[me GET]", e);

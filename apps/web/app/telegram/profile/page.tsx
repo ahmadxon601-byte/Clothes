@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone } from 'lucide-react';
+import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
@@ -15,6 +15,7 @@ interface MeUser {
     role: string;
     phone: string | null;
     telegram_id: number | null;
+    access_key: string | null;
 }
 
 export default function TelegramProfilePage() {
@@ -26,6 +27,7 @@ export default function TelegramProfilePage() {
     const [loading, setLoading] = useState(true);
     const [loggingIn, setLoggingIn] = useState(false);
     const [isDesktop, setIsDesktop] = useState(false);
+    const [keyCopied, setKeyCopied] = useState(false);
 
     // Detect desktop (no Telegram WebApp initData after SDK is given time to load)
     useEffect(() => {
@@ -183,6 +185,31 @@ export default function TelegramProfilePage() {
                         )}
                     </div>
                 </div>
+
+                {/* Access key card */}
+                {me.access_key && (
+                    <div className="bg-[var(--color-surface)] rounded-[20px] px-4 py-3 border border-[var(--color-border)] flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] shrink-0">
+                                <KeyRound size={16} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-hint)]">Kalit so&apos;z</p>
+                                <p className="font-mono text-[17px] font-black tracking-[0.2em] text-[var(--color-text)] leading-tight">{me.access_key}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (me.access_key) navigator.clipboard.writeText(me.access_key);
+                                setKeyCopied(true);
+                                setTimeout(() => setKeyCopied(false), 2000);
+                            }}
+                            className="w-9 h-9 flex shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface2)] text-[var(--color-primary)] active:scale-95 transition-all"
+                        >
+                            {keyCopied ? <Check size={15} strokeWidth={3} /> : <Copy size={15} />}
+                        </button>
+                    </div>
+                )}
 
                 {/* Menu */}
                 <div className="space-y-2">

@@ -8,15 +8,16 @@ import { cn } from '../lib/utils';
 type Props = {
     open: boolean;
     onClose: () => void;
-    defaultTab?: 'login' | 'register';
+    defaultTab?: 'login' | 'register' | 'key';
 };
 
 export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
-    const { login, register } = useWebAuth();
-    const [tab, setTab] = useState<'login' | 'register'>(defaultTab);
+    const { login, register, loginByKey } = useWebAuth();
+    const [tab, setTab] = useState<'login' | 'register' | 'key'>(defaultTab);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [accessKey, setAccessKey] = useState('');
     const [showPass, setShowPass] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -29,6 +30,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
             setName('');
             setEmail('');
             setPassword('');
+            setAccessKey('');
         }
     }, [open, defaultTab]);
 
@@ -47,9 +49,12 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
         try {
             if (tab === 'login') {
                 await login(email.trim(), password);
-            } else {
+            } else if (tab === 'register') {
                 if (name.trim().length < 2) { setError("Ism kamida 2 ta harf bo'lishi kerak"); setLoading(false); return; }
                 await register(name.trim(), email.trim(), password);
+            } else {
+                if (accessKey.trim().length !== 8) { setError("Kalit so'z 8 ta belgidan iborat bo'lishi kerak"); setLoading(false); return; }
+                await loginByKey(accessKey.trim());
             }
             onClose();
         } catch (err) {
@@ -75,14 +80,14 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
 
                 <div className="p-7">
                     <h2 className="font-[family-name:var(--font-playfair)] text-[26px] font-black text-[#111111] dark:text-white">
-                        {tab === 'login' ? 'Kirish' : "Ro'yxatdan o'tish"}
+                        {tab === 'login' ? 'Kirish' : tab === 'register' ? "Ro'yxatdan o'tish" : "Kalit so'z"}
                     </h2>
                     <p className="mt-1 text-[13px] text-[#6b7280]">
-                        {tab === 'login' ? "Hisobingizga kiring" : "Yangi hisob yarating"}
+                        {tab === 'login' ? "Hisobingizga kiring" : tab === 'register' ? "Yangi hisob yarating" : "Telegram profilingizdagi kalit so'zni kiriting"}
                     </p>
 
                     <div className="mt-5 flex gap-1 rounded-xl bg-[#f3f4f6] p-1 dark:bg-white/10">
-                        {(['login', 'register'] as const).map((t) => (
+                        {(['login', 'register', 'key'] as const).map((t) => (
                             <button
                                 key={t}
                                 onClick={() => { setTab(t); setError(''); }}
@@ -93,7 +98,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                                         : 'text-[#6b7280] hover:text-[#111111] dark:hover:text-white',
                                 )}
                             >
-                                {t === 'login' ? 'Kirish' : "Ro'yxat"}
+                                {t === 'login' ? 'Kirish' : t === 'register' ? "Ro'yxat" : '🔑 Kalit'}
                             </button>
                         ))}
                     </div>
@@ -111,37 +116,55 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                                 />
                             </label>
                         )}
-                        <label className="grid gap-1.5">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Email</span>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="email@example.com"
-                                disabled={loading}
-                                className="h-11 rounded-xl border border-black/12 bg-white px-3 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
-                            />
-                        </label>
-                        <label className="grid gap-1.5">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Parol</span>
-                            <div className="relative">
+                        {tab !== 'key' && (
+                            <label className="grid gap-1.5">
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Email</span>
                                 <input
-                                    type={showPass ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="email@example.com"
                                     disabled={loading}
-                                    className="h-11 w-full rounded-xl border border-black/12 bg-white px-3 pr-10 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                                    className="h-11 rounded-xl border border-black/12 bg-white px-3 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPass((p) => !p)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#111111] dark:hover:text-white"
-                                >
-                                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
-                        </label>
+                            </label>
+                        )}
+                        {tab !== 'key' && (
+                            <label className="grid gap-1.5">
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Parol</span>
+                                <div className="relative">
+                                    <input
+                                        type={showPass ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        disabled={loading}
+                                        className="h-11 w-full rounded-xl border border-black/12 bg-white px-3 pr-10 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPass((p) => !p)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#111111] dark:hover:text-white"
+                                    >
+                                        {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </label>
+                        )}
+                        {tab === 'key' && (
+                            <label className="grid gap-1.5">
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Kalit so&apos;z</span>
+                                <input
+                                    value={accessKey}
+                                    onChange={(e) => setAccessKey(e.target.value.toUpperCase())}
+                                    placeholder="XXXXXXXX"
+                                    maxLength={8}
+                                    disabled={loading}
+                                    className="h-11 rounded-xl border border-black/12 bg-white px-3 text-[14px] tracking-[0.2em] font-mono outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                                />
+                                <span className="text-[11px] text-[#6b7280]">Telegram yoki desktop profilingizdagi 8 ta belgidan iborat kalit</span>
+                            </label>
+                        )}
 
                         {error && (
                             <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">
@@ -155,7 +178,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                             className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#00c853] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading && <Loader2 size={14} className="animate-spin" />}
-                            {tab === 'login' ? 'Kirish' : "Ro'yxatdan o'tish"}
+                            {tab === 'login' ? 'Kirish' : tab === 'register' ? "Ro'yxatdan o'tish" : 'Kirish'}
                         </button>
                     </form>
                 </div>
