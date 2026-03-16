@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check } from 'lucide-react';
+import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check, Package } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
 
@@ -113,6 +113,7 @@ export default function SiteProfilePage() {
 
     const menu = [
         { href: '/favorites', label: 'Sevimlilar', sub: 'Saqlangan mahsulotlar', icon: Heart },
+        { href: '/my-products', label: 'Mening mahsulotlarim', sub: 'Mahsulotlarni boshqarish', icon: Package },
     ];
 
     if (loading) {
