@@ -89,7 +89,7 @@ export default function ShopsPage() {
               </THead>
               <tbody>
                 {query.data?.stores.map((item) => (
-                  <TR key={item.id}>
+                  <TR key={item.id} className="hover:bg-transparent">
                     <TD>
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-xs text-[var(--admin-muted)]">{item.address || t('common.noAddress')}</p>
@@ -104,14 +104,14 @@ export default function ShopsPage() {
                     </TD>
                     <TD className="text-right">
                       <div className="inline-flex items-center gap-1.5">
-                        <button title="Ko'rish" onClick={() => setViewStore(item)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors">
+                        <button title="Ko'rish" onClick={() => setViewStore(item)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition hover:text-[var(--admin-muted)] hover:shadow-none">
                           <Eye size={14} />
                         </button>
-                        <button title={item.is_active ? t('common.suspend') : t('common.activate')} onClick={() => toggleShop(item.id, item.is_active)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-amber-500 transition-colors">
-                          {item.is_active ? <ShieldOff size={14} /> : <Shield size={14} />}
+                        <button title={item.is_active ? t('common.suspend') : t('common.activate')} onClick={() => toggleShop(item.id, item.is_active)} className="rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none">
+                          {item.is_active ? t('common.suspend') : t('common.activate')}
                         </button>
-                        <button title="O'chirish" onClick={() => setDeleteStore(item)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-rose-500 transition-colors">
-                          <Trash2 size={14} />
+                        <button title="O'chirish" onClick={() => setDeleteStore(item)} className="rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none">
+                          O&apos;chirish
                         </button>
                       </div>
                     </TD>

@@ -148,7 +148,7 @@ export default function ProductsPage() {
                   const oldPrice = item.old_price ?? null;
                   const off = discount(oldPrice, currentPrice);
                   return (
-                    <TR key={item.id}>
+                    <TR key={item.id} className='hover:bg-transparent'>
                       <TD>
                         <input
                           type='checkbox'
@@ -185,18 +185,18 @@ export default function ProductsPage() {
                             <Eye size={14} />
                           </button>
                           <button
-                            className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
+                            className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
                             onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } }, { onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }) })}
                           >
                             {t('common.approve')}
                           </button>
                           <button
-                            className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
+                            className='rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
                             onClick={() => mutation.mutate({ id: item.id, payload: { is_active: !item.is_active } }, { onSuccess: () => showToast({ message: item.is_active ? t('products.blockedMsg') : t('products.unblockedMsg'), type: 'info' }) })}
                           >
                             {item.is_active ? t('common.block') : t('common.unblock')}
                           </button>
-                          <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white' onClick={() => setRejectId(item.id)}>
+                          <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
                             {t('common.reject')}
                           </button>
                         </div>
@@ -244,18 +244,18 @@ export default function ProductsPage() {
                   </div>
                   <div className='mt-3 grid grid-cols-3 gap-2'>
                     <button
-                      className='rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
+                      className='rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
                       onClick={() => mutation.mutate({ id: item.id, payload: { is_active: true } })}
                     >
                       {t('common.approve')}
                     </button>
                     <button
-                      className='rounded-full border border-[var(--admin-border)] py-2 text-xs font-semibold'
+                      className='rounded-full bg-indigo-500 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
                       onClick={() => mutation.mutate({ id: item.id, payload: { is_active: !item.is_active } })}
                     >
                       {item.is_active ? t('common.block') : t('common.unblock')}
                     </button>
-                    <button className='rounded-full bg-rose-500 py-2 text-xs font-semibold text-white' onClick={() => setRejectId(item.id)}>
+                    <button className='rounded-full bg-rose-500 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
                       {t('common.reject')}
                     </button>
                   </div>

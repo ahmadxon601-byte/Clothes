@@ -16,6 +16,7 @@ import {
   Moon,
   Package,
   Settings,
+  Shield,
   ShoppingBag,
   Store,
   Sun,
@@ -45,6 +46,7 @@ const primaryNav: NavItem[] = [
 ];
 
 const moreNav: NavItem[] = [
+  { href: '/admin/admins', labelKey: 'nav.admins', icon: Shield },
   { href: '/admin/categories', labelKey: 'nav.categories', icon: Boxes },
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
   { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
@@ -141,6 +143,7 @@ function MobileBottomNav({ onMore }: { onMore: () => void }) {
           );
         })}
         <button
+          data-admin-nav='true'
           onClick={onMore}
           className='flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium text-[var(--admin-muted)]'
         >
@@ -187,7 +190,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   if (!user) return null;
 
   return (
-    <div className='min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]'>
+    <div className='admin-shell min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]'>
       {/* Sidebar — md+ dan doim ko'rinadi */}
       <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 min-[1000px]:flex'>
         <div className='mb-4 rounded-2xl bg-[var(--admin-pill)] p-3'>
@@ -206,6 +209,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             ))}
         </div>
         <button
+          data-admin-nav='true'
           onClick={() => {
             logout();
             router.replace('/admin/login');
@@ -236,7 +240,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             >
               <div className='mb-4 flex items-center justify-between'>
                 <p className='text-lg font-bold'>Clothes MP</p>
-                <button onClick={() => setDrawerOpen(false)} className='rounded-xl border border-[var(--admin-border)] p-2'>
+                <button data-admin-nav='true' onClick={() => setDrawerOpen(false)} className='rounded-xl border border-[var(--admin-border)] p-2'>
                   <X className='size-4' />
                 </button>
               </div>
@@ -250,6 +254,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                 ))}
               </div>
               <button
+                data-admin-nav='true'
                 onClick={() => {
                   logout();
                   router.replace('/admin/login');
@@ -266,6 +271,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
       <div className='min-[1000px]:pl-[260px]'>
         <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur min-[1000px]:px-6'>
           <button
+            data-admin-nav='true'
             onClick={() => setDrawerOpen(true)}
             className='rounded-xl border border-[var(--admin-border)] p-2 min-[1000px]:hidden'
           >

@@ -184,6 +184,21 @@
     .admin-select:focus {
         border-color: var(--admin-accent);
     }
+
+    .admin-shell button:not([data-admin-nav='true']):not(:disabled) {
+        transition:
+            transform 0.18s ease,
+            background-color 0.18s ease,
+            border-color 0.18s ease,
+            box-shadow 0.18s ease,
+            color 0.18s ease,
+            opacity 0.18s ease;
+    }
+
+    .admin-shell button:not([data-admin-nav='true']):not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px color-mix(in oklab, var(--admin-text) 10%, transparent);
+    }
 }
 
 @layer base {
@@ -239,7 +254,7 @@
     }
 
     .font-playfair {
-        font-family: var(--font-playfair), Georgia, serif;
+        font-family: var(--font-inter), sans-serif;
     }
 }
 

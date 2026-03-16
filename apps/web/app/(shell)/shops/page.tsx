@@ -20,21 +20,33 @@ export default function ShopsPage() {
   const { w } = useWebI18n();
   const [stores, setStores] = useState<Store[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    const params = search.trim() ? `?search=${encodeURIComponent(search.trim())}&limit=50` : '?limit=50';
-    fetch(`/api/stores${params}`)
+    const params = debouncedSearch.trim() ? `?search=${encodeURIComponent(debouncedSearch.trim())}&limit=50` : '?limit=50';
+    fetch(`/api/stores${params}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((json) => {
         setStores(json.data?.stores ?? json.stores ?? []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  }, [search]);
+      .catch((error) => {
+        if (error?.name === 'AbortError') return;
+        setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [debouncedSearch]);
 
   useEffect(() => {
     const el = ref.current;

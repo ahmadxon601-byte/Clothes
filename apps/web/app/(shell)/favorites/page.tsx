@@ -168,9 +168,9 @@ export default function FavoritesPage() {
                                         <button
                                             onClick={(e) => { e.preventDefault(); toggleFav(product.product_id); }}
                                             disabled={isBusy}
-                                            className="absolute right-3 top-3 rounded-full border border-white/35 bg-[#00c853] p-2.5 text-[#06200f] backdrop-blur-md transition-all hover:opacity-80 disabled:opacity-50"
+                                            className="absolute right-3 top-3 rounded-full border border-red-200 bg-white/92 p-2.5 text-red-500 backdrop-blur-md transition-all hover:bg-white disabled:opacity-50"
                                         >
-                                            {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Heart size={14} className="fill-current" />}
+                                            {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Heart size={14} className="fill-current text-red-500" />}
                                         </button>
                                     </div>
                                     <div className="px-1 pb-1 pt-4">
