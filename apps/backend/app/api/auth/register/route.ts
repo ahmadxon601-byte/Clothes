@@ -4,6 +4,7 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
+import { generateAccessKey } from "@/src/lib/accessKey";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -29,11 +30,12 @@ export async function POST(req: NextRequest) {
     }
 
     const hash = await bcrypt.hash(password, 10);
+    const accessKey = generateAccessKey();
     const result = await query(
-      `INSERT INTO users (name, email, password_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, email, role, created_at`,
-      [name, email, hash]
+      `INSERT INTO users (name, email, password_hash, access_key)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, email, role, created_at, access_key`,
+      [name, email, hash, accessKey]
     );
 
     const user = result.rows[0];

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X } from 'lucide-react';
+import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check, Package } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
 
@@ -21,6 +21,8 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 
 export default function SiteProfilePage() {
     const { user, loading, storeStatus, refreshUser } = useWebAuth();
+    const [keyCopied, setKeyCopied] = useState(false);
+    const [accessKey, setAccessKey] = useState<string | null>(null);
     const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({ open: false, tab: 'login' });
     const [editOpen, setEditOpen] = useState(false);
     const [editTab, setEditTab] = useState<'profile' | 'password'>('profile');
@@ -37,7 +39,18 @@ export default function SiteProfilePage() {
     const [pwdSuccess, setPwdSuccess] = useState('');
 
     useEffect(() => {
-        if (user) { setEditName(user.name); setEditEmail(user.email); }
+        if (user) {
+            setEditName(user.name);
+            setEditEmail(user.email);
+            // Fetch access_key from /api/auth/me
+            const token = getToken();
+            if (token) {
+                fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(json => { if (json?.data?.access_key) setAccessKey(json.data.access_key); })
+                    .catch(() => {});
+            }
+        }
     }, [user]);
 
     const initials = useMemo(() => {
@@ -100,6 +113,7 @@ export default function SiteProfilePage() {
 
     const menu = [
         { href: '/favorites', label: 'Sevimlilar', sub: 'Saqlangan mahsulotlar', icon: Heart },
+        { href: '/my-products', label: 'Mening mahsulotlarim', sub: 'Mahsulotlarni boshqarish', icon: Package },
     ];
 
     if (loading) {
@@ -187,6 +201,25 @@ export default function SiteProfilePage() {
                                 <UserRound size={14} />{user.role}
                             </p>
                         </div>
+                        {accessKey && (
+                            <div className="rounded-2xl border border-[#00c853]/30 bg-[#f0faf4] p-4 dark:border-[#00c853]/20 dark:bg-[#0e2e1a] sm:col-span-2 lg:col-span-1">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">Kalit so&apos;z</p>
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                    <p className="font-mono text-[18px] font-black tracking-[0.25em] text-[#111111] dark:text-white">{accessKey}</p>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(accessKey);
+                                            setKeyCopied(true);
+                                            setTimeout(() => setKeyCopied(false), 2000);
+                                        }}
+                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#00c853]/30 bg-white text-[#00a645] transition-all hover:bg-[#00c853]/10 dark:bg-[#00c853]/10"
+                                    >
+                                        {keyCopied ? <Check size={14} /> : <Copy size={14} />}
+                                    </button>
+                                </div>
+                                <p className="mt-1 text-[10px] text-[#6b7280]">Telegram botda yoki boshqa qurilmada kirish uchun</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
