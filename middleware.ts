@@ -9,7 +9,6 @@ const CORS_HEADERS = {
 };
 
 export function middleware(request: NextRequest) {
-  // Handle CORS preflight
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 200, headers: CORS_HEADERS });
   }
