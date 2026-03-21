@@ -91,7 +91,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                 <header className="sticky top-0 z-30 border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-[#111111]/80">
                     <div className="mx-auto flex h-[72px] w-full max-w-[1280px] items-center justify-between px-4 md:h-[84px]">
                         <Link href={WEB_LINKS.HOME} className="text-[24px] font-black leading-none tracking-tight text-[#111111] dark:text-white md:text-[30px]">
-                            Aksiya<span className="text-[#00c853]">.uz</span>
+                            Qulaymarket<span className="text-[#00c853]">.Uz</span>
                         </Link>
                         <nav className="hidden items-center gap-8 lg:flex">
                             {links.map((link) => {
@@ -268,7 +268,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-14">
                         <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
                             <div>
-                                <h3 className="text-[30px] font-black tracking-tight">Aksiya<span className="text-[#00c853]">.uz</span></h3>
+                                <h3 className="text-[30px] font-black tracking-tight">Qulaymarket<span className="text-[#00c853]">.Uz</span></h3>
                                 <p className="mt-3 max-w-sm text-[14px] leading-7 text-[#6b7280] dark:text-[#9ca3af]">{w.footer.desc}</p>
                                 <div className="mt-5 flex items-center gap-2 text-[#6b7280] dark:text-[#9ca3af]">
                                     <button className="rounded-full border border-black/10 p-2 transition-colors hover:border-[#00c853]/40 hover:text-[#111111] dark:border-white/15 dark:hover:text-white"><Instagram size={16} /></button>
