@@ -12,11 +12,37 @@ export const registerTelegramHandlers = (bot: Bot): void => {
   };
 
   bot.command("start", async (ctx) => {
+    const telegramId = ctx.from?.id;
     const accessKeySupported = await hasAccessKeyColumn();
     const keyboard = new Keyboard()
       .requestContact("Telefon raqamni yuborish")
       .resized()
       .oneTime();
+
+    if (telegramId) {
+      try {
+        const existingUser = await query(
+          `SELECT id, name, phone
+           FROM users
+           WHERE telegram_id = $1
+           LIMIT 1`,
+          [telegramId]
+        );
+
+        if (existingUser.rows.length > 0) {
+          const existing = existingUser.rows[0];
+          await ctx.reply(
+            `Assalomu alaykum ${existing.name || ctx.from?.first_name || "foydalanuvchi"}.\n\n` +
+              `Sizning akkauntingiz allaqachon ulangan.\n` +
+              `Endi pastdagi tugma orqali ilovani ochishingiz mumkin.`,
+            { reply_markup: marketplaceButton() }
+          );
+          return;
+        }
+      } catch (err) {
+        console.error("[bot] start lookup error:", err);
+      }
+    }
 
     await ctx.reply(
       `Assalomu alaykum ${ctx.from?.first_name || "foydalanuvchi"}.\n\n` +
