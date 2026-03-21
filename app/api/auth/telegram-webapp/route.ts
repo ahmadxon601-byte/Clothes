@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (result.rows.length === 0) {
       // Foydalanuvchi hali phone yuboribmagan — botda /start bosishi kerak
       return fail(
-        "Avval botda telefon raqamingizni yuboring (@techgigsclothes_bot)",
+        "Avval botda telefon raqamingizni yuboring (@qulaymarketuzbot)",
         404
       );
     }

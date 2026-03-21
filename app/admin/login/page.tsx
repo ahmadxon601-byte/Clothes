@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
     <main className='grid min-h-screen place-items-center bg-[var(--admin-bg)] p-4'>
       <section className='admin-card w-full max-w-md p-6'>
         <div className='mb-6 text-center'>
-          <p className='text-2xl font-extrabold'>Aksiya.uz</p>
+          <p className='text-2xl font-extrabold'>Qulaymarket.Uz</p>
           <p className='text-sm text-[var(--admin-muted)]'>Admin login</p>
         </div>
 

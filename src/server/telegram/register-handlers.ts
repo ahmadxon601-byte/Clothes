@@ -20,7 +20,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
     await ctx.reply(
       `Assalomu alaykum ${ctx.from?.first_name || "foydalanuvchi"}.\n\n` +
-        `Aksiya.uz'ga xush kelibsiz.\n\n` +
+        `Qulaymarket.Uz'ga xush kelibsiz.\n\n` +
         `Davom etish uchun:\n` +
         `• Telefon raqamingizni yuboring` +
         (accessKeySupported ? `\n• Yoki desktop profilingizdagi kalit so'zni yuboring` : ""),

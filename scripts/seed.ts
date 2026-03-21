@@ -22,7 +22,7 @@ const pool = new Pool({
 
 async function main() {
   const name = "Admin123";
-  const email = "admin@clothes.uz";
+  const email = "admin@qulaymarket.uz";
   const plainPassword = "Ahmadxon123";
   const hash = await bcrypt.hash(plainPassword, 10);
 

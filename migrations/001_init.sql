@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Aksiya.uz — initial schema
+-- Qulaymarket.Uz — initial schema
 -- Run once: psql -U postgres -d pos -f migrations/001_init.sql
 -- ─────────────────────────────────────────────────────────────────────────────
 

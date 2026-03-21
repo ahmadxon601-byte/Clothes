@@ -6,7 +6,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-    title: 'Aksiya.uz — Premium Fashion Marketplace',
+    title: 'Qulaymarket.Uz — Premium Fashion Marketplace',
     description: 'Modern luxury fashion. Premium silhouettes, curated essentials and clean lines.',
 };
 
@@ -31,3 +31,4 @@ export default function RootLayout({
         </html>
     );
 }
+

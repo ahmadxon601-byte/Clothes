@@ -42,7 +42,7 @@ export function AppHeader() {
     let right = <div className="w-9 h-9" />;
 
     if (pathname === TELEGRAM_ROUTES.HOME || pathname === TELEGRAM_ROUTES.STORES) {
-        title = 'Aksiya.uz';
+        title = 'Qulaymarket.Uz';
         titleClass = 'text-[17px] font-bold text-[var(--color-text)] text-center';
         left = (
             <button onClick={toggleTheme} className={iconButtonClass}>

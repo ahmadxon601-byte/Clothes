@@ -332,7 +332,7 @@ export default function SiteProfilePage() {
                             </div>
                             <div>
                                 <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Do'kon Ochish</h2>
-                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Aksiya.uz platformasida o'z do'koningizni oching</p>
+                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Qulaymarket.Uz platformasida o'z do'koningizni oching</p>
                             </div>
                         </div>
                         <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
