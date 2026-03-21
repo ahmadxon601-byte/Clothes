@@ -21,7 +21,7 @@ import {
   TR,
 } from '../../../src/features/admin/components/DataViews';
 import { ReasonDialog } from '../../../src/features/admin/components/ReasonDialog';
-import { useApplications, useUpdateApplication, useAdminSSE } from '../../../src/features/admin/components/hooks';
+import { useApplications, useUpdateApplication } from '../../../src/features/admin/components/hooks';
 import { useToast } from '../../../src/shared/ui/useToast';
 
 export default function ApplicationsPage() {
@@ -33,11 +33,16 @@ export default function ApplicationsPage() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  useAdminSSE();
   const query = useApplications({ page, limit: 12, status, search });
   const mutation = useUpdateApplication();
 
   const appliedFilters = useMemo(() => [search ? `Search: ${search}` : '', status ? `Status: ${status}` : ''].filter(Boolean), [search, status]);
+  const statusLabel = (value: string) => {
+    if (value === 'pending') return t('applications.pending');
+    if (value === 'approved') return t('applications.approved');
+    if (value === 'rejected') return t('applications.rejected');
+    return value;
+  };
 
   return (
     <AdminShell
@@ -95,12 +100,15 @@ export default function ApplicationsPage() {
                   <TR key={item.id} className='hover:bg-transparent'>
                     <TD>
                       <p className='font-semibold'>{item.store_name}</p>
+                      <p className='text-xs font-semibold text-[var(--admin-muted)]'>
+                        {item.request_type === 'store_update' ? "Do'kon tahriri" : "Yangi do'kon"}
+                      </p>
                       <p className='text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
                     </TD>
                     <TD>{item.user_name || item.user_email}</TD>
                     <TD>{item.store_phone || '-'}</TD>
                     <TD>
-                      <StatusBadge label={item.status} tone={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'} />
+                      <StatusBadge label={statusLabel(item.status)} tone={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'} />
                     </TD>
                     <TD className='text-right'>
                       <div className='inline-flex gap-2'>
@@ -127,9 +135,12 @@ export default function ApplicationsPage() {
                 <div className='flex items-start justify-between gap-2'>
                   <div>
                     <p className='font-semibold'>{item.store_name}</p>
+                    <p className='text-xs font-semibold text-[var(--admin-muted)]'>
+                      {item.request_type === 'store_update' ? "Do'kon tahriri" : "Yangi do'kon"}
+                    </p>
                     <p className='text-sm text-[var(--admin-muted)]'>{item.user_name || item.user_email}</p>
                   </div>
-                  <StatusBadge label={item.status} tone={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'} />
+                  <StatusBadge label={statusLabel(item.status)} tone={item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'} />
                 </div>
                 <p className='mt-2 text-xs text-[var(--admin-muted)]'>{item.store_address || t('common.noAddress')}</p>
                 <div className='mt-3 flex gap-2'>

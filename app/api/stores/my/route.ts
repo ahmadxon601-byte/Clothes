@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
+import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 
 // ── GET /api/stores/my ────────────────────────────────────────────────────────
 // Returns the current user's store (if seller) or their seller_request status
 export async function GET(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
+    const support = await getSellerRequestSupport();
 
     // If user is a seller, return their store
     if (jwtUser.role === "seller" || jwtUser.role === "admin") {
@@ -28,7 +30,9 @@ export async function GET(req: NextRequest) {
 
     // Check for a pending/rejected seller request
     const reqResult = await query(
-      `SELECT id, store_name, status, created_at, admin_note
+      `SELECT id, store_name,
+              ${support.hasRequestType ? "request_type" : "'store_create'::text AS request_type"},
+              status, created_at, admin_note
        FROM seller_requests
        WHERE user_id = $1
        ORDER BY created_at DESC

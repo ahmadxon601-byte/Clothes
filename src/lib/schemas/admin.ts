@@ -14,6 +14,8 @@ export const applicationSchema = z.object({
   user_name: z.string().default(''),
   user_email: z.string().default(''),
   store_name: z.string().default(''),
+  request_type: z.enum(['store_create', 'store_update']).default('store_create'),
+  target_store_id: z.string().nullish(),
   store_description: z.string().nullish(),
   store_phone: z.string().nullish(),
   store_address: z.string().nullish(),
@@ -33,18 +35,59 @@ export const storeSchema = z.object({
   created_at: z.string(),
 });
 
+const pendingProductVariantSchema = z.object({
+  size: z.string().optional(),
+  color: z.string().optional(),
+  price: z.coerce.number(),
+  stock: z.coerce.number(),
+});
+
+const pendingProductImageSchema = z.object({
+  url: z.string(),
+  sort_order: z.coerce.number(),
+});
+
+const currentProductVariantSchema = z.object({
+  size: z.string().nullish(),
+  color: z.string().nullish(),
+  price: z.coerce.number(),
+  stock: z.coerce.number(),
+});
+
+const currentProductImageSchema = z.object({
+  url: z.string(),
+  sort_order: z.coerce.number(),
+});
+
+const pendingProductUpdateSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  base_price: z.coerce.number().optional(),
+  category_id: z.string().nullable().optional(),
+  images: z.array(pendingProductImageSchema).optional(),
+  variants: z.array(pendingProductVariantSchema).optional(),
+});
+
 export const productSchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string().nullish(),
   sku: z.string().default(''),
   price: z.coerce.number().optional(),
   base_price: z.coerce.number().optional(),
   old_price: z.coerce.number().nullish(),
   views: z.coerce.number().default(0),
   is_active: z.boolean().default(true),
+  review_status: z.enum(['pending', 'approved', 'rejected']).default('approved'),
+  review_note: z.string().nullish(),
+  category_id: z.string().nullish(),
   category_name: z.string().nullish(),
+  pending_category_name: z.string().nullish(),
   store_name: z.string().nullish(),
   thumbnail: z.string().nullish(),
+  current_images: z.array(currentProductImageSchema).default([]),
+  current_variants: z.array(currentProductVariantSchema).default([]),
+  pending_update_payload: pendingProductUpdateSchema.nullish(),
   created_at: z.string(),
 });
 

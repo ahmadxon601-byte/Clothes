@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { useAdminAuth } from '../../../src/context/AdminAuthContext';
 
 export default function AdminLoginPage() {
@@ -10,6 +10,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -54,7 +55,21 @@ export default function AdminLoginPage() {
             <span className='mb-1 inline-block text-[var(--admin-muted)]'>Password</span>
             <div className='relative'>
               <Lock className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-              <input className='admin-input pl-10' value={password} onChange={(e) => setPassword(e.target.value)} type='password' required />
+              <input
+                className='admin-input pl-10 pr-11'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type={showPassword ? 'text' : 'password'}
+                required
+              />
+              <button
+                type='button'
+                onClick={() => setShowPassword((prev) => !prev)}
+                className='absolute right-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-[var(--admin-muted)] transition hover:text-[var(--admin-fg)]'
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className='size-4' /> : <Eye className='size-4' />}
+              </button>
             </div>
           </label>
 

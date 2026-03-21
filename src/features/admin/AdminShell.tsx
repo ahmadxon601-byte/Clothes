@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   Store,
   Sun,
+  LogOut,
   Users,
   X,
 } from 'lucide-react';
@@ -214,8 +215,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             logout();
             router.replace('/admin/login');
           }}
-          className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
+          className='mt-4 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
         >
+          <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
+            <LogOut className='size-4' />
+          </span>
           {t('layout.logout')}
         </button>
       </aside>
@@ -259,8 +263,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                   logout();
                   router.replace('/admin/login');
                 }}
-                className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400'
+                className='mt-4 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
               >
+                <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
+                  <LogOut className='size-4' />
+                </span>
                 {t('layout.logout')}
               </button>
             </motion.aside>

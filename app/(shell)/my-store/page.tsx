@@ -9,13 +9,31 @@ import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 
+async function loadWithRetry<T>(loader: () => Promise<T>, retries = 2, delayMs = 400): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+        try {
+            return await loader();
+        } catch (error) {
+            lastError = error;
+            if (attempt === retries) break;
+            await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+        }
+    }
+
+    throw lastError instanceof Error
+        ? lastError
+        : new Error('Komponentni yuklab bo\'lmadi. Sahifani yangilang.');
+}
+
 const MapPickerLeaflet = dynamic(
-    () => import('../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
+    () => loadWithRetry(() => import('../../../src/shared/ui/MapPickerLeaflet')).then((m) => m.MapPickerLeaflet),
     { ssr: false }
 );
 
 const MapDisplay = dynamic(
-    () => import('../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
+    () => loadWithRetry(() => import('../../../src/shared/ui/MapDisplay')).then((m) => m.MapDisplay),
     { ssr: false, loading: () => <div className="h-[160px] w-full bg-[#f3f4f6] dark:bg-[#111111] animate-pulse" /> }
 );
 
@@ -34,6 +52,8 @@ type RequestData = {
     status: 'pending' | 'rejected' | 'approved';
     created_at: string;
     admin_note: string | null;
+    request_type?: 'store_create' | 'store_update';
+    target_store_id?: string | null;
 };
 
 function parseAddress(raw: string): { text: string; lat: number | null; lng: number | null } {
@@ -57,6 +77,7 @@ export default function MyStorePage() {
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [form, setForm] = useState({ name: '', description: '', phone: '', address: '' });
     const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
     const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
@@ -99,6 +120,7 @@ export default function MyStorePage() {
             address: store.address ?? '',
         });
         setError('');
+        setSuccess('');
         setFormErrors({});
         setEditingStore(store);
     };
@@ -111,6 +133,7 @@ export default function MyStorePage() {
         if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
         setFormErrors({});
         setError('');
+        setSuccess('');
         setSaving(true);
         try {
             const res = await fetch(`/api/stores/${editingStore.id}`, {
@@ -127,6 +150,7 @@ export default function MyStorePage() {
             if (!res.ok) throw new Error(json?.error ?? 'Update failed');
             await Promise.all([fetchAll(), refreshStore()]);
             setEditingStore(null);
+            setSuccess("Ariza yuborildi. Ko'rib chiqilmoqda.");
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
         } finally {
@@ -194,6 +218,12 @@ export default function MyStorePage() {
                     Mening Do'konlarim
                 </h1>
             </div>
+
+            {success && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    {success}
+                </div>
+            )}
 
             {/* Approved stores */}
             {stores.length > 0 && (
@@ -297,6 +327,9 @@ export default function MyStorePage() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#111111] dark:text-white truncate">{req.store_name}</p>
+                                <p className="text-[12px] font-semibold text-yellow-700 dark:text-yellow-400">
+                                    {req.request_type === 'store_update' ? "Do'kon tahrirlash arizasi" : "Yangi do'kon arizasi"}
+                                </p>
                                 <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                                     {new Date(req.created_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
@@ -323,6 +356,9 @@ export default function MyStorePage() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#111111] dark:text-white truncate">{req.store_name}</p>
+                                <p className="text-[12px] font-semibold text-red-600 dark:text-red-400">
+                                    {req.request_type === 'store_update' ? "Do'kon tahrirlash arizasi" : "Yangi do'kon arizasi"}
+                                </p>
                                 {req.admin_note && (
                                     <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af] truncate">{req.admin_note}</p>
                                 )}
@@ -372,6 +408,9 @@ export default function MyStorePage() {
                         <div className="p-7">
                             <h2 className="text-[22px] font-black text-[#111111] dark:text-white">Do'konni Tahrirlash</h2>
                             <p className="mt-0.5 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{editingStore.name}</p>
+                            <p className="mt-2 rounded-xl bg-[#f3fdf6] px-3 py-2 text-[12px] font-semibold text-[#007d35] dark:bg-[#00c853]/10 dark:text-[#7bf0a7]">
+                                Saqlash bosilganda o'zgarishlar to'g'ridan-to'g'ri chiqmaydi. Avval admin tasdiqlaydi.
+                            </p>
                             <form onSubmit={handleUpdate} className="mt-5 grid gap-3">
                                 <label className="grid gap-1.5">
                                     <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Do&apos;kon nomi</span>

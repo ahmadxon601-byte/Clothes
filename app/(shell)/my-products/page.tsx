@@ -17,6 +17,8 @@ interface Product {
   sale_price: number | null;
   sku: string;
   is_active: boolean;
+  review_status: 'pending' | 'approved' | 'rejected';
+  review_note: string | null;
   views: number;
   created_at: string;
   category_name: string | null;
@@ -92,6 +94,7 @@ export default function MyProductsPage() {
   const [formError, setFormError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const getCategoryLabel = (cat: Category) => {
     if (language === 'ru') return cat.name_ru || cat.name;
@@ -155,6 +158,7 @@ export default function MyProductsPage() {
     setFormImages([]);
     setFormError('');
     setFormErrors({});
+    setSuccessMessage('');
     setEditProduct(null);
     setCreateOpen(true);
   };
@@ -174,6 +178,7 @@ export default function MyProductsPage() {
     setFormImages(p.thumbnail ? [p.thumbnail] : []);
     setFormError('');
     setFormErrors({});
+    setSuccessMessage('');
     setEditProduct(p);
     setCreateOpen(true);
     // Load variant data
@@ -213,6 +218,7 @@ export default function MyProductsPage() {
     }
 
     setFormError('');
+    setSuccessMessage('');
     setUploadingImg(true);
     try {
       const urls: string[] = [];
@@ -294,12 +300,13 @@ export default function MyProductsPage() {
           }),
         });
       }
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
         throw new Error(json?.error ?? 'Xatolik yuz berdi');
       }
       setCreateOpen(false);
       setEditProduct(null);
+      setSuccessMessage(editProduct ? "Ariza yuborildi. Ko'rib chiqilmoqda." : "Mahsulot adminga ko'rib chiqish uchun yuborildi.");
       loadProducts();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Xatolik yuz berdi');
@@ -319,15 +326,24 @@ export default function MyProductsPage() {
   };
 
   const toggleActive = async (p: Product) => {
+    if (p.review_status !== 'approved') {
+      setSuccessMessage('');
+      setFormError("Tasdiqlanmagan mahsulotni faollashtirib bo'lmaydi.");
+      return;
+    }
     try {
-      await fetch(`/api/products/${p.id}`, {
+      const res = await fetch(`/api/products/${p.id}`, {
         method: 'PUT',
         headers: authHeader(),
         body: JSON.stringify({ is_active: !p.is_active }),
       });
-      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, is_active: !x.is_active } : x)));
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json?.error ?? "Holatni o'zgartirib bo'lmadi");
+      }
+      loadProducts();
     } catch {
-      /* noop */
+      setFormError("Holatni o'zgartirib bo'lmadi");
     }
   };
 
@@ -377,6 +393,12 @@ export default function MyProductsPage() {
         )}
       </div>
 
+      {successMessage ? (
+        <div className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+          {successMessage}
+        </div>
+      ) : null}
+
       {stores.length === 0 ? (
         <div className="rounded-3xl border border-black/10 bg-white p-10 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
           <Package size={40} className="mx-auto text-[#9ca3af]" />
@@ -413,9 +435,11 @@ export default function MyProductsPage() {
                       <Package size={36} className="text-[#d1d5db]" />
                     </div>
                   )}
-                  {!p.is_active && (
+                  {(p.review_status !== 'approved' || !p.is_active) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                      <span className="rounded-full bg-black/70 px-3 py-1 text-[11px] font-bold text-white">Nofaol</span>
+                      <span className="rounded-full bg-black/70 px-3 py-1 text-[11px] font-bold text-white">
+                        {p.review_status === 'pending' ? "Ko'rib chiqilmoqda" : p.review_status === 'rejected' ? 'Rad etilgan' : 'Nofaol'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -450,6 +474,11 @@ export default function MyProductsPage() {
                       </div>
                     );
                   })()}
+                  {p.review_status !== 'approved' ? (
+                    <p className={`mt-2 text-[11px] font-semibold ${p.review_status === 'pending' ? 'text-amber-500' : 'text-rose-500'}`}>
+                      {p.review_status === 'pending' ? "Admin tasdig'i kutilmoqda" : p.review_note || 'Mahsulot rad etilgan'}
+                    </p>
+                  ) : null}
                 </div>
               </Link>
 

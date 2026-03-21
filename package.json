@@ -8,6 +8,7 @@
     "dev": "node scripts/predev.mjs && next dev --hostname 127.0.0.1 --port 3010",
     "dev:admin": "node scripts/predev.mjs && next dev --hostname 127.0.0.1 --port 3020",
     "build": "next build",
+    "postbuild": "node scripts/fix-build-css.mjs",
     "start": "next start",
     "lint": "next lint",
     "bot:dev": "tsx scripts/telegram-polling.ts"

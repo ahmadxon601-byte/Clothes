@@ -4,6 +4,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
+import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,6 +18,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");
     const { id } = await params;
+    const support = await getSellerRequestSupport();
 
     const body = await req.json();
     const parsed = schema.safeParse(body);
@@ -50,24 +52,44 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
 
       if (action === "approve") {
-        // Create the store
-        await client.query(
-          `INSERT INTO stores (owner_id, name, description, phone, address)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            sellerReq.user_id,
-            sellerReq.store_name,
-            sellerReq.store_description,
-            sellerReq.phone,
-            sellerReq.address,
-          ]
-        );
+        const isStoreUpdate =
+          support.hasRequestType &&
+          sellerReq.request_type === "store_update" &&
+          support.hasTargetStoreId &&
+          sellerReq.target_store_id;
 
-        // Promote user to seller
-        await client.query(
-          "UPDATE users SET role = 'seller', updated_at = NOW() WHERE id = $1",
-          [sellerReq.user_id]
-        );
+        if (isStoreUpdate) {
+          await client.query(
+            `UPDATE stores
+             SET name = $1, description = $2, phone = $3, address = $4, updated_at = NOW()
+             WHERE id = $5 AND owner_id = $6`,
+            [
+              sellerReq.store_name,
+              sellerReq.store_description,
+              sellerReq.phone,
+              sellerReq.address,
+              sellerReq.target_store_id,
+              sellerReq.user_id,
+            ]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO stores (owner_id, name, description, phone, address)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+              sellerReq.user_id,
+              sellerReq.store_name,
+              sellerReq.store_description,
+              sellerReq.phone,
+              sellerReq.address,
+            ]
+          );
+
+          await client.query(
+            "UPDATE users SET role = 'seller', updated_at = NOW() WHERE id = $1",
+            [sellerReq.user_id]
+          );
+        }
       }
 
       await client.query("COMMIT");

@@ -24,6 +24,12 @@ export default function DashboardPage() {
   const stats = useAdminStats();
   const applications = useApplications({ page: 1, limit: 5, status: 'pending' });
   const products = useProducts({ page: 1, limit: 5 });
+  const statusLabel = (value: string) => {
+    if (value === 'pending') return t('applications.pending');
+    if (value === 'approved') return t('applications.approved');
+    if (value === 'rejected') return t('applications.rejected');
+    return value;
+  };
 
   const cards = [
     { title: t('dashboard.users'), value: stats.data?.users_count ?? 0, icon: Users },
@@ -75,7 +81,7 @@ export default function DashboardPage() {
                         <TD>{item.store_name}</TD>
                         <TD>{item.user_name || item.user_email}</TD>
                         <TD>
-                          <StatusBadge label={item.status} tone={item.status === 'pending' ? 'warning' : item.status === 'approved' ? 'success' : 'danger'} />
+                          <StatusBadge label={statusLabel(item.status)} tone={item.status === 'pending' ? 'warning' : item.status === 'approved' ? 'success' : 'danger'} />
                         </TD>
                       </TR>
                     ))}
@@ -88,7 +94,7 @@ export default function DashboardPage() {
                     <p className='font-semibold'>{item.store_name}</p>
                     <p className='text-sm text-[var(--admin-muted)]'>{item.user_name || item.user_email}</p>
                     <div className='mt-2'>
-                      <StatusBadge label={item.status} tone={item.status === 'pending' ? 'warning' : item.status === 'approved' ? 'success' : 'danger'} />
+                      <StatusBadge label={statusLabel(item.status)} tone={item.status === 'pending' ? 'warning' : item.status === 'approved' ? 'success' : 'danger'} />
                     </div>
                   </MobileCard>
                 ))}

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
+import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -44,9 +45,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const jwtUser = requireAuth(req);
     const { id } = await params;
+    const support = await getSellerRequestSupport();
 
     const storeResult = await query(
-      "SELECT owner_id FROM stores WHERE id = $1 AND is_active = TRUE",
+      "SELECT st.owner_id, st.name, u.name AS owner_name FROM stores st JOIN users u ON u.id = st.owner_id WHERE st.id = $1 AND st.is_active = TRUE",
       [id]
     );
     if (storeResult.rows.length === 0) return fail("Store not found", 404);
@@ -58,26 +60,71 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let idx = 1;
+    const hasChanges =
+      parsed.data.name !== undefined ||
+      parsed.data.description !== undefined ||
+      parsed.data.phone !== undefined ||
+      parsed.data.address !== undefined ||
+      parsed.data.image_url !== undefined;
+    if (!hasChanges) return fail("Nothing to update", 422);
 
-    if (parsed.data.name !== undefined) { fields.push(`name = $${idx++}`); values.push(parsed.data.name); }
-    if (parsed.data.description !== undefined) { fields.push(`description = $${idx++}`); values.push(parsed.data.description); }
-    if (parsed.data.phone !== undefined) { fields.push(`phone = $${idx++}`); values.push(parsed.data.phone); }
-    if (parsed.data.address !== undefined) { fields.push(`address = $${idx++}`); values.push(parsed.data.address); }
-    if (parsed.data.image_url !== undefined) { fields.push(`image_url = $${idx++}`); values.push(parsed.data.image_url); }
+    if (jwtUser.role === "admin") {
+      const fields: string[] = [];
+      const values: unknown[] = [];
+      let idx = 1;
 
-    if (fields.length === 0) return fail("Nothing to update", 422);
-    fields.push(`updated_at = NOW()`);
-    values.push(id);
+      if (parsed.data.name !== undefined) { fields.push(`name = $${idx++}`); values.push(parsed.data.name); }
+      if (parsed.data.description !== undefined) { fields.push(`description = $${idx++}`); values.push(parsed.data.description); }
+      if (parsed.data.phone !== undefined) { fields.push(`phone = $${idx++}`); values.push(parsed.data.phone); }
+      if (parsed.data.address !== undefined) { fields.push(`address = $${idx++}`); values.push(parsed.data.address); }
+      if (parsed.data.image_url !== undefined) { fields.push(`image_url = $${idx++}`); values.push(parsed.data.image_url); }
 
-    const result = await query(
-      `UPDATE stores SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, name, description, phone, address, image_url, created_at`,
-      values
+      fields.push(`updated_at = NOW()`);
+      values.push(id);
+
+      const result = await query(
+        `UPDATE stores SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, name, description, phone, address, image_url, created_at`,
+        values
+      );
+      emitAdminEvent({ type: "stores", action: "updated" });
+      return ok({ store: result.rows[0] });
+    }
+
+    if (!support.hasRequestType || !support.hasTargetStoreId) {
+      return fail("Store update review migration is not applied yet", 503);
+    }
+
+    const existingPending = await query(
+      `SELECT id
+       FROM seller_requests
+       WHERE user_id = $1
+         AND status = 'pending'
+         AND request_type = 'store_update'
+         AND target_store_id = $2
+       LIMIT 1`,
+      [jwtUser.userId, id]
     );
-    emitAdminEvent({ type: "stores", action: "updated" });
-    return ok({ store: result.rows[0] });
+    if (existingPending.rows.length > 0) {
+      return fail("Bu do'kon uchun pending tahrirlash arizasi allaqachon mavjud", 409);
+    }
+
+    await query(
+      `INSERT INTO seller_requests
+         (user_id, store_name, store_description, owner_name, phone, address, request_type, target_store_id)
+       VALUES ($1, $2, $3, $4, $5, $6, 'store_update', $7)`,
+      [
+        jwtUser.userId,
+        parsed.data.name ?? storeResult.rows[0].name,
+        parsed.data.description ?? null,
+        storeResult.rows[0].owner_name,
+        parsed.data.phone ?? null,
+        parsed.data.address ?? null,
+        id,
+      ]
+    );
+
+    emitAdminEvent({ type: "seller_requests", action: "created" });
+    return ok({ message: "Store update request submitted for admin approval" });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[store PATCH]", e);
