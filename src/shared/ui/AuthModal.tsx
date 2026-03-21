@@ -175,7 +175,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#00c853] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading && <Loader2 size={14} className="animate-spin" />}
                             {tab === 'login' ? 'Kirish' : tab === 'register' ? "Ro'yxatdan o'tish" : 'Kirish'}

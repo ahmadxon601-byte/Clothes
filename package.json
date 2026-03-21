@@ -11,7 +11,8 @@
     "postbuild": "node scripts/fix-build-css.mjs",
     "start": "next start",
     "lint": "next lint",
-    "bot:dev": "tsx scripts/telegram-polling.ts"
+    "bot:dev": "tsx scripts/telegram-polling.ts",
+    "bot:admin:dev": "tsx scripts/admin-telegram-polling.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.0",

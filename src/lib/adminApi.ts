@@ -132,9 +132,9 @@ export const adminApi = {
 
   getAuditLogs: (params: QueryParams) => request<{ logs: AuditLog[]; pagination: Pagination }>('/api/admin/audit-logs?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('logs', auditLogSchema)),
 
-  createCategory: (payload: { name: string; name_uz?: string; name_ru?: string; name_en?: string; slug: string }) =>
+  createCategory: (payload: { name: string; name_uz?: string; name_ru?: string; name_en?: string; slug: string; parent_id?: string | null }) =>
     request('/api/admin/categories', { method: 'POST', body: JSON.stringify(payload) }),
-  updateCategory: (id: string, payload: { name?: string; name_uz?: string; name_ru?: string; name_en?: string; slug?: string }) =>
+  updateCategory: (id: string, payload: { name?: string; name_uz?: string; name_ru?: string; name_en?: string; slug?: string; parent_id?: string | null }) =>
     request(`/api/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteCategory: (id: string) =>
     request(`/api/admin/categories/${id}`, { method: 'DELETE' }),

@@ -107,7 +107,7 @@ export default function ProductsPage() {
                         className={cn(
                             'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
                             filterOpen || activeFilterCount > 0
-                                ? 'bg-[#00c853] border-[#00c853] text-white'
+                                ? 'bg-[#13ec37] border-[#13ec37] text-white'
                                 : 'bg-white dark:bg-[#1a1a1a] border-black/8 dark:border-white/8 text-[#9ca3af] hover:border-[#00c853]/40'
                         )}
                     >
@@ -131,7 +131,7 @@ export default function ProductsPage() {
                                     <button key={opt.value} onClick={() => setSort(opt.value)}
                                         className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all',
                                             sort === opt.value
-                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
                                                 : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                                         )}>
                                         {opt.label}
@@ -161,7 +161,7 @@ export default function ProductsPage() {
                                     <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
                                         className={cn('w-11 h-11 rounded-xl text-[13px] font-bold border transition-all',
                                             sizeFilter === s
-                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
                                                 : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                                         )}>
                                         {s}
@@ -176,7 +176,7 @@ export default function ProductsPage() {
                                 <p className="text-[14px] font-semibold text-[#111111] dark:text-white">Faqat aksiyada</p>
                                 <button onClick={() => setOnSale(o => !o)}
                                     className={cn('w-11 h-6 rounded-full border transition-all relative',
-                                        onSale ? 'bg-[#00c853] border-[#00c853]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
+                                        onSale ? 'bg-[#13ec37] border-[#13ec37]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
                                     )}>
                                     <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all',
                                         onSale ? 'left-[calc(100%-22px)]' : 'left-0.5')} />

@@ -8,6 +8,8 @@ import { fetchProductById, fetchProducts, toggleFavorite, getApiToken, type ApiP
 import { formatPrice } from '../../../../src/shared/lib/formatPrice';
 import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { cn } from '../../../../src/shared/lib/utils';
+import { RichTextContent } from '../../../../src/shared/ui/RichTextContent';
+import { getVariantMeta, getDepartmentBySlug } from '../../../../src/shared/lib/productCategoryMeta';
 
 export default function TgProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -66,6 +68,7 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
         ? [...product.images].sort((a, b) => a.sort_order - b.sort_order)
         : [];
     const displayImage = images[imgIdx]?.url || product.thumbnail || 'https://placehold.co/400x533/f5f5f5/ccc?text=No+Image';
+    const variantLabel = getVariantMeta(getDepartmentBySlug(product.category_slug)).label;
 
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)]">
@@ -129,7 +132,7 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {v?.size && (
                                     <span className="px-3 py-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
-                                        O&apos;lcham: {v.size}
+                                        {variantLabel}: {v.size}
                                     </span>
                                 )}
                                 {v?.stock != null && (
@@ -148,7 +151,10 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
                 })()}
 
                 {product.description && (
-                    <p className="mt-4 text-[13px] text-[var(--color-hint)] leading-relaxed">{product.description}</p>
+                    <RichTextContent
+                        html={product.description}
+                        className="mt-4 text-[13px] text-[var(--color-hint)] leading-relaxed [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:ml-5 [&_ul]:list-disc"
+                    />
                 )}
 
                 {/* Store link */}

@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 const spec = {
   openapi: "3.0.3",
   info: {
-    title: "Clothes Marketplace API",
+    title: "Aksiya.uz API",
     version: "1.0.0",
     description:
-      "REST API for the Clothes Marketplace — Next.js backend, PostgreSQL, JWT auth.",
+      "REST API for Aksiya.uz — Next.js backend, PostgreSQL, JWT auth.",
   },
   servers: [{ url: "/api", description: "Next.js API routes" }],
   components: {

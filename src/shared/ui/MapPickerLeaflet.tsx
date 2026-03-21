@@ -181,7 +181,7 @@ export function MapPickerLeaflet({ initialLat = 41.2995, initialLng = 69.2401, o
                 <button
                     onClick={handleConfirm}
                     disabled={!pin || loading}
-                    className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#00c853] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] disabled:opacity-50"
+                    className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] disabled:opacity-50"
                 >
                     {loading && <Loader2 size={13} className="animate-spin" />}
                     {loading ? "Manzil aniqlanmoqda..." : "Tasdiqlash"}

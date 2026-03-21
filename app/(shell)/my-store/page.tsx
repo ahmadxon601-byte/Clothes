@@ -391,7 +391,7 @@ export default function MyStorePage() {
                     </div>
                     <Link
                         href="/open-store"
-                        className="inline-flex h-11 items-center gap-2 rounded-full bg-[#00c853] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                        className="inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                     >
                         Ariza Yuborish <ArrowRight size={14} />
                     </Link>
@@ -455,7 +455,7 @@ export default function MyStorePage() {
                                 {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
                                 <div className="flex gap-2">
                                     <button type="button" onClick={() => setEditingStore(null)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">Bekor</button>
-                                    <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#00c853] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] disabled:opacity-60">
+                                    <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] disabled:opacity-60">
                                         {saving && <Loader2 size={13} className="animate-spin" />}
                                         Saqlash
                                     </button>

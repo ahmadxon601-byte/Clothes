@@ -4,6 +4,7 @@ import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 const schema = z.object({
   store_name: z.string().min(2).max(255),
@@ -71,6 +72,16 @@ export async function POST(req: NextRequest) {
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
+    void notifyAdminsViaTelegram({
+      text:
+        `Yangi do'kon arizasi tushdi.\n\n` +
+        `Do'kon: ${store_name}\n` +
+        `Arizachi: ${owner_name}\n` +
+        `${phone ? `Aloqa: ${phone}\n` : ""}` +
+        `${address ? `Manzil: ${address}\n` : ""}` +
+        `Holat: Kutilmoqda`,
+      route: "/admin/applications",
+    });
     return ok(
       { message: "Seller request submitted. Wait for admin approval." },
       201

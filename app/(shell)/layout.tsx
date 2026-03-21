@@ -73,7 +73,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         const langLabels: Record<WebLanguage, string> = { uz: "O'zbek", en: 'English', ru: 'Русский' };
 
         const footerGroups = [
-            { title: w.footer.about, items: [{ href: WEB_LINKS.HOME, label: w.footer.aboutClothes }, { href: WEB_LINKS.SHOPS, label: w.footer.ourStory }, { href: WEB_LINKS.SHOPS, label: w.footer.careers }] },
+            { title: w.footer.about, items: [{ href: WEB_LINKS.HOME, label: w.footer.aboutBrand }, { href: WEB_LINKS.SHOPS, label: w.footer.ourStory }, { href: WEB_LINKS.SHOPS, label: w.footer.careers }] },
             { title: w.footer.customerService, items: [{ href: WEB_LINKS.SHOPS, label: w.footer.helpCenter }, { href: WEB_LINKS.SHOPS, label: w.footer.shipping }, { href: WEB_LINKS.SHOPS, label: w.footer.returns }] },
             { title: w.footer.categories, items: [{ href: WEB_LINKS.CLOTHING, label: w.footer.men }, { href: WEB_LINKS.CLOTHING, label: w.footer.women }, { href: WEB_LINKS.FOOTWEAR, label: w.footer.shoes }] },
         ];
@@ -91,7 +91,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                 <header className="sticky top-0 z-30 border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-[#111111]/80">
                     <div className="mx-auto flex h-[72px] w-full max-w-[1280px] items-center justify-between px-4 md:h-[84px]">
                         <Link href={WEB_LINKS.HOME} className="text-[24px] font-black leading-none tracking-tight text-[#111111] dark:text-white md:text-[30px]">
-                            Clothes<span className="text-[#00c853]">.</span>
+                            Aksiya<span className="text-[#00c853]">.uz</span>
                         </Link>
                         <nav className="hidden items-center gap-8 lg:flex">
                             {links.map((link) => {
@@ -227,7 +227,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     </button>
                                     <button
                                         onClick={() => setAuthModal({ open: true, tab: 'register' })}
-                                        className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#00c853] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
+                                        className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#13ec37] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
                                     >
                                         <UserPlus size={13} />
                                         Ro&apos;yxat
@@ -268,7 +268,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-14">
                         <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
                             <div>
-                                <h3 className="text-[30px] font-black tracking-tight">Clothes<span className="text-[#00c853]">.</span></h3>
+                                <h3 className="text-[30px] font-black tracking-tight">Aksiya<span className="text-[#00c853]">.uz</span></h3>
                                 <p className="mt-3 max-w-sm text-[14px] leading-7 text-[#6b7280] dark:text-[#9ca3af]">{w.footer.desc}</p>
                                 <div className="mt-5 flex items-center gap-2 text-[#6b7280] dark:text-[#9ca3af]">
                                     <button className="rounded-full border border-black/10 p-2 transition-colors hover:border-[#00c853]/40 hover:text-[#111111] dark:border-white/15 dark:hover:text-white"><Instagram size={16} /></button>

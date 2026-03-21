@@ -23,6 +23,8 @@ import {
 } from '../../../src/features/admin/components/DataViews';
 import { useProductMutation, useProducts } from '../../../src/features/admin/components/hooks';
 import { useToast } from '../../../src/shared/ui/useToast';
+import { RichTextContent } from '../../../src/shared/ui/RichTextContent';
+import { stripRichText } from '../../../src/shared/lib/richText';
 
 function discount(oldPrice?: number | null, price?: number) {
   if (!oldPrice || !price || oldPrice <= price) return 0;
@@ -48,7 +50,7 @@ function pendingChanges(item: Product, t: (key: string, values?: Record<string, 
   const changes: Array<{ label: string; value: string }> = [];
   if (payload.name !== undefined) changes.push({ label: 'Nomi', value: payload.name });
   if (payload.base_price !== undefined) changes.push({ label: 'Asl narx', value: `${payload.base_price.toLocaleString()} UZS` });
-  if (payload.description !== undefined) changes.push({ label: 'Tavsif', value: payload.description || 'Bo‘shatiladi' });
+  if (payload.description !== undefined) changes.push({ label: 'Tavsif', value: stripRichText(payload.description ?? '') || 'Bo‘shatiladi' });
   if (payload.category_id !== undefined) changes.push({ label: 'Kategoriya', value: payload.category_id ? 'Yangilanadi' : 'Olib tashlanadi' });
   if (payload.images !== undefined) changes.push({ label: 'Rasmlar', value: `${payload.images.length} ta rasm yangilanadi` });
   if (payload.variants !== undefined && payload.variants[0]) {
@@ -119,7 +121,7 @@ function reviewChanges(item: Product) {
   if (payload.description !== undefined && payload.description !== (item.description ?? null)) {
     changes.push({
       label: 'Tavsif',
-      value: `${item.description?.trim() || "Bo'sh"} -> ${payload.description?.trim() || "Bo'sh"}`,
+      value: `${stripRichText(item.description || '') || "Bo'sh"} -> ${stripRichText(payload.description || '') || "Bo'sh"}`,
     });
   }
 
@@ -145,13 +147,15 @@ function reviewChanges(item: Product) {
   return changes;
 }
 
+function canApprove(item: Product) {
+  return item.review_status === 'pending' || Boolean(item.pending_update_payload);
+}
+
 export default function ProductsPage() {
   const { t } = useAdminI18n();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [mobileMulti, setMobileMulti] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const query = useProducts({ page, limit: 16, search, status });
@@ -160,21 +164,13 @@ export default function ProductsPage() {
 
   const appliedFilters = useMemo(() => [search ? `Search: ${search}` : '', status ? `Status: ${status}` : ''].filter(Boolean), [search, status]);
 
-  const allIds = query.data?.products.map((item) => item.id) ?? [];
-  const allSelected = allIds.length > 0 && allIds.every((id) => selected.includes(id));
-
   return (
     <AdminShell
       title={t('products.title')}
       actions={
-        <div className='flex items-center gap-2'>
-          <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-            <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
-          </button>
-          <button onClick={() => setMobileMulti((prev) => !prev)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-            {mobileMulti ? t('common.done') : t('common.select')}
-          </button>
-        </div>
+        <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
+          <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
+        </button>
       }
     >
       <AdminPageSection title={t('products.moderation')} description={t('products.moderationDesc')} />
@@ -206,25 +202,6 @@ export default function ProductsPage() {
         </select>
       </MobileFilterSheet>
 
-      {selected.length > 0 ? (
-        <div className='admin-card mb-3 flex items-center justify-between gap-2 p-3'>
-          <p className='text-sm font-semibold'>{t('common.selected', { count: selected.length })}</p>
-          <div className='flex items-center gap-2'>
-            <button
-              className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-xs'
-              onClick={() => {
-                Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { review_status: 'approved' } }))).then(() => {
-                  setSelected([]);
-                  showToast({ message: t('products.bulkApprovedMsg'), type: 'success' });
-                });
-              }}
-            >
-              {t('common.approve')}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       {query.isLoading ? (
         <SkeletonRows />
       ) : (query.data?.products.length ?? 0) === 0 ? (
@@ -235,14 +212,6 @@ export default function ProductsPage() {
             <Table>
               <THead>
                 <tr>
-                  <TH>
-                    <input
-                      type='checkbox'
-                      checked={allSelected}
-                      onChange={(e) => setSelected(e.target.checked ? allIds : [])}
-                      aria-label='Select all products'
-                    />
-                  </TH>
                   <TH>{t('products.name')}</TH>
                   <TH>{t('products.store')}</TH>
                   <TH>{t('products.price')}</TH>
@@ -256,18 +225,9 @@ export default function ProductsPage() {
                   const currentPrice = item.price ?? item.base_price ?? 0;
                   const oldPrice = item.old_price ?? null;
                   const off = discount(oldPrice, currentPrice);
+                  const approvable = canApprove(item);
                   return (
                     <TR key={item.id} className='hover:bg-transparent'>
-                      <TD>
-                        <input
-                          type='checkbox'
-                          checked={selected.includes(item.id)}
-                          onChange={(event) =>
-                            setSelected((prev) => (event.target.checked ? [...prev, item.id] : prev.filter((value) => value !== item.id)))
-                          }
-                          aria-label={`Select ${item.name}`}
-                        />
-                      </TD>
                       <TD>
                         <div className='flex items-center gap-3'>
                           <div className='size-11 overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)]'>
@@ -290,14 +250,21 @@ export default function ProductsPage() {
                       </TD>
                       <TD className='text-right'>
                         <div className='inline-flex items-center gap-1.5'>
-                          <button title="Ko'rish" onClick={() => setViewProduct(item)} className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-[var(--admin-fg)] transition-colors'>
+                          <button title="Ko'rish" onClick={() => setViewProduct(item)} className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition-colors hover:bg-transparent hover:text-[var(--admin-fg)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0'>
                             <Eye size={14} />
                           </button>
                           <button
-                            className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
-                            onClick={() => mutation.mutate({ id: item.id, payload: { review_status: 'approved' } }, { onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }) })}
+                            disabled={!approvable || mutation.isPending}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold text-white transition hover:shadow-none ${approvable ? 'bg-emerald-500 hover:bg-emerald-500' : 'cursor-not-allowed bg-slate-600/70 opacity-60'}`}
+                            onClick={() => mutation.mutate(
+                              { id: item.id, payload: { review_status: 'approved' } },
+                              {
+                                onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }),
+                                onError: (error: Error) => showToast({ message: error.message || "Tasdiqlab bo'lmadi", type: 'error' }),
+                              }
+                            )}
                           >
-                            {t('common.approve')}
+                            {approvable ? t('common.approve') : t('products.filterApproved')}
                           </button>
                           <button
                             className='rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
@@ -319,22 +286,11 @@ export default function ProductsPage() {
               const currentPrice = item.price ?? item.base_price ?? 0;
               const oldPrice = item.old_price ?? null;
               const off = discount(oldPrice, currentPrice);
-              const checked = selected.includes(item.id);
+              const approvable = canApprove(item);
 
               return (
                 <MobileCard key={item.id}>
                   <div className='flex items-start gap-3'>
-                    {mobileMulti ? (
-                      <input
-                        type='checkbox'
-                        checked={checked}
-                        onChange={(event) =>
-                          setSelected((prev) => (event.target.checked ? [...prev, item.id] : prev.filter((value) => value !== item.id)))
-                        }
-                        className='mt-1'
-                        aria-label={`Select ${item.name}`}
-                      />
-                    ) : null}
                     <div className='flex-1'>
                       <div className='mb-1 flex items-center justify-between gap-2'>
                         <p className='font-semibold'>{item.name}</p>
@@ -350,10 +306,17 @@ export default function ProductsPage() {
                   </div>
                   <div className='mt-3 grid grid-cols-3 gap-2'>
                     <button
-                      className='rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
-                      onClick={() => mutation.mutate({ id: item.id, payload: { review_status: 'approved' } })}
+                      disabled={!approvable || mutation.isPending}
+                      className={`rounded-full py-2 text-xs font-semibold text-white transition hover:shadow-none ${approvable ? 'bg-emerald-500 hover:bg-emerald-500' : 'cursor-not-allowed bg-slate-600/70 opacity-60'}`}
+                      onClick={() => mutation.mutate(
+                        { id: item.id, payload: { review_status: 'approved' } },
+                        {
+                          onSuccess: () => showToast({ message: t('products.approvedMsg'), type: 'success' }),
+                          onError: (error: Error) => showToast({ message: error.message || "Tasdiqlab bo'lmadi", type: 'error' }),
+                        }
+                      )}
                     >
-                      {t('common.approve')}
+                      {approvable ? t('common.approve') : t('products.filterApproved')}
                     </button>
                     <button
                       className='rounded-full bg-indigo-500 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
@@ -368,20 +331,6 @@ export default function ProductsPage() {
           </MobileCardList>
         </>
       )}
-
-      {mobileMulti && selected.length > 0 ? (
-        <div className='fixed inset-x-0 bottom-20 z-40 flex items-center justify-between border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-3 shadow-[var(--admin-shadow)] lg:hidden'>
-          <p className='text-sm font-semibold'>{t('common.selected', { count: selected.length })}</p>
-          <div className='flex gap-2'>
-            <button
-              className='rounded-full border border-[var(--admin-border)] px-3 py-2 text-xs'
-              onClick={() => Promise.all(selected.map((id) => mutation.mutateAsync({ id, payload: { review_status: 'approved' } }))).then(() => setSelected([]))}
-            >
-              {t('common.approve')}
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       <div className='mt-4 flex justify-end gap-2'>
         <button disabled={page <= 1} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm disabled:opacity-50' onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
@@ -413,6 +362,15 @@ export default function ProductsPage() {
               <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Do&apos;kon</span><span className='font-semibold'>{viewProduct.store_name || '—'}</span></div>
               <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Kategoriya</span><span className='font-semibold'>{viewProduct.category_name || '—'}</span></div>
               <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Ko&apos;rishlar</span><span className='font-semibold'>{viewProduct.views}</span></div>
+              {viewProduct.description ? (
+                <div className='pt-2'>
+                  <p className='mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-muted)]'>Tavsif</p>
+                  <RichTextContent
+                    html={viewProduct.description}
+                    className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-3 text-sm [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:ml-5 [&_ul]:list-disc'
+                  />
+                </div>
+              ) : null}
               <div className='flex justify-between'>
                 <span className='text-[var(--admin-muted)]'>Holat</span>
                 <StatusBadge label={productStatusLabel(viewProduct, t)} tone={productStatusTone(viewProduct)} />

@@ -249,6 +249,33 @@
         display: none;
     }
 
+    .soft-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(34, 197, 94, 0.55) transparent;
+    }
+
+    .soft-scrollbar::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    .soft-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .soft-scrollbar::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, rgba(34, 197, 94, 0.7), rgba(22, 163, 74, 0.38));
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    .soft-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.55));
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
     .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }

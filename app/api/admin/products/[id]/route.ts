@@ -68,6 +68,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       current.pending_update_payload
     ) {
       const pending = current.pending_update_payload;
+      if (pending.category_id) {
+        const categoryResult = await query(
+          "SELECT id FROM categories WHERE id = $1",
+          [pending.category_id]
+        );
+        if (categoryResult.rows.length === 0) {
+          return fail("Tanlangan kategoriya yoki subkategoriya o'chirilgan. Mahsulotni qayta tahrirlang.", 409);
+        }
+      }
       const db = await pool.connect();
       try {
         await db.query("BEGIN");

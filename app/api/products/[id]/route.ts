@@ -4,6 +4,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -131,14 +132,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     if (jwtUser.role === "seller") {
       const own = await query(
-        `SELECT p.id, p.sku${reviewSupport.hasReviewStatus ? ", p.review_status" : ""}
+        `SELECT p.id, p.sku, p.name${reviewSupport.hasReviewStatus ? ", p.review_status" : ""}
          FROM products p
          JOIN stores st ON st.id = p.store_id
          WHERE p.id = $1 AND st.owner_id = $2`,
         [id, jwtUser.userId]
       );
       if (own.rows.length === 0) return fail("Forbidden", 403);
-      existingProduct = own.rows[0] as { id: string; sku: string; review_status?: string | null };
+      existingProduct = own.rows[0] as { id: string; sku: string; name?: string; review_status?: string | null };
     }
 
     const body = await req.json();
@@ -158,7 +159,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
       reviewSupport.hasPendingUpdatePayload &&
       (existingProduct?.review_status ?? "approved") === "approved"
     ) {
-      const pendingPayload = {
+      const pendingPayload: Record<string, unknown> & {
+        name?: string;
+        base_price?: number;
+      } = {
         ...Object.fromEntries(Object.entries(rest).filter(([, val]) => val !== undefined && val !== null)),
         ...(Object.entries(rest).some(([, val]) => val === null) ? Object.fromEntries(Object.entries(rest).filter(([, val]) => val === null)) : {}),
         ...(images !== undefined ? { images } : {}),
@@ -174,6 +178,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
 
       emitAdminEvent({ type: "products", action: "updated" });
+      void notifyAdminsViaTelegram({
+        text:
+          `Mahsulot o'zgarishi ko'rib chiqishga yuborildi.\n\n` +
+          `Mahsulot: ${(existingProduct as { name?: string } | null)?.name || id}\n` +
+          `${pendingPayload.name ? `Yangi nom: ${String(pendingPayload.name)}\n` : ""}` +
+          `${pendingPayload.base_price ? `Yangi narx: ${Number(pendingPayload.base_price).toLocaleString()} UZS\n` : ""}` +
+          `Holat: Kutilmoqda`,
+        route: "/admin/products",
+      });
       return ok({ message: "Product update request submitted for admin approval" });
     }
 

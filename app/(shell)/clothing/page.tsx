@@ -75,7 +75,7 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (iso
             <button key={i} onClick={() => onSelect(iso)}
               className={cn(
                 'h-9 w-full rounded-lg text-[13px] font-semibold transition-all',
-                isSelected ? 'bg-[#00c853] text-white' :
+                isSelected ? 'bg-[#13ec37] text-white' :
                 isToday    ? 'border border-[#00c853] text-[#00c853]' :
                              'text-[#111111] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
               )}>
@@ -235,7 +235,7 @@ export default function ClothingPage() {
           className={cn(
             'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
             filterOpen || activeFilterCount > 0
-              ? 'bg-[#00c853] border-[#00c853] text-white'
+              ? 'bg-[#13ec37] border-[#13ec37] text-white'
               : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-[#9ca3af] hover:border-[#00c853]/40'
           )}
         >
@@ -273,7 +273,7 @@ export default function ClothingPage() {
               <button onClick={() => setCalOpen(o => !o)}
                 className={cn('flex items-center gap-2 px-4 py-1.5 rounded-full border text-[13px] font-semibold transition-all',
                   calOpen
-                    ? 'bg-[#00c853] text-white border-[#00c853]'
+                    ? 'bg-[#13ec37] text-white border-[#13ec37]'
                     : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                 )}>
                 <CalendarDays size={15} />
@@ -311,7 +311,7 @@ export default function ClothingPage() {
                 <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
                   className={cn('h-10 px-3 rounded-xl text-[13px] font-bold border transition-all',
                     sizeFilter === s
-                      ? 'bg-[#00c853] text-white border-[#00c853]'
+                      ? 'bg-[#13ec37] text-white border-[#13ec37]'
                       : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                   )}>
                   {s}

@@ -145,7 +145,7 @@ export default function SiteProfilePage() {
                             </button>
                             <button
                                 onClick={() => setAuthModal({ open: true, tab: 'register' })}
-                                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#13ec37] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                             >
                                 Ro'yxatdan o'tish
                             </button>
@@ -332,7 +332,7 @@ export default function SiteProfilePage() {
                             </div>
                             <div>
                                 <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Do'kon Ochish</h2>
-                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Clothes platformasida o'z do'koningizni oching</p>
+                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Aksiya.uz platformasida o'z do'koningizni oching</p>
                             </div>
                         </div>
                         <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
@@ -419,7 +419,7 @@ export default function SiteProfilePage() {
                                     {editError && <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{editError}</p>}
                                     <div className="flex gap-2">
                                         <button type="button" onClick={() => setEditOpen(false)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">Bekor</button>
-                                        <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#00c853] text-[12px] font-black text-[#06200f] disabled:opacity-60">
+                                        <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black text-[#06200f] disabled:opacity-60">
                                             {saving && <Loader2 size={13} className="animate-spin" />}
                                             Saqlash
                                         </button>

@@ -210,7 +210,7 @@ export default function WebsiteHomePage() {
                         <div className="mt-8 flex flex-wrap gap-3">
                             <Link
                                 href={WEB_LINKS.SHOP}
-                                className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-[#00c853] px-7 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(0,200,83,0.9)]"
+                                className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-[#13ec37] px-7 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(0,200,83,0.9)]"
                             >
                                 {w.home.shopNow}
                                 <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
@@ -361,7 +361,7 @@ export default function WebsiteHomePage() {
                                     className={cn(
                                         'inline-flex items-center justify-center rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00c853] focus-visible:ring-offset-1',
                                         activeCategory === cat
-                                            ? 'bg-[#00c853] text-[#06200f] shadow-[0_12px_24px_-14px_rgba(0,200,83,0.75)]'
+                                            ? 'bg-[#13ec37] text-[#06200f] shadow-[0_12px_24px_-14px_rgba(0,200,83,0.75)]'
                                             : 'text-[#475467] hover:bg-white hover:text-[#111827] dark:text-[#9ca3af] dark:hover:bg-white/10 dark:hover:text-white',
                                     )}
                                 >
@@ -449,7 +449,7 @@ export default function WebsiteHomePage() {
                     </p>
                     <Link
                         href={WEB_LINKS.SHOP}
-                        className="mt-8 inline-flex h-13 items-center justify-center rounded-full bg-[#00c853] px-8 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-14px_rgba(0,200,83,0.85)]"
+                        className="mt-8 inline-flex h-13 items-center justify-center rounded-full bg-[#13ec37] px-8 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-14px_rgba(0,200,83,0.85)]"
                     >
                         {w.home.claimOffer}
                     </Link>

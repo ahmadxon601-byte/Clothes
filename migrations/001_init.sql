@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Clothes Marketplace — initial schema
+-- Aksiya.uz — initial schema
 -- Run once: psql -U postgres -d pos -f migrations/001_init.sql
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -120,17 +120,6 @@ CREATE INDEX IF NOT EXISTS idx_seller_requests_user ON seller_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_seller_requests_status ON seller_requests(status);
 
 -- ── Seed: default categories ──────────────────────────────────────────────────
-INSERT INTO categories (name, slug) VALUES
-  ('Jackets',     'jackets'),
-  ('Shirts',      'shirts'),
-  ('Pants',       'pants'),
-  ('Dresses',     'dresses'),
-  ('Shoes',       'shoes'),
-  ('Accessories', 'accessories'),
-  ('Sportswear',  'sportswear'),
-  ('Outerwear',   'outerwear')
-ON CONFLICT (slug) DO NOTHING;
-
 -- ── NOTE ──────────────────────────────────────────────────────────────────────
 -- To create the initial admin user, run:
 --   npx tsx scripts/seed.ts

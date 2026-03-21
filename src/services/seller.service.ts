@@ -31,7 +31,7 @@ const defaultPromotions: SellerPromotion[] = [
 ];
 
 const defaultSettings: SellerSettings = {
-  shopName: "Clothes Seller Studio",
+  shopName: "Aksiya.uz Seller Studio",
   supportPhone: "+998 90 111 22 33",
   autoConfirmOrders: false
 };

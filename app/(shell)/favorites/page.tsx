@@ -101,7 +101,7 @@ export default function FavoritesPage() {
                         <p className="mt-3 text-[15px] text-[#6b7280] dark:text-[#9ca3af]">{w.favorites.authDesc}</p>
                         <button
                             onClick={() => setAuthModal(true)}
-                            className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                            className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[#13ec37] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                         >
                             {w.favorites.authAction}
                         </button>

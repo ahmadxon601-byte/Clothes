@@ -1,7 +1,7 @@
 'use client';
 
 import { Pencil, Plus, Trash2, X, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
@@ -137,15 +137,30 @@ export default function CategoriesPage() {
     setFormOpen(true);
   };
   const closeForm = () => { setFormOpen(false); setEditCat(null); setTranslating(false); };
+  const submitForm = () => { if (!isPending && canSubmit) (editCat ? updateMut : createMut).mutate(); };
 
   const isPending = createMut.isPending || updateMut.isPending || translating;
   const canSubmit = name.trim() && slug.trim();
+
+  useEffect(() => {
+    if (!formOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeForm();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [formOpen]);
 
   return (
     <AdminShell
       title={t('categories.title')}
       actions={
-        <button onClick={openCreate} className="admin-btn flex items-center gap-2 px-4 py-2 text-sm">
+        <button onClick={openCreate} className="admin-btn flex items-center gap-2 px-4 py-2 text-sm shadow-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">
           <Plus className="size-4" /> Kategoriya qo&apos;shish
         </button>
       }
@@ -172,10 +187,10 @@ export default function CategoriesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <p className="mr-2 text-xs text-[var(--admin-muted)]">{new Date(cat.created_at).toLocaleDateString(locale)}</p>
-                  <button onClick={() => openEdit(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-blue-500 transition-colors" title="Tahrirlash">
+                  <button onClick={() => openEdit(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition-colors hover:bg-transparent hover:text-blue-500 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0" title="Tahrirlash">
                     <Pencil size={14} />
                   </button>
-                  <button onClick={() => setDeleteCat(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] hover:text-rose-500 transition-colors" title="O'chirish">
+                  <button onClick={() => setDeleteCat(cat)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition-colors hover:bg-transparent hover:text-rose-500 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0" title="O'chirish">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -188,8 +203,14 @@ export default function CategoriesPage() {
       {/* Create / Edit modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="admin-card relative w-full max-w-sm p-6">
-            <button onClick={closeForm} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)]">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitForm();
+            }}
+            className="admin-card relative w-full max-w-sm p-6"
+          >
+            <button type="button" onClick={closeForm} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition-colors hover:bg-transparent hover:text-[var(--admin-fg)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">
               <X size={14} />
             </button>
             <h2 className="mb-4 text-base font-bold">{editCat ? 'Tahrirlash' : 'Yangi kategoriya'}</h2>
@@ -203,7 +224,11 @@ export default function CategoriesPage() {
                       key={l}
                       type="button"
                       onClick={() => setLang(l)}
-                      className={`flex-1 rounded-lg py-1.5 text-xs font-bold border transition-all ${lang === l ? 'bg-[var(--admin-accent)] text-white border-[var(--admin-accent)]' : 'border-[var(--admin-border)] text-[var(--admin-muted)] hover:border-[var(--admin-accent)]/50'}`}
+                      className={`flex-1 rounded-lg border py-1.5 text-xs font-bold shadow-none outline-none transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 ${
+                        lang === l
+                          ? 'border-[#00bc7d] bg-[#00bc7d] text-white'
+                          : 'border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] hover:border-white/10 hover:text-[var(--admin-fg)]'
+                      }`}
                     >
                       {LANG_LABELS[l]}
                     </button>
@@ -243,16 +268,16 @@ export default function CategoriesPage() {
 
             {formError && <p className="mt-2 text-xs text-rose-500">{formError}</p>}
             <div className="mt-5 flex gap-2">
-              <button onClick={closeForm} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>
+              <button type="button" onClick={closeForm} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>
               <button
+                type="submit"
                 disabled={isPending || !canSubmit}
-                onClick={() => editCat ? updateMut.mutate() : createMut.mutate()}
                 className="flex-1 rounded-full bg-[var(--admin-accent)] py-2 text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isPending ? <><Loader2 size={13} className="animate-spin" /> ...</> : 'Saqlash'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 
@@ -260,7 +285,7 @@ export default function CategoriesPage() {
       {deleteCat && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="admin-card w-full max-w-sm p-6">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/8 text-rose-500 shadow-none">
               <Trash2 size={22} />
             </div>
             <h2 className="text-base font-bold">Kategoriyani o&apos;chirish</h2>
@@ -268,11 +293,11 @@ export default function CategoriesPage() {
               <span className="font-semibold text-[var(--admin-fg)]">{getLocalizedName(deleteCat, locale)}</span> o&apos;chirilsinmi?
             </p>
             <div className="mt-5 flex gap-2">
-              <button onClick={() => setDeleteCat(null)} className="flex-1 rounded-full border border-[var(--admin-border)] py-2 text-sm">Bekor</button>
+              <button onClick={() => setDeleteCat(null)} className="flex-1 rounded-full border border-[var(--admin-border)] bg-transparent py-2 text-sm shadow-none outline-none transition-colors hover:bg-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">Bekor</button>
               <button
                 onClick={() => deleteMut.mutate(deleteCat.id)}
                 disabled={deleteMut.isPending}
-                className="flex-1 rounded-full bg-rose-500 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-rose-500 py-2 text-sm font-semibold text-white shadow-none outline-none transition-colors hover:bg-rose-500 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50"
               >
                 O&apos;chirish
               </button>
