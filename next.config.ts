@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  devIndicators: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -12,7 +17,7 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com"
       }
     ]
-  }
+  },
 };
 
 export default nextConfig;
