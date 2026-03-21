@@ -19,6 +19,10 @@ export const applicationSchema = z.object({
   store_description: z.string().nullish(),
   store_phone: z.string().nullish(),
   store_address: z.string().nullish(),
+  current_store_name: z.string().nullish(),
+  current_store_description: z.string().nullish(),
+  current_store_phone: z.string().nullish(),
+  current_store_address: z.string().nullish(),
   status: z.string().default('pending'),
   created_at: z.string(),
 });

@@ -30,10 +30,15 @@ export async function GET(req: NextRequest) {
               ${support.hasTargetStoreId ? "sr.target_store_id" : "NULL::uuid AS target_store_id"},
               sr.store_description, sr.owner_name,
               sr.phone AS store_phone, sr.address AS store_address, sr.status,
+              st.name AS current_store_name,
+              st.description AS current_store_description,
+              st.phone AS current_store_phone,
+              st.address AS current_store_address,
               sr.admin_note, sr.created_at, sr.updated_at, sr.image_url,
               u.name AS user_name, u.email AS user_email
        FROM seller_requests sr
        JOIN users u ON u.id = sr.user_id
+       LEFT JOIN stores st ON st.id = sr.target_store_id
        ${whereClause}
        ORDER BY sr.created_at DESC
        LIMIT $${status ? 2 : 1} OFFSET $${status ? 3 : 2}`,
