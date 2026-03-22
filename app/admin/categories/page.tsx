@@ -16,6 +16,7 @@ interface Category {
   name_ru: string | null;
   name_en: string | null;
   slug: string;
+  parent_id?: string | null;
   created_at: string;
 }
 
@@ -50,6 +51,7 @@ export default function CategoriesPage() {
   const { showToast } = useToast();
   const { data, isLoading } = useCategories();
   const categories = (data as { categories: Category[] } | null)?.categories ?? [];
+  const parentCategories = categories.filter((cat) => !cat.parent_id);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
@@ -169,12 +171,12 @@ export default function CategoriesPage() {
 
       {isLoading ? (
         <SkeletonRows />
-      ) : categories.length === 0 ? (
+      ) : parentCategories.length === 0 ? (
         <EmptyState title={t('categories.empty')} description={t('categories.emptyDesc')} />
       ) : (
         <section className="admin-card p-4">
           <ul className="space-y-2">
-            {categories.map((cat) => (
+            {parentCategories.map((cat) => (
               <li key={cat.id} className="flex items-center justify-between rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3">
                 <div>
                   <p className="font-semibold">{getLocalizedName(cat, locale)}</p>

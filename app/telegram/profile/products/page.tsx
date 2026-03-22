@@ -1,713 +1,577 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Package, Plus, Trash2, Edit3, Eye, Loader2, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, Edit3, Eye, Loader2, Package, Plus, Trash2, X } from 'lucide-react';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/lib/apiClient';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
-import { formatPrice } from '../../../../src/shared/lib/formatPrice';
 import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
+import { RichTextEditor } from '../../../../src/shared/ui/RichTextEditor';
 
 interface MyProduct {
-    id: string;
-    name: string;
-    base_price: number;
-    sale_price: number | null;
-    description: string | null;
-    category_id: string | null;
-    category_name: string | null;
-    store_name: string;
-    store_id: string;
-    thumbnail: string | null;
-    is_active: boolean;
+  id: string;
+  name: string;
+  base_price: number;
+  sale_price: number | null;
+  description: string | null;
+  category_id: string | null;
+  category_name: string | null;
+  store_name: string;
+  store_id: string;
+  thumbnail: string | null;
+  is_active: boolean;
 }
 
 interface MyStore {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 interface Category {
-    id: string;
-    name: string;
-    slug: string;
+  id: string;
+  name: string;
+  name_uz?: string | null;
+  name_ru?: string | null;
+  name_en?: string | null;
+  slug: string;
+  parent_id?: string | null;
 }
 
 type View = 'list' | 'create' | 'edit';
 
+const fieldClass =
+  'w-full rounded-[20px] border border-white/8 bg-white/[0.04] px-4 py-3 text-[14px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all placeholder:text-[#9ca3af] focus:border-[#22c55e]/55 focus:bg-white/[0.08] focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)]';
+const fieldErrorClass =
+  'w-full rounded-[20px] border border-red-500/80 bg-white/[0.04] px-4 py-3 text-[14px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all placeholder:text-[#9ca3af] focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.12)]';
+const selectClass = `${fieldClass} appearance-none pr-11 leading-[1.2]`;
+const subtleLabelClass =
+  'mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#94a3b8]';
+
 function authHeaders(): Record<string, string> {
-    const token = getApiToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  const token = getApiToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function uploadImage(file: File): Promise<string> {
-    const token = getApiToken();
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? 'Upload failed');
-    return (json.data?.url ?? json.url) as string;
+  const token = getApiToken();
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? 'Upload failed');
+  return (json.data?.url ?? json.url) as string;
 }
 
-const inputCls = "w-full h-12 rounded-[14px] border bg-[var(--color-surface)] px-4 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)]";
-const selectCls = `${inputCls} appearance-none cursor-pointer`;
-
 export default function ProfileProductsPage() {
-    const { WebApp, isReady } = useTelegram();
-    const [products, setProducts] = useState<MyProduct[]>([]);
-    const [stores, setStores] = useState<MyStore[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<View>('list');
-    const [editProduct, setEditProduct] = useState<MyProduct | null>(null);
+  const { WebApp, isReady } = useTelegram();
+  const [products, setProducts] = useState<MyProduct[]>([]);
+  const [stores, setStores] = useState<MyStore[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<View>('list');
+  const [editProduct, setEditProduct] = useState<MyProduct | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
+  const [parentCategoryMenuOpen, setParentCategoryMenuOpen] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
+    open: false,
+    message: '',
+    onConfirm: () => {},
+  });
 
-    // Create form
-    const [name, setName] = useState('');
-    const [originalPrice, setOriginalPrice] = useState('');
-    const [discount, setDiscount] = useState('');
-    const [currentPrice, setCurrentPrice] = useState('');
-    const [size, setSize] = useState('');
-    const [stock, setStock] = useState('1');
-    const [desc, setDesc] = useState('');
-    const [storeId, setStoreId] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    name: '',
+    base_price: '',
+    discount: '',
+    current_price: '',
+    stock: '1',
+    description: '',
+    category_id: '',
+    store_id: '',
+  });
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [parentCategoryId, setParentCategoryId] = useState('');
 
-    // Field-level validation errors
-    const [createErrors, setCreateErrors] = useState<Record<string, boolean>>({});
-    const [editErrors, setEditErrors] = useState<Record<string, boolean>>({});
+  const parentCategories = useMemo(
+    () => categories.filter((category) => !category.parent_id),
+    [categories]
+  );
+  const subcategories = useMemo(
+    () => categories.filter((category) => category.parent_id),
+    [categories]
+  );
+  const filteredCategories = useMemo(
+    () => subcategories.filter((category) => category.parent_id === parentCategoryId),
+    [subcategories, parentCategoryId]
+  );
+  const selectedParentCategory = parentCategories.find((category) => category.id === parentCategoryId) ?? null;
+  const selectedCategory = categories.find((category) => category.id === form.category_id) ?? null;
 
-    // Confirm dialog state
-    const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
-        open: false,
-        message: '',
-        onConfirm: () => {},
+  const getCategoryLabel = (category: Category) =>
+    category.name_uz || category.name_ru || category.name_en || category.name;
+
+  const categoryPlaceholder = '— Kategoriya tanlanmagan —';
+  const selectedParentCategoryLabel = selectedParentCategory ? getCategoryLabel(selectedParentCategory) : categoryPlaceholder;
+  const selectedCategoryLabel = selectedCategory ? getCategoryLabel(selectedCategory) : categoryPlaceholder;
+
+  const calcCurrentPrice = (base: string, disc: string) => {
+    const b = Number(base);
+    const d = Number(disc);
+    if (!b || Number.isNaN(b) || Number.isNaN(d)) return '';
+    return String(Math.round(b * (1 - d / 100)));
+  };
+
+  const calcDiscount = (base: string, current: string) => {
+    const b = Number(base);
+    const c = Number(current);
+    if (!b || !c || Number.isNaN(b) || Number.isNaN(c)) return '';
+    return String(Math.round((1 - c / b) * 100));
+  };
+
+  const fetchAll = async () => {
+    const token = getApiToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const [productsRes, storesRes, categoriesRes] = await Promise.all([
+        fetch('/api/products/my', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/stores/my/all', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/categories'),
+      ]);
+      const [productsJson, storesJson, categoriesJson] = await Promise.all([
+        productsRes.json(),
+        storesRes.json(),
+        categoriesRes.json(),
+      ]);
+
+      setProducts(productsJson.data?.products ?? productsJson.products ?? []);
+      const nextStores: MyStore[] = storesJson.data?.stores ?? storesJson.stores ?? [];
+      setStores(nextStores);
+      setCategories(categoriesJson.data?.categories ?? categoriesJson.categories ?? []);
+      if (nextStores.length > 0) {
+        setForm((prev) => ({ ...prev, store_id: prev.store_id || nextStores[0].id }));
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isReady) return;
+    const initData = WebApp?.initData;
+    if (initData) {
+      telegramWebAppAuth(initData)
+        .then((token) => setApiToken(token))
+        .catch(() => {})
+        .finally(() => fetchAll());
+    } else {
+      fetchAll();
+    }
+  }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useSSERefetch(['products'], fetchAll);
+
+  useEffect(() => {
+    if (!categories.length || !parentCategoryId) return;
+    const nested = subcategories.filter((category) => category.parent_id === parentCategoryId);
+    setForm((prev) => {
+      if (nested.length === 0) {
+        return prev.category_id === parentCategoryId ? prev : { ...prev, category_id: parentCategoryId };
+      }
+      if (nested.some((category) => category.id === prev.category_id)) return prev;
+      return { ...prev, category_id: nested[0].id };
+    });
+  }, [categories, parentCategoryId, subcategories]);
+
+  const resetForm = () => {
+    const defaultParent = parentCategories[0] ?? null;
+    const defaultSub = defaultParent
+      ? subcategories.find((category) => category.parent_id === defaultParent.id) ?? null
+      : null;
+
+    setParentCategoryId(defaultParent?.id ?? '');
+    setForm({
+      name: '',
+      base_price: '',
+      discount: '',
+      current_price: '',
+      stock: '1',
+      description: '',
+      category_id: defaultSub?.id ?? defaultParent?.id ?? '',
+      store_id: stores[0]?.id ?? '',
+    });
+    setFormImages([]);
+    setFormError('');
+    setFormErrors({});
+    setParentCategoryMenuOpen(false);
+    setCategoryMenuOpen(false);
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setEditProduct(null);
+    setView('create');
+  };
+
+  const openEdit = async (product: MyProduct) => {
+    setEditProduct(product);
+    setFormError('');
+    setFormErrors({});
+    setParentCategoryMenuOpen(false);
+    setCategoryMenuOpen(false);
+
+    const currentCategory = categories.find((category) => category.id === product.category_id) ?? null;
+    const currentParentId = currentCategory?.parent_id ?? currentCategory?.id ?? '';
+    setParentCategoryId(currentParentId);
+    setForm({
+      name: product.name,
+      base_price: String(product.base_price),
+      discount: product.sale_price && product.base_price
+        ? calcDiscount(String(product.base_price), String(product.sale_price))
+        : '',
+      current_price: product.sale_price != null ? String(product.sale_price) : String(product.base_price),
+      stock: '1',
+      description: product.description ?? '',
+      category_id: product.category_id ?? '',
+      store_id: product.store_id,
     });
 
-    // Edit form
-    const [editName, setEditName] = useState('');
-    const [editOriginalPrice, setEditOriginalPrice] = useState('');
-    const [editDiscount, setEditDiscount] = useState('');
-    const [editCurrentPrice, setEditCurrentPrice] = useState('');
-    const [editSize, setEditSize] = useState('');
-    const [editStock, setEditStock] = useState('1');
-    const [editDesc, setEditDesc] = useState('');
-    const [editCategoryId, setEditCategoryId] = useState('');
-    const [editImages, setEditImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
+    try {
+      const res = await fetch(`/api/products/${product.id}`);
+      const json = await res.json();
+      const data = json.data?.product ?? json.product;
+      const images: Array<{ url: string; sort_order: number }> = data?.images ?? [];
+      const variants: Array<{ stock?: number }> = data?.variants ?? [];
+      setFormImages(images.sort((a, b) => a.sort_order - b.sort_order).map((item) => item.url));
+      if (variants[0]?.stock != null) {
+        setForm((prev) => ({ ...prev, stock: String(variants[0].stock) }));
+      }
+    } catch {
+      setFormImages(product.thumbnail ? [product.thumbnail] : []);
+    }
 
+    setView('edit');
+  };
 
-    const fetchAll = async () => {
-        const token = getApiToken();
-        if (!token) { setLoading(false); return; }
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploadingImg(true);
+    setFormError('');
+    try {
+      const uploaded = await Promise.all(Array.from(files).map((file) => uploadImage(file)));
+      setFormImages((prev) => [...prev, ...uploaded]);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Rasm yuklanmadi');
+    } finally {
+      setUploadingImg(false);
+    }
+  };
+
+  const validate = () => {
+    const errors: Record<string, boolean> = {};
+    if (!form.name.trim()) errors.name = true;
+    if (!form.base_price || Number(form.base_price) <= 0 || Number.isNaN(Number(form.base_price))) errors.price = true;
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+    setSaving(true);
+    setFormError('');
+    try {
+      const currentPrice = form.current_price && Number(form.current_price) > 0
+        ? Number(form.current_price)
+        : Number(form.base_price);
+      const payload = {
+        name: form.name.trim(),
+        base_price: Number(form.base_price),
+        description: form.description || undefined,
+        category_id: form.category_id || undefined,
+        store_id: form.store_id || undefined,
+        images: formImages.map((url, index) => ({ url, sort_order: index })),
+        variants: [{ price: currentPrice, stock: Number(form.stock) || 1 }],
+      };
+
+      const res = await fetch(editProduct ? `/api/products/${editProduct.id}` : '/api/products', {
+        method: editProduct ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setFormError(json.error ?? 'Xatolik yuz berdi');
+        return;
+      }
+
+      await fetchAll();
+      setView('list');
+      setEditProduct(null);
+      resetForm();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Xatolik yuz berdi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (productId: string) => {
+    setConfirmDialog({
+      open: true,
+      message: "Mahsulotni o'chirishni tasdiqlaysizmi?",
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, open: false }));
         try {
-            const [productsRes, storesRes, catsRes] = await Promise.all([
-                fetch('/api/products/my', { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/stores/my/all', { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/categories'),
-            ]);
-            const [pJson, sJson, cJson] = await Promise.all([productsRes.json(), storesRes.json(), catsRes.json()]);
-            setProducts(pJson.data?.products ?? pJson.products ?? []);
-            const myStores: MyStore[] = sJson.data?.stores ?? sJson.stores ?? [];
-            setStores(myStores);
-            setCategories(cJson.data?.categories ?? cJson.categories ?? []);
-            if (myStores.length > 0 && !storeId) setStoreId(myStores[0].id);
-        } catch { /* ignore */ } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!isReady) return;
-        const initData = WebApp?.initData;
-        if (initData) {
-            telegramWebAppAuth(initData)
-                .then(t => { setApiToken(t); })
-                .catch(() => {})
-                .finally(() => fetchAll());
-        } else {
-            fetchAll();
-        }
-    }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useSSERefetch(['products'], fetchAll);
-
-    // Price auto-calculation helpers
-    const calcCurrentPrice = (op: string, disc: string) => {
-        const o = Number(op); const d = Number(disc);
-        if (!o || isNaN(o) || isNaN(d)) return '';
-        return String(Math.round(o * (1 - d / 100)));
-    };
-    const calcDiscount = (op: string, cp: string) => {
-        const o = Number(op); const c = Number(cp);
-        if (!o || !c || isNaN(o) || isNaN(c)) return '';
-        return String(Math.round((1 - c / o) * 100));
-    };
-
-    const handleCreate = async () => {
-        const errors: Record<string, boolean> = {};
-        if (!name.trim()) errors.name = true;
-        if (!originalPrice || isNaN(Number(originalPrice)) || Number(originalPrice) <= 0) errors.originalPrice = true;
-        if (!storeId) errors.store = true;
-        if (Object.keys(errors).length > 0) { setCreateErrors(errors); return; }
-        setCreateErrors({});
-
-        const finalPrice = currentPrice ? Number(currentPrice) : Number(originalPrice);
-
-        setSubmitting(true); setError('');
-        try {
-            const uploadedImages = await Promise.all(
-                images.map(async (img, i) => ({ url: await uploadImage(img.file), sort_order: i }))
-            );
-            const res = await fetch('/api/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({
-                    name: name.trim(), base_price: Number(originalPrice),
-                    description: desc || undefined, store_id: storeId,
-                    category_id: categoryId || undefined, images: uploadedImages,
-                    variants: [{ size: size || undefined, price: finalPrice, stock: Number(stock) || 1 }],
-                }),
-            });
-            const json = await res.json();
-            if (!res.ok) { setError(json.error ?? 'Xatolik'); return; }
-            setName(''); setOriginalPrice(''); setDiscount(''); setCurrentPrice('');
-            setSize(''); setStock('1'); setDesc(''); setCategoryId(''); setImages([]);
-            await fetchAll();
-            setView('list');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Xatolik');
-        } finally { setSubmitting(false); }
-    };
-
-    const handleEditOpen = async (product: MyProduct) => {
-        setEditProduct(product);
-        setEditName(product.name);
-        setEditOriginalPrice(String(product.base_price));
-        setEditDiscount('');
-        setEditCurrentPrice(String(product.base_price));
-        setEditSize('');
-        setEditStock('1');
-        setEditDesc(product.description ?? '');
-        setEditCategoryId(product.category_id ?? '');
-        setEditErrors({});
-        // Load existing images and variant data
-        try {
-            const res = await fetch(`/api/products/${product.id}`);
-            const json = await res.json();
-            const p = json.data?.product ?? json.product;
-            const imgs: { url: string; sort_order: number }[] = p?.images ?? [];
-            setEditImages(imgs.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order).map((i: { url: string }) => ({ preview: i.url, url: i.url })));
-            const variants: { size?: string; price?: number; stock?: number }[] = p?.variants ?? [];
-            if (variants.length > 0) {
-                const v = variants[0];
-                if (v.size) setEditSize(v.size);
-                if (v.stock != null) setEditStock(String(v.stock));
-                if (v.price != null) {
-                    setEditCurrentPrice(String(v.price));
-                    if (product.base_price && v.price !== product.base_price) {
-                        setEditDiscount(String(Math.round((1 - v.price / product.base_price) * 100)));
-                    }
-                }
-            }
+          await fetch(`/api/products/${productId}`, { method: 'DELETE', headers: authHeaders() });
+          await fetchAll();
         } catch {
-            setEditImages(product.thumbnail ? [{ preview: product.thumbnail, url: product.thumbnail }] : []);
         }
-        setError('');
-        setView('edit');
-    };
+      },
+    });
+  };
 
-    const handleUpdate = async () => {
-        if (!editProduct) return;
-        const errors: Record<string, boolean> = {};
-        if (!editName.trim()) errors.name = true;
-        if (!editOriginalPrice || isNaN(Number(editOriginalPrice)) || Number(editOriginalPrice) <= 0) errors.originalPrice = true;
-        if (Object.keys(errors).length > 0) { setEditErrors(errors); return; }
-        setEditErrors({});
-
-        const finalPrice = editCurrentPrice ? Number(editCurrentPrice) : Number(editOriginalPrice);
-
-        setSubmitting(true); setError('');
-        try {
-            const finalImages = await Promise.all(
-                editImages.map(async (img, i) => {
-                    if (img.file) {
-                        const url = await uploadImage(img.file);
-                        return { url, sort_order: i };
-                    }
-                    return { url: img.url!, sort_order: i };
-                })
-            );
-            const res = await fetch(`/api/products/${editProduct.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', ...authHeaders() },
-                body: JSON.stringify({
-                    name: editName.trim(), base_price: Number(editOriginalPrice),
-                    description: editDesc || undefined,
-                    category_id: editCategoryId || null,
-                    images: finalImages,
-                    variants: [{ size: editSize || undefined, price: finalPrice, stock: Number(editStock) || 1 }],
-                }),
-            });
-            const json = await res.json();
-            if (!res.ok) { setError(json.error ?? 'Xatolik'); return; }
-            await fetchAll();
-            setView('list');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Xatolik');
-        } finally { setSubmitting(false); }
-    };
-
-    const handleDelete = async (productId: string) => {
-        setConfirmDialog({
-            open: true,
-            message: "Mahsulotni o'chirishni tasdiqlaysizmi?",
-            onConfirm: async () => {
-                setConfirmDialog(d => ({ ...d, open: false }));
-                try {
-                    await fetch(`/api/products/${productId}`, { method: 'DELETE', headers: authHeaders() });
-                    await fetchAll();
-                } catch { /* ignore */ }
-            },
-        });
-    };
-
-    const addImageToList = (file: File, target: 'create' | 'edit') => {
-        const preview = URL.createObjectURL(file);
-        if (target === 'create') setImages(prev => [...prev, { file, preview }]);
-        else setEditImages(prev => [...prev, { file, preview }]);
-    };
-
-    if (loading) return (
-        <div className="flex items-center justify-center min-h-[50vh]">
-            <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
-        </div>
-    );
-
-    // ── Image strip component (reused in create/edit) ──
-    const ImageStrip = ({ imgs, onRemove, onAdd, inputId }: {
-        imgs: { preview: string }[];
-        onRemove: (i: number) => void;
-        onAdd: (f: File) => void;
-        inputId: string;
-    }) => (
-        <div className="space-y-2">
-            {imgs.length > 0 && (
-                <div className="relative w-full aspect-[3/4] rounded-[20px] overflow-hidden bg-[var(--color-surface2)] border border-[var(--color-border)]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imgs[0].preview} alt="" className="w-full h-full object-contain bg-[var(--color-surface2)]" />
-                    <button onClick={() => onRemove(0)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
-                        <X size={13} className="text-white" />
-                    </button>
-                </div>
-            )}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                {imgs.slice(1).map((img, idx) => (
-                    <div key={idx + 1} className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface2)]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                        <button onClick={() => onRemove(idx + 1)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
-                            <X size={10} className="text-white" />
-                        </button>
-                    </div>
-                ))}
-                <label
-                    htmlFor={inputId}
-                    className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-1 cursor-pointer active:opacity-70"
-                >
-                    <ImageIcon size={18} className="text-[var(--color-hint)]" />
-                    <span className="text-[10px] text-[var(--color-hint)]">Rasm</span>
-                </label>
-            </div>
-            <input id={inputId} type="file" accept="image/*" multiple className="hidden" onChange={e => {
-                Array.from(e.target.files ?? []).forEach(f => onAdd(f));
-                e.target.value = '';
-            }} />
-        </div>
-    );
-
-    // ── Create form ──
-    if (view === 'create') {
-        return (
-            <>
-                <ConfirmDialog
-                    open={confirmDialog.open}
-                    message={confirmDialog.message}
-                    onConfirm={confirmDialog.onConfirm}
-                    onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
-                />
-                <div className="px-4 pb-8">
-                    <button onClick={() => { setView('list'); setError(''); setCreateErrors({}); }} className="flex items-center gap-2 mb-5 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Orqaga
-                    </button>
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">Yangi mahsulot</h2>
-                    <div className="space-y-3">
-                        <ImageStrip
-                            imgs={images}
-                            onRemove={i => setImages(prev => prev.filter((_, idx) => idx !== i))}
-                            onAdd={f => addImageToList(f, 'create')}
-                            inputId="tg-img-create"
-                        />
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Mahsulot nomi *</p>
-                            <input
-                                value={name}
-                                onChange={e => { setName(e.target.value); if (createErrors.name) setCreateErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Masalan: Futbolka"
-                                className={`${inputCls} ${createErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
-                            />
-                            {createErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
-                        </div>
-                        <div>
-                            <p className="mb-2 text-[12px] font-semibold text-[var(--color-hint)]">O&apos;lcham</p>
-                            <div className="flex flex-wrap gap-2">
-                                {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
-                                    <button key={s} type="button"
-                                        onClick={() => setSize(prev => prev === s ? '' : s)}
-                                        className={`h-9 px-3 rounded-xl text-[12px] font-bold border transition-all ${size === s ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'}`}>
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Asl narx (UZS) *</p>
-                            <input
-                                value={originalPrice}
-                                onChange={e => {
-                                    const v = e.target.value;
-                                    setOriginalPrice(v);
-                                    if (createErrors.originalPrice) setCreateErrors(p => ({ ...p, originalPrice: false }));
-                                    setCurrentPrice(calcCurrentPrice(v, discount));
-                                }}
-                                placeholder="0"
-                                type="number"
-                                inputMode="numeric"
-                                className={`${inputCls} ${createErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
-                            />
-                            {createErrors.originalPrice && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="flex-1">
-                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Aksiya %</p>
-                                <input
-                                    value={discount}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setDiscount(v);
-                                        setCurrentPrice(calcCurrentPrice(originalPrice, v));
-                                    }}
-                                    placeholder="0"
-                                    type="number"
-                                    inputMode="numeric"
-                                    min="0"
-                                    max="100"
-                                    className={`${inputCls} border-[var(--color-border)]`}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Hozirgi narx (UZS)</p>
-                                <input
-                                    value={currentPrice}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setCurrentPrice(v);
-                                        setDiscount(calcDiscount(originalPrice, v));
-                                    }}
-                                    placeholder="0"
-                                    type="number"
-                                    inputMode="numeric"
-                                    className={`${inputCls} border-[var(--color-border)]`}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Soni (dona)</p>
-                            <input
-                                value={stock}
-                                onChange={e => setStock(e.target.value)}
-                                placeholder="1"
-                                type="number"
-                                inputMode="numeric"
-                                min="0"
-                                className={`${inputCls} border-[var(--color-border)]`}
-                            />
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Tavsif</p>
-                            <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Mahsulot haqida..." rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Do&apos;kon *</p>
-                            <select
-                                value={storeId}
-                                onChange={e => { setStoreId(e.target.value); if (createErrors.store) setCreateErrors(p => ({ ...p, store: false })); }}
-                                className={`${selectCls} ${createErrors.store ? 'border-red-500' : 'border-[var(--color-border)]'}`}
-                            >
-                                {stores.length === 0 ? <option value="">Do&apos;kon yo&apos;q</option> : stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </select>
-                            {createErrors.store && <p className="mt-1 text-[12px] text-red-500">Do&apos;kon tanlang</p>}
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Kategoriya</p>
-                            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
-                                <option value="">Tanlang</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                        {stores.length === 0 && (
-                            <div className="p-3 rounded-[14px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
-                                <p className="text-[13px] text-amber-600 dark:text-amber-400">
-                                    Avval do&apos;kon oching.{' '}
-                                    <Link href="/telegram/profile/stores" className="underline font-bold">Do&apos;kon ochish</Link>
-                                </p>
-                            </div>
-                        )}
-                        {error && <p className="text-red-500 text-[13px]">{error}</p>}
-                        <button onClick={handleCreate} disabled={submitting || stores.length === 0} className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
-                            {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                            Mahsulot qo&apos;shish
-                        </button>
-                    </div>
-                </div>
-            </>
-        );
-    }
-
-    // ── Edit form ──
-    if (view === 'edit' && editProduct) {
-        return (
-            <>
-                <ConfirmDialog
-                    open={confirmDialog.open}
-                    message={confirmDialog.message}
-                    onConfirm={confirmDialog.onConfirm}
-                    onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
-                />
-                <div className="px-4 pb-8">
-                    <button onClick={() => { setView('list'); setError(''); setEditErrors({}); }} className="flex items-center gap-2 mb-5 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Orqaga
-                    </button>
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">Mahsulotni tahrirlash</h2>
-                    <div className="space-y-3">
-                        <ImageStrip
-                            imgs={editImages}
-                            onRemove={i => setEditImages(prev => prev.filter((_, idx) => idx !== i))}
-                            onAdd={f => addImageToList(f, 'edit')}
-                            inputId="tg-img-edit"
-                        />
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Mahsulot nomi *</p>
-                            <input
-                                value={editName}
-                                onChange={e => { setEditName(e.target.value); if (editErrors.name) setEditErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Masalan: Futbolka"
-                                className={`${inputCls} ${editErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
-                            />
-                            {editErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
-                        </div>
-                        <div>
-                            <p className="mb-2 text-[12px] font-semibold text-[var(--color-hint)]">O&apos;lcham</p>
-                            <div className="flex flex-wrap gap-2">
-                                {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
-                                    <button key={s} type="button"
-                                        onClick={() => setEditSize(prev => prev === s ? '' : s)}
-                                        className={`h-9 px-3 rounded-xl text-[12px] font-bold border transition-all ${editSize === s ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'}`}>
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Asl narx (UZS) *</p>
-                            <input
-                                value={editOriginalPrice}
-                                onChange={e => {
-                                    const v = e.target.value;
-                                    setEditOriginalPrice(v);
-                                    if (editErrors.originalPrice) setEditErrors(p => ({ ...p, originalPrice: false }));
-                                    setEditCurrentPrice(calcCurrentPrice(v, editDiscount));
-                                }}
-                                placeholder="0"
-                                type="number"
-                                inputMode="numeric"
-                                className={`${inputCls} ${editErrors.originalPrice ? 'border-red-500' : 'border-[var(--color-border)]'}`}
-                            />
-                            {editErrors.originalPrice && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="flex-1">
-                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Aksiya %</p>
-                                <input
-                                    value={editDiscount}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setEditDiscount(v);
-                                        setEditCurrentPrice(calcCurrentPrice(editOriginalPrice, v));
-                                    }}
-                                    placeholder="0"
-                                    type="number"
-                                    inputMode="numeric"
-                                    min="0"
-                                    max="100"
-                                    className={`${inputCls} border-[var(--color-border)]`}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Hozirgi narx (UZS)</p>
-                                <input
-                                    value={editCurrentPrice}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setEditCurrentPrice(v);
-                                        setEditDiscount(calcDiscount(editOriginalPrice, v));
-                                    }}
-                                    placeholder="0"
-                                    type="number"
-                                    inputMode="numeric"
-                                    className={`${inputCls} border-[var(--color-border)]`}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Soni (dona)</p>
-                            <input
-                                value={editStock}
-                                onChange={e => setEditStock(e.target.value)}
-                                placeholder="1"
-                                type="number"
-                                inputMode="numeric"
-                                min="0"
-                                className={`${inputCls} border-[var(--color-border)]`}
-                            />
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Tavsif</p>
-                            <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Mahsulot haqida..." rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        </div>
-                        <div>
-                            <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-hint)]">Kategoriya</p>
-                            <select value={editCategoryId} onChange={e => setEditCategoryId(e.target.value)} className={`${selectCls} border-[var(--color-border)]`}>
-                                <option value="">Tanlang</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                        {error && <p className="text-red-500 text-[13px]">{error}</p>}
-                        <button onClick={handleUpdate} disabled={submitting} className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
-                            {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                            Saqlash
-                        </button>
-                    </div>
-                </div>
-            </>
-        );
-    }
-
-    // ── List view ──
+  if (loading) {
     return (
-        <>
-            <ConfirmDialog
-                open={confirmDialog.open}
-                message={confirmDialog.message}
-                onConfirm={confirmDialog.onConfirm}
-                onCancel={() => setConfirmDialog(d => ({ ...d, open: false }))}
-            />
-            <div className="px-4 pb-8">
-                <div className="flex items-center justify-between mb-5">
-                    <Link href="/telegram/profile" className="flex items-center gap-2 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Profil
-                    </Link>
-                    <h2 className="text-[17px] font-bold text-[var(--color-text)]">Mening mahsulotlarim</h2>
-                    <div className="w-16" />
-                </div>
-
-                {products.length > 0 ? (
-                    <div className="space-y-3 mb-5">
-                        {products.map(product => (
-                            <div key={product.id} className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-border)] p-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--color-surface2)] shrink-0">
-                                        {product.thumbnail ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={product.thumbnail} alt={product.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <Package size={22} className="text-[var(--color-hint)]" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[14px] font-bold text-[var(--color-text)] truncate">{product.name}</p>
-                                        {(() => {
-                                            const bp = Number(product.base_price);
-                                            const sp = product.sale_price != null ? Number(product.sale_price) : null;
-                                            const cur = sp != null && sp < bp ? sp : bp;
-                                            const hasDis = cur < bp;
-                                            const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
-                                            return (
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <p className="text-[13px] font-bold text-[var(--color-primary)]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
-                                                    {hasDis && (
-                                                        <>
-                                                            <span className="text-[11px] text-[var(--color-hint)] line-through">{bp.toLocaleString('ru-RU')}</span>
-                                                            <span className="px-1 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                        <p className="text-[11px] text-[var(--color-hint)] truncate">{product.store_name}{product.category_name ? ` · ${product.category_name}` : ''}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 mt-3">
-                                    <Link
-                                        href={TELEGRAM_ROUTES.PRODUCT(product.id)}
-                                        className="flex-1 h-9 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all"
-                                    >
-                                        <Eye size={14} /> Ko&apos;rish
-                                    </Link>
-                                    <button
-                                        onClick={() => handleEditOpen(product)}
-                                        className="flex-1 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all"
-                                    >
-                                        <Edit3 size={14} /> Tahrir
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(product.id)}
-                                        className="flex-1 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all"
-                                    >
-                                        <Trash2 size={14} /> O&apos;chirish
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center py-12 text-center mb-5">
-                        <div className="w-14 h-14 rounded-full bg-[var(--color-surface2)] border border-[var(--color-border)] flex items-center justify-center mb-3">
-                            <Package size={24} className="text-[var(--color-hint)]" />
-                        </div>
-                        <p className="text-[16px] font-bold text-[var(--color-text)]">Mahsulot yo&apos;q</p>
-                        <p className="text-[13px] text-[var(--color-hint)] mt-1">Yangi mahsulot qo&apos;shing</p>
-                    </div>
-                )}
-
-                <button
-                    onClick={() => { setView('create'); setError(''); setCreateErrors({}); }}
-                    className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_14px_rgba(26,229,80,0.25)]"
-                >
-                    <Plus size={18} />
-                    Mahsulot qo&apos;shish
-                </button>
-            </div>
-        </>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
+      </div>
     );
+  }
+
+  if (view !== 'list') {
+    return (
+      <>
+        <ConfirmDialog
+          open={confirmDialog.open}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+        />
+        <div className="px-4 pb-8">
+          <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="mb-5 flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
+            <ArrowLeft size={18} /> Orqaga
+          </button>
+          <h2 className="mb-5 text-[20px] font-bold text-[var(--color-text)]">
+            {editProduct ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}
+          </h2>
+
+          <div className="space-y-4">
+            {!editProduct && stores.length > 1 && (
+              <label className="block">
+                <span className={subtleLabelClass}>Do'kon</span>
+                <div className="relative">
+                  <select value={form.store_id} onChange={(e) => setForm((prev) => ({ ...prev, store_id: e.target.value }))} className={selectClass}>
+                    {stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                </div>
+              </label>
+            )}
+
+            <label className="block">
+              <span className={subtleLabelClass}>Nomi</span>
+              <input value={form.name} onChange={(e) => { setForm((prev) => ({ ...prev, name: e.target.value })); if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: false })); }} className={formErrors.name ? fieldErrorClass : fieldClass} placeholder="Masalan: Erkaklar ko'ylagi" />
+              {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
+            </label>
+
+            <label className="block">
+              <span className={subtleLabelClass}>Asl narx (so&apos;m) *</span>
+              <input type="number" min="0" value={form.base_price} onChange={(e) => { const value = e.target.value; if (formErrors.price) setFormErrors((prev) => ({ ...prev, price: false })); setForm((prev) => ({ ...prev, base_price: value, current_price: calcCurrentPrice(value, prev.discount) })); }} className={formErrors.price ? fieldErrorClass : fieldClass} placeholder="50000" />
+              {formErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className={subtleLabelClass}>Aksiya %</span>
+                <input type="number" min="0" max="100" value={form.discount} onChange={(e) => { const value = e.target.value; setForm((prev) => ({ ...prev, discount: value, current_price: calcCurrentPrice(prev.base_price, value) })); }} className={fieldClass} placeholder="0" />
+              </label>
+              <label className="block">
+                <span className={subtleLabelClass}>Hozir narxi</span>
+                <input type="number" min="0" value={form.current_price} onChange={(e) => { const value = e.target.value; setForm((prev) => ({ ...prev, current_price: value, discount: calcDiscount(prev.base_price, value) })); }} className={fieldClass} placeholder="50000" />
+              </label>
+            </div>
+
+            <label className="block">
+              <span className={subtleLabelClass}>Soni (dona)</span>
+              <input type="number" min="0" value={form.stock} onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))} className={fieldClass} placeholder="1" />
+            </label>
+
+            <label className="block">
+              <span className={subtleLabelClass}>Asosiy kategoriya</span>
+              <div className="relative">
+                <button type="button" onClick={() => setParentCategoryMenuOpen((prev) => !prev)} className={`${fieldClass} flex items-center justify-between pr-4 text-left`}>
+                  <span className={selectedParentCategory ? 'text-white' : 'text-[#94a3b8]'}>{parentCategories.length ? selectedParentCategoryLabel : 'Asosiy kategoriya topilmadi'}</span>
+                  <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${parentCategoryMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {parentCategoryMenuOpen && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-white/10 bg-[rgba(18,18,18,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                    <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                      {parentCategories.map((category) => (
+                        <button key={category.id} type="button" onClick={() => { setParentCategoryId(category.id); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${parentCategoryId === category.id ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#d1d5db] hover:bg-white/5 hover:text-white'}`}>
+                          {getCategoryLabel(category)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            <label className="block">
+              <span className={subtleLabelClass}>Subkategoriya</span>
+              <div className="relative">
+                <button type="button" onClick={() => filteredCategories.length > 0 && setCategoryMenuOpen((prev) => !prev)} className={`${fieldClass} flex items-center justify-between pr-4 text-left ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}>
+                  <span className={selectedCategory ? 'text-white' : 'text-[#94a3b8]'}>{filteredCategories.length ? selectedCategoryLabel : "Bu kategoriya uchun subkategoriya yo'q"}</span>
+                  <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${categoryMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {categoryMenuOpen && filteredCategories.length > 0 && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-white/10 bg-[rgba(18,18,18,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                    <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                      {filteredCategories.map((category) => (
+                        <button key={category.id} type="button" onClick={() => { setForm((prev) => ({ ...prev, category_id: category.id })); setCategoryMenuOpen(false); }} className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${form.category_id === category.id ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#d1d5db] hover:bg-white/5 hover:text-white'}`}>
+                          {getCategoryLabel(category)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            <label className="block">
+              <span className={subtleLabelClass}>Tavsif (ixtiyoriy)</span>
+              <RichTextEditor value={form.description} onChange={(value) => setForm((prev) => ({ ...prev, description: value }))} placeholder="Mahsulot haqida qisqacha..." />
+            </label>
+
+            <div>
+              <span className={subtleLabelClass}>Rasmlar (ixtiyoriy)</span>
+              <div className="flex flex-wrap gap-2.5 rounded-[24px] border border-white/8 bg-white/[0.02] p-3">
+                {formImages.map((url, index) => (
+                  <div key={index} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => setFormImages((prev) => prev.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-white/15 bg-white/[0.04] text-[#94a3b8] transition-all hover:border-[#22c55e]/50 hover:bg-[#22c55e]/8 hover:text-[#16a34a]">
+                  {uploadingImg ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <>
+                      <Camera size={18} />
+                      <span className="text-[9px] font-bold">Rasm</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" multiple className="sr-only" disabled={uploadingImg} onChange={(e) => handleImageUpload(e.target.files)} />
+                </label>
+              </div>
+            </div>
+
+            {formError && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-[12px] font-semibold text-red-400">{formError}</p>}
+
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="h-12 flex-1 rounded-full border border-white/10 bg-white/[0.03] text-[13px] font-black text-white">
+                Bekor
+              </button>
+              <button onClick={handleSave} disabled={saving} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[13px] font-black text-[#052e16] disabled:opacity-60">
+                {saving && <Loader2 size={13} className="animate-spin" />}
+                Saqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+      />
+      <div className="px-4 pb-8">
+        <div className="mb-5 flex items-center justify-between">
+          <Link href="/telegram/profile" className="flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
+            <ArrowLeft size={18} /> Profil
+          </Link>
+          <h2 className="text-[17px] font-bold text-[var(--color-text)]">Mening mahsulotlarim</h2>
+          <div className="w-16" />
+        </div>
+
+        {products.length > 0 ? (
+          <div className="mb-5 space-y-3">
+            {products.map((product) => {
+              const base = Number(product.base_price);
+              const current = product.sale_price != null && Number(product.sale_price) < base ? Number(product.sale_price) : base;
+              const hasDiscount = current < base;
+              const discount = hasDiscount ? Math.round((1 - current / base) * 100) : 0;
+              return (
+                <div key={product.id} className="rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[var(--color-surface2)]">
+                      {product.thumbnail ? <img src={product.thumbnail} alt={product.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Package size={22} className="text-[var(--color-hint)]" /></div>}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-bold text-[var(--color-text)]">{product.name}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="text-[13px] font-bold text-[var(--color-primary)]">{current.toLocaleString('ru-RU')} so&apos;m</p>
+                        {hasDiscount && (
+                          <>
+                            <span className="text-[11px] text-[var(--color-hint)] line-through">{base.toLocaleString('ru-RU')}</span>
+                            <span className="rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-bold text-white">-{discount}%</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="truncate text-[11px] text-[var(--color-hint)]">{product.store_name}{product.category_name ? ` · ${product.category_name}` : ''}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Link href={TELEGRAM_ROUTES.PRODUCT(product.id)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)]/10 text-[12px] font-bold text-[var(--color-primary)]">
+                      <Eye size={14} /> Ko&apos;rish
+                    </Link>
+                    <button onClick={() => openEdit(product)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 text-[12px] font-bold text-blue-500">
+                      <Edit3 size={14} /> Tahrir
+                    </button>
+                    <button onClick={() => handleDelete(product.id)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500/10 text-[12px] font-bold text-red-500">
+                      <Trash2 size={14} /> O&apos;chirish
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mb-5 flex flex-col items-center py-12 text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface2)]">
+              <Package size={24} className="text-[var(--color-hint)]" />
+            </div>
+            <p className="text-[16px] font-bold text-[var(--color-text)]">Mahsulot yo&apos;q</p>
+            <p className="mt-1 text-[13px] text-[var(--color-hint)]">Yangi mahsulot qo&apos;shing</p>
+          </div>
+        )}
+
+        <button onClick={openCreate} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] text-[15px] font-bold text-white shadow-[0_4px_14px_rgba(26,229,80,0.25)]">
+          <Plus size={18} />
+          Mahsulot qo&apos;shish
+        </button>
+      </div>
+    </>
+  );
 }

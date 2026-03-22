@@ -21,7 +21,7 @@ import {
   TR,
 } from '../../../src/features/admin/components/DataViews';
 import { ReasonDialog } from '../../../src/features/admin/components/ReasonDialog';
-import { useApplications, useUpdateApplication } from '../../../src/features/admin/components/hooks';
+import { useApplications, useStoreMutation, useUpdateApplication } from '../../../src/features/admin/components/hooks';
 import { useToast } from '../../../src/shared/ui/useToast';
 
 export default function ApplicationsPage() {
@@ -36,6 +36,7 @@ export default function ApplicationsPage() {
 
   const query = useApplications({ page, limit: 12, status, search });
   const mutation = useUpdateApplication();
+  const storeMutation = useStoreMutation();
 
   const appliedFilters = useMemo(() => [search ? `Search: ${search}` : '', status ? `Status: ${status}` : ''].filter(Boolean), [search, status]);
   const requests = useMemo(() => {
@@ -114,6 +115,19 @@ export default function ApplicationsPage() {
     return changes;
   };
   const viewRequest = requests.find((item) => item.id === viewRequestId) ?? null;
+  const toggleStore = (item: NonNullable<typeof query.data>['requests'][number]) => {
+    if (!item.store_id || item.store_is_active == null) return;
+    storeMutation.mutate(
+      { id: item.store_id, payload: { is_active: !item.store_is_active } },
+      {
+        onSuccess: () =>
+          showToast({
+            message: item.store_is_active ? t('stores.suspendedMsg') : t('stores.activatedMsg'),
+            type: item.store_is_active ? 'info' : 'success',
+          }),
+      }
+    );
+  };
 
   return (
     <AdminShell
@@ -199,15 +213,26 @@ export default function ApplicationsPage() {
                         >
                           <Eye size={14} />
                         </button>
-                        <button
-                          className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
-                          onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
-                        >
-                          {t('applications.approve')}
-                        </button>
-                        <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
-                          {t('applications.reject')}
-                        </button>
+                        {item.status === 'pending' ? (
+                          <>
+                            <button
+                              className='rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
+                              onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
+                            >
+                              {t('applications.approve')}
+                            </button>
+                            <button className='rounded-full bg-rose-500 px-3 py-1 text-xs text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
+                              {t('applications.reject')}
+                            </button>
+                          </>
+                        ) : item.status === 'approved' && item.store_id ? (
+                          <button
+                            className='rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
+                            onClick={() => toggleStore(item)}
+                          >
+                            {item.store_is_active ? t('common.suspend') : t('common.activate')}
+                          </button>
+                        ) : null}
                       </div>
                     </TD>
                   </TR>
@@ -247,15 +272,28 @@ export default function ApplicationsPage() {
                   >
                     <Eye size={12} />
                   </button>
-                  <button
-                    className='rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
-                    onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
-                  >
-                    {t('applications.approve')}
-                  </button>
-                  <button className='rounded-full bg-rose-500 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
-                    {t('applications.reject')}
-                  </button>
+                  {item.status === 'pending' ? (
+                    <>
+                      <button
+                        className='rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 hover:shadow-none'
+                        onClick={() => mutation.mutate({ id: item.id, status: 'approved' }, { onSuccess: () => showToast({ message: t('applications.approvedMsg'), type: 'success' }) })}
+                      >
+                        {t('applications.approve')}
+                      </button>
+                      <button className='rounded-full bg-rose-500 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 hover:shadow-none' onClick={() => setRejectId(item.id)}>
+                        {t('applications.reject')}
+                      </button>
+                    </>
+                  ) : item.status === 'approved' && item.store_id ? (
+                    <button
+                      className='col-span-2 rounded-full bg-indigo-500 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none'
+                      onClick={() => toggleStore(item)}
+                    >
+                      {item.store_is_active ? t('common.suspend') : t('common.activate')}
+                    </button>
+                  ) : (
+                    <div className='col-span-2' />
+                  )}
                 </div>
               </MobileCard>
             ))}

@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
               ${support.hasTargetStoreId ? "sr.target_store_id" : "NULL::uuid AS target_store_id"},
               sr.store_description, sr.owner_name,
               sr.phone AS store_phone, sr.address AS store_address, sr.status,
+              st.id AS store_id,
+              st.is_active AS store_is_active,
               st.name AS current_store_name,
               st.description AS current_store_description,
               st.phone AS current_store_phone,
@@ -38,7 +40,15 @@ export async function GET(req: NextRequest) {
               u.name AS user_name, u.email AS user_email
        FROM seller_requests sr
        JOIN users u ON u.id = sr.user_id
-       LEFT JOIN stores st ON st.id = sr.target_store_id
+       LEFT JOIN stores st ON (
+         ${support.hasTargetStoreId ? "(sr.target_store_id IS NOT NULL AND st.id = sr.target_store_id)" : "FALSE"}
+         OR
+         (
+           ${support.hasRequestType ? "sr.request_type = 'store_create'" : "TRUE"}
+           AND st.owner_id = sr.user_id
+           AND LOWER(st.name) = LOWER(sr.store_name)
+         )
+       )
        ${whereClause}
        ORDER BY sr.created_at DESC
        LIMIT $${status ? 2 : 1} OFFSET $${status ? 3 : 2}`,

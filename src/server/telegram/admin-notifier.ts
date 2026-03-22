@@ -1,7 +1,7 @@
 import { InlineKeyboard } from "grammy";
-import { query } from "../../lib/db";
 import { getMarketplaceUrl } from "./get-marketplace-url";
 import { getAdminWebhookBot } from "./create-admin-webhook-bot";
+import { listAdminTelegramChatIds } from "./admin-chat-subscriptions";
 
 type NotifyAdminsOptions = {
   text: string;
@@ -13,10 +13,8 @@ export async function notifyAdminsViaTelegram({ text, route }: NotifyAdminsOptio
   if (!bot) return;
 
   try {
-    const admins = await query(
-      "SELECT id, telegram_id FROM users WHERE role = 'admin' AND telegram_id IS NOT NULL"
-    );
-    if (admins.rows.length === 0) return;
+    const chatIds = await listAdminTelegramChatIds();
+    if (chatIds.length === 0) return;
 
     const keyboard = new InlineKeyboard().webApp(
       "Admin panelni ochish",
@@ -24,9 +22,7 @@ export async function notifyAdminsViaTelegram({ text, route }: NotifyAdminsOptio
     );
 
     await Promise.all(
-      admins.rows.map(async (row) => {
-        const chatId = Number(row.telegram_id);
-        if (!Number.isFinite(chatId)) return;
+      chatIds.map(async (chatId) => {
         try {
           await bot.api.sendMessage(chatId, text, {
             reply_markup: keyboard,
@@ -34,7 +30,6 @@ export async function notifyAdminsViaTelegram({ text, route }: NotifyAdminsOptio
           });
         } catch (error) {
           console.warn("[admin-bot notify] failed to send message", {
-            adminId: row.id,
             chatId,
             error: error instanceof Error ? error.message : String(error),
           });

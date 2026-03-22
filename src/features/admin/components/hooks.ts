@@ -106,7 +106,10 @@ export function useStoreMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) => adminApi.updateStore(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'stores'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'stores'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'applications'] });
+    },
   });
 }
 

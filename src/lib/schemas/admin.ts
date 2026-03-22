@@ -19,6 +19,8 @@ export const applicationSchema = z.object({
   store_description: z.string().nullish(),
   store_phone: z.string().nullish(),
   store_address: z.string().nullish(),
+  store_id: z.string().nullish(),
+  store_is_active: z.boolean().nullish(),
   current_store_name: z.string().nullish(),
   current_store_description: z.string().nullish(),
   current_store_phone: z.string().nullish(),
