@@ -6,26 +6,31 @@ import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { useAdminAuth } from '../../../src/context/AdminAuthContext';
 
 export default function AdminLoginPage() {
-  const { login, user, loading } = useAdminAuth();
+  const { login, user, loading, telegramAccessLoading, telegramAccessChecked, telegramAllowed, telegramAccessError } = useAdminAuth();
   const router = useRouter();
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [initData, setInitData] = useState('');
 
   useEffect(() => {
-    if (!loading && user) {
+    setInitData(window.Telegram?.WebApp?.initData ?? '');
+  }, []);
+
+  useEffect(() => {
+    if (!loading && (!initData || telegramAccessChecked) && user) {
       router.replace('/admin/dashboard');
     }
-  }, [loading, router, user]);
+  }, [initData, loading, router, telegramAccessChecked, user]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitting(true);
     setError('');
     try {
-      await login(loginValue, password);
+      await login(loginValue, password, initData || undefined);
       router.replace('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -42,12 +47,19 @@ export default function AdminLoginPage() {
           <p className='text-sm text-[var(--admin-muted)]'>Admin login</p>
         </div>
 
+        {telegramAccessLoading ? <p className='mb-4 text-sm text-[var(--admin-muted)]'>Telegram access tekshirilmoqda...</p> : null}
+        {!telegramAllowed ? (
+          <p className='rounded-xl bg-rose-500/15 px-3 py-2 text-sm text-rose-500'>
+            {telegramAccessError || "Sizga admin panelga kirish ruxsati berilmagan"}
+          </p>
+        ) : null}
+
         <form onSubmit={onSubmit} className='space-y-3'>
           <label className='block text-sm'>
             <span className='mb-1 inline-block text-[var(--admin-muted)]'>Login</span>
             <div className='relative'>
               <User className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
-              <input className='admin-input pl-10' value={loginValue} onChange={(e) => setLoginValue(e.target.value)} type='text' required />
+              <input className='admin-input pl-10' value={loginValue} onChange={(e) => setLoginValue(e.target.value)} type='text' required disabled={telegramAccessLoading || !telegramAllowed} />
             </div>
           </label>
 
@@ -61,6 +73,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 type={showPassword ? 'text' : 'password'}
                 required
+                disabled={telegramAccessLoading || !telegramAllowed}
               />
               <button
                 type='button'
@@ -77,7 +90,7 @@ export default function AdminLoginPage() {
 
           <button
             type='submit'
-            disabled={submitting}
+            disabled={submitting || telegramAccessLoading || !telegramAllowed}
             className='w-full rounded-full bg-[var(--admin-accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--admin-accent-hover)] disabled:opacity-60'
           >
             {submitting ? 'Signing in...' : 'Sign in'}

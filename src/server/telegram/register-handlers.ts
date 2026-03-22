@@ -11,6 +11,22 @@ export const registerTelegramHandlers = (bot: Bot): void => {
     return new InlineKeyboard().webApp("Do'konni ochish", url);
   };
 
+  const clearReplyKeyboard = () =>
+    ({ remove_keyboard: true } as const);
+
+  const sendMarketplaceReady = async (
+    ctx: { reply: (...args: any[]) => Promise<unknown> },
+    text: string
+  ) => {
+    await ctx.reply(text, {
+      reply_markup: clearReplyKeyboard(),
+    });
+
+    await ctx.reply("Ilovani ochish uchun pastdagi tugmani bosing.", {
+      reply_markup: marketplaceButton(),
+    });
+  };
+
   bot.command("start", async (ctx) => {
     const telegramId = ctx.from?.id;
     const accessKeySupported = await hasAccessKeyColumn();
@@ -31,11 +47,11 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
         if (existingUser.rows.length > 0) {
           const existing = existingUser.rows[0];
-          await ctx.reply(
+          await sendMarketplaceReady(
+            ctx,
             `Assalomu alaykum ${existing.name || ctx.from?.first_name || "foydalanuvchi"}.\n\n` +
               `Sizning akkauntingiz allaqachon ulangan.\n` +
-              `Endi pastdagi tugma orqali ilovani ochishingiz mumkin.`,
-            { reply_markup: marketplaceButton() }
+              `Endi pastdagi tugma orqali ilovani ochishingiz mumkin.`
           );
           return;
         }
@@ -120,11 +136,11 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
     emitAdminEvent({ type: "users", action: "created" });
 
-    await ctx.reply(
+    await sendMarketplaceReady(
+      ctx,
       `Akkountingiz tayyor, ${contact.first_name}.\n\n` +
         `Endi pastdagi tugma orqali do'konni oching.\n` +
-        `Siz avtomatik tarzda tizimga kirasiz.`,
-      { reply_markup: marketplaceButton() }
+        `Siz avtomatik tarzda tizimga kirasiz.`
     );
   });
 
@@ -182,10 +198,10 @@ export const registerTelegramHandlers = (bot: Bot): void => {
         [telegramId, user.id]
       );
 
-      await ctx.reply(
+      await sendMarketplaceReady(
+        ctx,
         `Muvaffaqiyatli. ${user.name} akkountiga ulandingiz.\n\n` +
-          `Endi pastdagi tugma orqali do'konni oching.`,
-        { reply_markup: marketplaceButton() }
+          `Endi pastdagi tugma orqali do'konni oching.`
       );
     } catch (err) {
       console.error("[bot] key login error:", err);

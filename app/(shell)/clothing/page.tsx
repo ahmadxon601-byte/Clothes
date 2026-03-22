@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Heart, Loader2, Package, Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useSettingsStore } from '../../../src/features/settings/model';
@@ -94,9 +94,10 @@ function getToken() {
 
 export default function ClothingPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null; parent_id?: string | null }[]>([]);
   const lang = useSettingsStore((s) => s.settings.language);
-  const [activeCategory, setActiveCategory] = useState('');
+  const [activeParentCategory, setActiveParentCategory] = useState('');
+  const [activeSubcategory, setActiveSubcategory] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [favIds, setFavIds] = useState<Set<string>>(() => {
@@ -116,6 +117,8 @@ export default function ClothingPage() {
   const [calOpen, setCalOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const parentCategories = useMemo(() => categories.filter((cat) => !cat.parent_id), [categories]);
+  const subcategories = useMemo(() => categories.filter((cat) => cat.parent_id === activeParentCategory), [categories, activeParentCategory]);
 
   const activeFilterCount =
     (minPrice ? 1 : 0) +
@@ -191,11 +194,11 @@ export default function ClothingPage() {
 
   const triggerFetch = useCallback((immediate = false) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const go = () => doFetch({ query, category: activeCategory, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
+    const go = () => doFetch({ query, category: activeSubcategory || (subcategories.length === 0 ? activeParentCategory : ''), minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
     if (immediate) go();
     else debounceRef.current = setTimeout(go, 400);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, activeCategory, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, doFetch]);
+  }, [query, activeParentCategory, activeSubcategory, subcategories.length, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, doFetch]);
 
   useEffect(() => {
     triggerFetch(false);
@@ -345,16 +348,33 @@ export default function ClothingPage() {
       {categories.length > 0 && (
         <div className="mb-8 flex flex-wrap gap-2 pb-1">
           <button
-            onClick={() => setActiveCategory('')}
-            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+            onClick={() => { setActiveParentCategory(''); setActiveSubcategory(''); }}
+            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === '' && activeSubcategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
           >
             Barchasi
           </button>
-          {categories.map((cat) => (
+          {parentCategories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+              onClick={() => {
+                const nextParent = activeParentCategory === cat.id ? '' : cat.id;
+                setActiveParentCategory(nextParent);
+                setActiveSubcategory('');
+              }}
+              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+            >
+              {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
+            </button>
+          ))}
+        </div>
+      )}
+      {activeParentCategory && subcategories.length > 0 && (
+        <div className="mb-8 flex flex-wrap gap-2 pb-1">
+          {subcategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveSubcategory(activeSubcategory === cat.id ? '' : cat.id)}
+              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeSubcategory === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37] shadow' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
             >
               {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
             </button>

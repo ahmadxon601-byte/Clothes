@@ -4,10 +4,12 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
+import { requireAllowedAdminTelegramUser } from "@/src/server/telegram/admin-webapp-auth";
 
 const schema = z.object({
   login: z.string().min(1),
   password: z.string().min(1),
+  initData: z.string().min(1).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -18,7 +20,15 @@ export async function POST(req: NextRequest) {
       return fail(parsed.error.errors[0].message, 422);
     }
 
-    const { login, password } = parsed.data;
+    const { login, password, initData } = parsed.data;
+
+    if (initData) {
+      try {
+        await requireAllowedAdminTelegramUser(initData);
+      } catch (error) {
+        return fail(error instanceof Error ? error.message : "Telegram admin access rad etildi", 403);
+      }
+    }
 
     // login orqali faqat admin roleli foydalanuvchilarni topish
     const result = await query(

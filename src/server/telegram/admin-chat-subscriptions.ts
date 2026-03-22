@@ -1,4 +1,5 @@
 import { query } from "../../lib/db";
+import { ensureAdminAccessTable, normalizeTelegramUsername } from "./admin-access";
 
 type AdminTelegramChatRow = {
   chat_id: string | number;
@@ -46,20 +47,25 @@ export async function subscribeAdminTelegramChat(input: {
       input.chatId,
       input.telegramUserId ?? null,
       input.firstName ?? null,
-      input.username ?? null,
+      normalizeTelegramUsername(input.username),
     ]
   );
 }
 
 export async function listAdminTelegramChatIds(): Promise<number[]> {
   await ensureAdminTelegramChatsTable();
+  await ensureAdminAccessTable();
 
   const result = await query(
-    "SELECT chat_id FROM admin_telegram_chats ORDER BY updated_at DESC"
+    `SELECT chats.chat_id
+     FROM admin_telegram_chats chats
+     JOIN admin_telegram_access access
+       ON access.username = chats.username
+      AND access.is_active = TRUE
+     ORDER BY chats.updated_at DESC`
   );
 
   return result.rows
     .map((row) => Number((row as AdminTelegramChatRow).chat_id))
     .filter((value) => Number.isFinite(value));
 }
-

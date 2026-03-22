@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -107,7 +107,8 @@ export default function TgHomePage() {
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
     const [search, setSearch] = useState('');
-    const [activeCat, setActiveCat] = useState('');
+    const [activeParentCat, setActiveParentCat] = useState('');
+    const [activeSubCat, setActiveSubCat] = useState('');
     const [loading, setLoading] = useState(true);
     const [favs, setFavs] = useState<Set<string>>(new Set());
 
@@ -148,6 +149,15 @@ export default function TgHomePage() {
         return cat.name;
     };
 
+    const parentCategories = useMemo(
+        () => categories.filter(cat => !cat.parent_id),
+        [categories]
+    );
+    const subcategories = useMemo(
+        () => categories.filter(cat => cat.parent_id === activeParentCat),
+        [categories, activeParentCat]
+    );
+
     const activeFilterCount =
         (minPrice ? 1 : 0) +
         (maxPrice ? 1 : 0) +
@@ -177,11 +187,11 @@ export default function TgHomePage() {
 
     const triggerFetch = useCallback((immediate = false) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        const go = () => loadProducts({ search, category: activeCat, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
+        const go = () => loadProducts({ search, category: activeSubCat || (subcategories.length === 0 ? activeParentCat : ''), minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
         if (immediate) go();
         else debounceRef.current = setTimeout(go, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, activeCat, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, loadProducts]);
+    }, [search, activeParentCat, activeSubCat, subcategories.length, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, loadProducts]);
 
     useEffect(() => {
         fetchCategories()
@@ -377,21 +387,37 @@ export default function TgHomePage() {
 
             {/* Category chips */}
             <div className="mb-3 flex flex-wrap gap-2">
-                <button onClick={() => setActiveCat('')}
+                <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
                     className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                        !activeCat ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
+                        !activeParentCat && !activeSubCat ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
                                    : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
                     <span className="block max-w-[42vw] truncate">{t.all}</span>
                 </button>
-                {categories.map(cat => (
-                    <button key={cat.id} onClick={() => setActiveCat(activeCat === cat.id ? '' : cat.id)}
+                {parentCategories.map(cat => (
+                    <button key={cat.id} onClick={() => {
+                        const nextParent = activeParentCat === cat.id ? '' : cat.id;
+                        setActiveParentCat(nextParent);
+                        setActiveSubCat('');
+                    }}
                         className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                            activeCat === cat.id ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
+                            activeParentCat === cat.id ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
                                                  : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
                         <span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span>
                     </button>
                 ))}
             </div>
+            {activeParentCat && subcategories.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {subcategories.map(cat => (
+                        <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)}
+                            className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                                activeSubCat === cat.id ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                                                        : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
+                            <span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="mb-3">
                 <BannerCarousel variant="telegram" productRoute={(id) => TELEGRAM_ROUTES.PRODUCT(id)} />

@@ -70,6 +70,7 @@ export interface ApiCategory {
     name_ru: string | null;
     name_en: string | null;
     slug: string;
+    parent_id?: string | null;
 }
 
 export interface ApiFavorite {
