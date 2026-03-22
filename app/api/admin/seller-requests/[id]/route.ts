@@ -5,6 +5,7 @@ import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { notifySellerDecisionViaTelegram } from "@/src/server/telegram/seller-notifier";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -27,7 +28,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { action, note } = parsed.data;
 
     const reqResult = await query(
-      "SELECT * FROM seller_requests WHERE id = $1",
+      `SELECT sr.*, u.telegram_id
+       FROM seller_requests sr
+       LEFT JOIN users u ON u.id = sr.user_id
+       WHERE sr.id = $1`,
       [id]
     );
     if (reqResult.rows.length === 0) return fail("Request not found", 404);
@@ -96,6 +100,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
       emitAdminEvent({ type: "seller_requests", action: "updated" });
       emitAdminEvent({ type: "stores", action: "updated" });
       logAction({ admin, action, entity: "seller_request", entityId: id, details: { note, newStatus } });
+
+      if (sellerReq.telegram_id) {
+        await notifySellerDecisionViaTelegram({
+          telegramId: Number(sellerReq.telegram_id),
+          status: newStatus,
+          storeName: sellerReq.store_name,
+          note: note ?? sellerReq.admin_note ?? null,
+          isUpdate:
+            Boolean(support.hasRequestType) &&
+            sellerReq.request_type === "store_update",
+        });
+      }
+
       return ok({ message: `Request ${newStatus}` });
     } catch (e) {
       await client.query("ROLLBACK");

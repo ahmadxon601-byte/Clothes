@@ -178,7 +178,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
 
       emitAdminEvent({ type: "products", action: "updated" });
-      void notifyAdminsViaTelegram({
+      await notifyAdminsViaTelegram({
         text:
           `Mahsulot o'zgarishi ko'rib chiqishga yuborildi.\n\n` +
           `Mahsulot: ${(existingProduct as { name?: string } | null)?.name || id}\n` +

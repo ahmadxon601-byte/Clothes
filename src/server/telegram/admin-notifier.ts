@@ -10,11 +10,17 @@ type NotifyAdminsOptions = {
 
 export async function notifyAdminsViaTelegram({ text, route }: NotifyAdminsOptions): Promise<void> {
   const bot = getAdminWebhookBot();
-  if (!bot) return;
+  if (!bot) {
+    console.warn("[admin-bot notify] skipped: ADMIN_TELEGRAM_BOT_TOKEN is missing");
+    return;
+  }
 
   try {
     const chatIds = await listAdminTelegramChatIds();
-    if (chatIds.length === 0) return;
+    if (chatIds.length === 0) {
+      console.warn("[admin-bot notify] skipped: no subscribed admin chats found");
+      return;
+    }
 
     const keyboard = new InlineKeyboard().webApp(
       "Admin panelni ochish",

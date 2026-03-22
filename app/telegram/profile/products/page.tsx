@@ -9,6 +9,7 @@ import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { RichTextEditor } from '../../../../src/shared/ui/RichTextEditor';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
 
 interface MyProduct {
   id: string;
@@ -70,6 +71,7 @@ async function uploadImage(file: File): Promise<string> {
 
 export default function ProfileProductsPage() {
   const { WebApp, isReady } = useTelegram();
+  const { t } = useTranslation();
   const [products, setProducts] = useState<MyProduct[]>([]);
   const [stores, setStores] = useState<MyStore[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -274,7 +276,7 @@ export default function ProfileProductsPage() {
       const uploaded = await Promise.all(Array.from(files).map((file) => uploadImage(file)));
       setFormImages((prev) => [...prev, ...uploaded]);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Rasm yuklanmadi');
+      setFormError(error instanceof Error ? error.message : t.error_occurred);
     } finally {
       setUploadingImg(false);
     }
@@ -313,7 +315,7 @@ export default function ProfileProductsPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setFormError(json.error ?? 'Xatolik yuz berdi');
+        setFormError(json.error ?? t.error_occurred);
         return;
       }
 
@@ -322,7 +324,7 @@ export default function ProfileProductsPage() {
       setEditProduct(null);
       resetForm();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Xatolik yuz berdi');
+      setFormError(error instanceof Error ? error.message : t.error_occurred);
     } finally {
       setSaving(false);
     }
@@ -331,7 +333,7 @@ export default function ProfileProductsPage() {
   const handleDelete = async (productId: string) => {
     setConfirmDialog({
       open: true,
-      message: "Mahsulotni o'chirishni tasdiqlaysizmi?",
+      message: t.confirm_delete_product,
       onConfirm: async () => {
         setConfirmDialog((prev) => ({ ...prev, open: false }));
         try {
@@ -362,16 +364,16 @@ export default function ProfileProductsPage() {
         />
         <div className="px-4 pb-8">
           <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="mb-5 flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
-            <ArrowLeft size={18} /> Orqaga
+            <ArrowLeft size={18} /> {t.back}
           </button>
           <h2 className="mb-5 text-[20px] font-bold text-[var(--color-text)]">
-            {editProduct ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}
+            {editProduct ? t.edit_product : t.add_new_product}
           </h2>
 
           <div className="space-y-4">
             {!editProduct && stores.length > 1 && (
               <label className="block">
-                <span className={subtleLabelClass}>Do'kon</span>
+                <span className={subtleLabelClass}>{t.store}</span>
                 <div className="relative">
                   <select value={form.store_id} onChange={(e) => setForm((prev) => ({ ...prev, store_id: e.target.value }))} className={selectClass}>
                     {stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
@@ -382,38 +384,38 @@ export default function ProfileProductsPage() {
             )}
 
             <label className="block">
-              <span className={subtleLabelClass}>Nomi</span>
-              <input value={form.name} onChange={(e) => { setForm((prev) => ({ ...prev, name: e.target.value })); if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: false })); }} className={formErrors.name ? fieldErrorClass : fieldClass} placeholder="Masalan: Erkaklar ko'ylagi" />
-              {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
+              <span className={subtleLabelClass}>{t.product_name}</span>
+              <input value={form.name} onChange={(e) => { setForm((prev) => ({ ...prev, name: e.target.value })); if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: false })); }} className={formErrors.name ? fieldErrorClass : fieldClass} placeholder={t.product_name} />
+              {formErrors.name && <p className="mt-1 text-[12px] text-red-500">{t.product_required}</p>}
             </label>
 
             <label className="block">
-              <span className={subtleLabelClass}>Asl narx (so&apos;m) *</span>
+              <span className={subtleLabelClass}>{t.original_price} *</span>
               <input type="number" min="0" value={form.base_price} onChange={(e) => { const value = e.target.value; if (formErrors.price) setFormErrors((prev) => ({ ...prev, price: false })); setForm((prev) => ({ ...prev, base_price: value, current_price: calcCurrentPrice(value, prev.discount) })); }} className={formErrors.price ? fieldErrorClass : fieldClass} placeholder="50000" />
               {formErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
             </label>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className={subtleLabelClass}>Aksiya %</span>
+                <span className={subtleLabelClass}>{t.sale_percent}</span>
                 <input type="number" min="0" max="100" value={form.discount} onChange={(e) => { const value = e.target.value; setForm((prev) => ({ ...prev, discount: value, current_price: calcCurrentPrice(prev.base_price, value) })); }} className={fieldClass} placeholder="0" />
               </label>
               <label className="block">
-                <span className={subtleLabelClass}>Hozir narxi</span>
+                <span className={subtleLabelClass}>{t.current_price}</span>
                 <input type="number" min="0" value={form.current_price} onChange={(e) => { const value = e.target.value; setForm((prev) => ({ ...prev, current_price: value, discount: calcDiscount(prev.base_price, value) })); }} className={fieldClass} placeholder="50000" />
               </label>
             </div>
 
             <label className="block">
-              <span className={subtleLabelClass}>Soni (dona)</span>
+              <span className={subtleLabelClass}>{t.quantity}</span>
               <input type="number" min="0" value={form.stock} onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))} className={fieldClass} placeholder="1" />
             </label>
 
             <label className="block">
-              <span className={subtleLabelClass}>Asosiy kategoriya</span>
+              <span className={subtleLabelClass}>{t.main_category}</span>
               <div className="relative">
                 <button type="button" onClick={() => setParentCategoryMenuOpen((prev) => !prev)} className={`${fieldClass} flex items-center justify-between pr-4 text-left`}>
-                  <span className={selectedParentCategory ? 'text-white' : 'text-[#94a3b8]'}>{parentCategories.length ? selectedParentCategoryLabel : 'Asosiy kategoriya topilmadi'}</span>
+                  <span className={selectedParentCategory ? 'text-white' : 'text-[#94a3b8]'}>{parentCategories.length ? selectedParentCategoryLabel : t.main_category}</span>
                   <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${parentCategoryMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {parentCategoryMenuOpen && (
@@ -431,10 +433,10 @@ export default function ProfileProductsPage() {
             </label>
 
             <label className="block">
-              <span className={subtleLabelClass}>Subkategoriya</span>
+              <span className={subtleLabelClass}>{t.subcategory}</span>
               <div className="relative">
                 <button type="button" onClick={() => filteredCategories.length > 0 && setCategoryMenuOpen((prev) => !prev)} className={`${fieldClass} flex items-center justify-between pr-4 text-left ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}>
-                  <span className={selectedCategory ? 'text-white' : 'text-[#94a3b8]'}>{filteredCategories.length ? selectedCategoryLabel : "Bu kategoriya uchun subkategoriya yo'q"}</span>
+                  <span className={selectedCategory ? 'text-white' : 'text-[#94a3b8]'}>{filteredCategories.length ? selectedCategoryLabel : t.subcategory}</span>
                   <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${categoryMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {categoryMenuOpen && filteredCategories.length > 0 && (
@@ -452,12 +454,12 @@ export default function ProfileProductsPage() {
             </label>
 
             <label className="block">
-              <span className={subtleLabelClass}>Tavsif (ixtiyoriy)</span>
-              <RichTextEditor value={form.description} onChange={(value) => setForm((prev) => ({ ...prev, description: value }))} placeholder="Mahsulot haqida qisqacha..." />
+              <span className={subtleLabelClass}>{t.optional_description}</span>
+              <RichTextEditor value={form.description} onChange={(value) => setForm((prev) => ({ ...prev, description: value }))} placeholder={t.description} />
             </label>
 
             <div>
-              <span className={subtleLabelClass}>Rasmlar (ixtiyoriy)</span>
+              <span className={subtleLabelClass}>{t.optional_images}</span>
               <div className="flex flex-wrap gap-2.5 rounded-[24px] border border-white/8 bg-white/[0.02] p-3">
                 {formImages.map((url, index) => (
                   <div key={index} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
@@ -473,7 +475,7 @@ export default function ProfileProductsPage() {
                   ) : (
                     <>
                       <Camera size={18} />
-                      <span className="text-[9px] font-bold">Rasm</span>
+                      <span className="text-[9px] font-bold">{t.image_short}</span>
                     </>
                   )}
                   <input type="file" accept="image/*" multiple className="sr-only" disabled={uploadingImg} onChange={(e) => handleImageUpload(e.target.files)} />
@@ -485,11 +487,11 @@ export default function ProfileProductsPage() {
 
             <div className="mt-6 flex gap-3">
               <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="h-12 flex-1 rounded-full border border-white/10 bg-white/[0.03] text-[13px] font-black text-white">
-                Bekor
+                {t.cancel}
               </button>
               <button onClick={handleSave} disabled={saving} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[13px] font-black text-[#052e16] disabled:opacity-60">
                 {saving && <Loader2 size={13} className="animate-spin" />}
-                Saqlash
+                {t.save}
               </button>
             </div>
           </div>
@@ -509,9 +511,9 @@ export default function ProfileProductsPage() {
       <div className="px-4 pb-8">
         <div className="mb-5 flex items-center justify-between">
           <Link href="/telegram/profile" className="flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
-            <ArrowLeft size={18} /> Profil
+            <ArrowLeft size={18} /> {t.profile}
           </Link>
-          <h2 className="text-[17px] font-bold text-[var(--color-text)]">Mening mahsulotlarim</h2>
+          <h2 className="text-[17px] font-bold text-[var(--color-text)]">{t.my_products}</h2>
           <div className="w-16" />
         </div>
 
@@ -544,13 +546,13 @@ export default function ProfileProductsPage() {
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Link href={TELEGRAM_ROUTES.PRODUCT(product.id)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)]/10 text-[12px] font-bold text-[var(--color-primary)]">
-                      <Eye size={14} /> Ko&apos;rish
+                      <Eye size={14} /> {t.view}
                     </Link>
                     <button onClick={() => openEdit(product)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 text-[12px] font-bold text-blue-500">
-                      <Edit3 size={14} /> Tahrir
+                      <Edit3 size={14} /> {t.edit}
                     </button>
                     <button onClick={() => handleDelete(product.id)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500/10 text-[12px] font-bold text-red-500">
-                      <Trash2 size={14} /> O&apos;chirish
+                      <Trash2 size={14} /> {t.delete}
                     </button>
                   </div>
                 </div>
@@ -562,14 +564,14 @@ export default function ProfileProductsPage() {
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface2)]">
               <Package size={24} className="text-[var(--color-hint)]" />
             </div>
-            <p className="text-[16px] font-bold text-[var(--color-text)]">Mahsulot yo&apos;q</p>
-            <p className="mt-1 text-[13px] text-[var(--color-hint)]">Yangi mahsulot qo&apos;shing</p>
+            <p className="text-[16px] font-bold text-[var(--color-text)]">{t.product_missing}</p>
+            <p className="mt-1 text-[13px] text-[var(--color-hint)]">{t.add_product}</p>
           </div>
         )}
 
         <button onClick={openCreate} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] text-[15px] font-bold text-white shadow-[0_4px_14px_rgba(26,229,80,0.25)]">
           <Plus size={18} />
-          Mahsulot qo&apos;shish
+          {t.add_product}
         </button>
       </div>
     </>

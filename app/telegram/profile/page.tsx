@@ -101,9 +101,9 @@ export default function TelegramProfilePage() {
                 <div className="w-16 h-16 rounded-full bg-[var(--color-surface2)] border border-[var(--color-border)] flex items-center justify-center mb-4">
                     <Smartphone size={28} className="text-[var(--color-hint)]" />
                 </div>
-                <h2 className="text-[20px] font-bold text-[var(--color-text)]">Faqat Telegram orqali</h2>
+                <h2 className="text-[20px] font-bold text-[var(--color-text)]">{t.telegram_only_title}</h2>
                 <p className="mt-2 text-[14px] text-[var(--color-hint)] leading-relaxed max-w-xs">
-                    Bu sahifa faqat Telegram Mini App orqali ochiladi. Iltimos, Telegram botdan foydalaning.
+                    {t.telegram_only_desc}
                 </p>
             </div>
         );
@@ -131,10 +131,10 @@ export default function TelegramProfilePage() {
                     )}
                 </div>
                 <h2 className="text-[20px] font-bold text-[var(--color-text)]">
-                    {tgUser?.first_name ? `Salom, ${tgUser.first_name}!` : 'Kirish kerak'}
+                    {tgUser?.first_name || t.login_required}
                 </h2>
                 <p className="mt-2 text-[14px] text-[var(--color-hint)] leading-relaxed max-w-xs">
-                    Profilingizni ko&apos;rish uchun Telegram orqali kiring.
+                    {t.profile_login_desc}
                 </p>
                 <button
                     onClick={handleLogin}
@@ -142,7 +142,7 @@ export default function TelegramProfilePage() {
                     className="mt-6 h-12 px-8 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center gap-2 disabled:opacity-50 active:scale-95 transition-all shadow-[0_4px_14px_rgba(26,229,80,0.3)]"
                 >
                     {loggingIn ? <Loader2 size={18} className="animate-spin" /> : null}
-                    Telegram orqali kirish
+                    {t.login_via_telegram}
                 </button>
             </div>
         );
@@ -198,7 +198,7 @@ export default function TelegramProfilePage() {
                                 <KeyRound size={16} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-hint)]">Kalit so&apos;z</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-hint)]">{t.access_key}</p>
                                 <p className="font-mono text-[17px] font-black tracking-[0.2em] text-[var(--color-text)] leading-tight">{me.access_key}</p>
                             </div>
                         </div>
@@ -251,8 +251,8 @@ export default function TelegramProfilePage() {
                                 <Store size={20} />
                             </div>
                             <div>
-                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">Mening do&apos;konim</p>
-                                <p className="text-[11px] text-[var(--color-hint)] font-medium">Do&apos;konlarni boshqarish</p>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.my_store}</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{t.manage_stores}</p>
                             </div>
                         </div>
                         <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
@@ -267,8 +267,8 @@ export default function TelegramProfilePage() {
                                 <Package size={20} />
                             </div>
                             <div>
-                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">Mening mahsulotlarim</p>
-                                <p className="text-[11px] text-[var(--color-hint)] font-medium">Mahsulotlarni boshqarish</p>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.my_products}</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{t.manage_products}</p>
                             </div>
                         </div>
                         <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
@@ -282,8 +282,8 @@ export default function TelegramProfilePage() {
                             <LogOut size={20} />
                         </div>
                         <div className="text-left">
-                            <p className="text-[15px] font-bold text-red-600 dark:text-red-400 leading-tight">Chiqish</p>
-                            <p className="text-[11px] text-red-400 dark:text-red-500 font-medium">Hisobdan chiqish</p>
+                            <p className="text-[15px] font-bold text-red-600 dark:text-red-400 leading-tight">{t.logout}</p>
+                            <p className="text-[11px] text-red-400 dark:text-red-500 font-medium">{t.logout_desc}</p>
                         </div>
                     </button>
                 </div>

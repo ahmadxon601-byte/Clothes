@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
-    void notifyAdminsViaTelegram({
+    await notifyAdminsViaTelegram({
       text:
         `Yangi do'kon arizasi tushdi.\n\n` +
         `Do'kon: ${store_name}\n` +

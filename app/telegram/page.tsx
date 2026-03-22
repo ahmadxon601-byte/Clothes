@@ -129,7 +129,7 @@ export default function TgHomePage() {
         } catch { /* ignore */ }
     }, []);
 
-    const clearFiltersLabel = language === 'en' ? 'Clear filters' : language === 'ru' ? 'Очистить фильтры' : 'Filtrlarni tozalash';
+    const clearFiltersLabel = t.clear_filters;
 
     const categoryLabel = (cat: ApiCategory) => {
         if (language === 'ru' && cat.name_ru) return cat.name_ru;
@@ -137,7 +137,7 @@ export default function TgHomePage() {
         if (cat.name_uz) return cat.name_uz;
         const key = (cat.slug || cat.name || '').toLowerCase();
         if (key.includes('accessor')) return t.cat_accessories;
-        if (key.includes('dress')) return language === 'uz' ? 'Ko\'ylaklar' : language === 'ru' ? 'Платья' : 'Dresses';
+        if (key.includes('dress')) return language === 'uz' ? "Ko'ylaklar" : language === 'ru' ? 'Платья' : 'Dresses';
         if (key.includes('outerwear')) return language === 'uz' ? 'Ustki kiyim' : language === 'ru' ? 'Верхняя одежда' : 'Outerwear';
         if (key.includes('pant')) return t.cat_pants;
         if (key.includes('shirt')) return t.cat_shirts;
@@ -297,12 +297,12 @@ export default function TgHomePage() {
 
                     {/* Date from */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Yaratilgan sana (dan)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.created_from}</p>
                         {createdFrom ? (
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[12px] font-semibold text-[var(--color-primary)]">
                                     <CalendarDays size={13} />
-                                    {formatDateLabel(createdFrom)} dan
+                                    {formatDateLabel(createdFrom)}
                                 </span>
                                 <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
                                     className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--color-hint)]/10">
@@ -310,7 +310,7 @@ export default function TgHomePage() {
                                 </button>
                                 <button onClick={() => setCalOpen(o => !o)}
                                     className="text-[12px] font-semibold text-[var(--color-hint)] underline">
-                                    O&apos;zgartirish
+                                    {t.change_value}
                                 </button>
                             </div>
                         ) : (
@@ -321,7 +321,7 @@ export default function TgHomePage() {
                                         : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'
                                 )}>
                                 <CalendarDays size={14} />
-                                Sana tanlash
+                                {t.choose_date}
                             </button>
                         )}
                         {calOpen && (
@@ -336,7 +336,7 @@ export default function TgHomePage() {
 
                     {/* Price range */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Narx oralig&apos;i (so&apos;m)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.price_range}</p>
                         <div className="grid grid-cols-2 gap-2">
                             <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min"
                                 type="number"
@@ -349,7 +349,7 @@ export default function TgHomePage() {
 
                     {/* Size */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">O&apos;lcham</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.size}</p>
                         <div className="flex flex-wrap gap-1.5">
                             {SIZES.map(s => (
                                 <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
@@ -366,12 +366,12 @@ export default function TgHomePage() {
 
                     {/* Min discount */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Aksiya (kamida %)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.minimum_discount}</p>
                         <div className="flex items-center gap-2">
                             <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
                                 type="number" min="1" max="99" placeholder="20"
                                 className="h-9 w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 text-[13px] text-[var(--color-text)] outline-none focus:ring-2 ring-[var(--color-primary)]/20" />
-                            <span className="text-[12px] text-[var(--color-hint)]">% va undan ko&apos;p</span>
+                            <span className="text-[12px] text-[var(--color-hint)]">% {t.and_more}</span>
                         </div>
                     </div>
 

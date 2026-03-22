@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
       await client.query("COMMIT");
       emitAdminEvent({ type: "products", action: "created" });
       if (reviewSupport.hasReviewStatus && reviewStatus === "pending") {
-        void notifyAdminsViaTelegram({
+        await notifyAdminsViaTelegram({
           text:
             `Yangi mahsulot moderatsiyaga yuborildi.\n\n` +
             `Mahsulot: ${name}\n` +

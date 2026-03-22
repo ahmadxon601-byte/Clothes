@@ -9,6 +9,7 @@ import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
 import { InlineMapPicker } from '../../../../src/shared/ui/InlineMapPicker';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
 
 interface MyStore {
     id: string;
@@ -73,6 +74,7 @@ function displayAddress(address: string | null) {
 
 export default function ProfileStoresPage() {
     const { WebApp, isReady } = useTelegram();
+    const { t } = useTranslation();
     const [stores, setStores] = useState<MyStore[]>([]);
     const [requests, setRequests] = useState<SellerRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -193,13 +195,13 @@ export default function ProfileStoresPage() {
                 }),
             });
             const json = await res.json();
-            if (!res.ok) { setError(json.error ?? 'Xatolik yuz berdi'); return; }
+            if (!res.ok) { setError(json.error ?? t.error_occurred); return; }
             setApplyName(''); setApplyDesc(''); setApplyPhone(''); setApplyAddress('');
             setApplyAddressLabel(''); setApplyOwner(''); setApplyImgFile(null); setApplyImgPreview(null);
             await fetchAll();
             setView('list');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Xatolik yuz berdi');
+            setError(e instanceof Error ? e.message : t.error_occurred);
         } finally { setSubmitting(false); }
     };
 
@@ -240,18 +242,18 @@ export default function ProfileStoresPage() {
                 }),
             });
             const json = await res.json();
-            if (!res.ok) { setError(json.error ?? 'Xatolik yuz berdi'); return; }
+            if (!res.ok) { setError(json.error ?? t.error_occurred); return; }
             await fetchAll();
             setView('list');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Xatolik yuz berdi');
+            setError(e instanceof Error ? e.message : t.error_occurred);
         } finally { setSubmitting(false); }
     };
 
     const handleDelete = async (storeId: string) => {
         setConfirmDialog({
             open: true,
-            message: "Do'konni o'chirishni tasdiqlaysizmi?",
+            message: t.confirm_delete_store,
             onConfirm: async () => {
                 setConfirmDialog(d => ({ ...d, open: false }));
                 try {
@@ -265,7 +267,7 @@ export default function ProfileStoresPage() {
     const handleDeleteRequest = async (reqId: string) => {
         setConfirmDialog({
             open: true,
-            message: "Arizani o'chirishni tasdiqlaysizmi?",
+            message: t.confirm_delete_request,
             onConfirm: async () => {
                 setConfirmDialog(d => ({ ...d, open: false }));
                 try {
@@ -277,9 +279,9 @@ export default function ProfileStoresPage() {
     };
 
     const statusBadge = (status: string) => {
-        if (status === 'pending') return <span className="flex items-center gap-1 text-amber-500 text-[11px] font-bold"><Clock size={11} />Ko&apos;rib chiqilmoqda</span>;
-        if (status === 'approved') return <span className="flex items-center gap-1 text-green-500 text-[11px] font-bold"><CheckCircle size={11} />Tasdiqlandi</span>;
-        return <span className="flex items-center gap-1 text-red-500 text-[11px] font-bold"><XCircle size={11} />Rad etildi</span>;
+        if (status === 'pending') return <span className="flex items-center gap-1 text-amber-500 text-[11px] font-bold"><Clock size={11} />{t.status_reviewing}</span>;
+        if (status === 'approved') return <span className="flex items-center gap-1 text-green-500 text-[11px] font-bold"><CheckCircle size={11} />{t.status_approved}</span>;
+        return <span className="flex items-center gap-1 text-red-500 text-[11px] font-bold"><XCircle size={11} />{t.status_rejected}</span>;
     };
 
     const inputCls = "w-full h-12 rounded-[14px] border bg-[var(--color-surface)] px-4 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)]";
@@ -302,9 +304,9 @@ export default function ProfileStoresPage() {
                 />
                 <div className="px-4 pb-8">
                     <button onClick={() => { setView('list'); setError(''); setApplyErrors({}); }} className="flex items-center gap-2 mb-5 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Orqaga
+                        <ArrowLeft size={18} /> {t.back}
                     </button>
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">Do&apos;kon ochish arizasi</h2>
+                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">{t.store_open_request}</h2>
 
                     <div className="space-y-3">
                         {/* Image */}
@@ -316,7 +318,7 @@ export default function ProfileStoresPage() {
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={applyImgPreview} alt="preview" className="w-full h-full object-cover" />
                             ) : (
-                                <><ImageIcon size={28} className="text-[var(--color-hint)]" /><p className="text-[13px] text-[var(--color-hint)]">Do&apos;kon rasmi</p></>
+                                <><ImageIcon size={28} className="text-[var(--color-hint)]" /><p className="text-[13px] text-[var(--color-hint)]">{t.store_image}</p></>
                             )}
                             <input ref={applyFileRef} type="file" accept="image/*" className="hidden" onChange={e => {
                                 const f = e.target.files?.[0];
@@ -328,33 +330,33 @@ export default function ProfileStoresPage() {
                             <input
                                 value={applyOwner}
                                 onChange={e => { setApplyOwner(e.target.value); if (applyErrors.owner) setApplyErrors(p => ({ ...p, owner: false })); }}
-                                placeholder="Ism familiya *"
+                                placeholder={`${t.full_name} *`}
                                 className={`${inputCls} ${applyErrors.owner ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
-                            {applyErrors.owner && <p className="mt-1 text-[12px] text-red-500">Ism familiya majburiy</p>}
+                            {applyErrors.owner && <p className="mt-1 text-[12px] text-red-500">{t.full_name_required}</p>}
                         </div>
                         <div>
                             <input
                                 value={applyName}
                                 onChange={e => { setApplyName(e.target.value); if (applyErrors.name) setApplyErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Do'kon nomi *"
+                                placeholder={`${t.store_name} *`}
                                 className={`${inputCls} ${applyErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
-                            {applyErrors.name && <p className="mt-1 text-[12px] text-red-500">Do&apos;kon nomi majburiy</p>}
+                            {applyErrors.name && <p className="mt-1 text-[12px] text-red-500">{t.store_name_required}</p>}
                         </div>
-                        <textarea value={applyDesc} onChange={e => setApplyDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        <input value={applyPhone} onChange={e => setApplyPhone(e.target.value)} placeholder="Telefon" className={`${inputCls} border-[var(--color-border)]`} />
+                        <textarea value={applyDesc} onChange={e => setApplyDesc(e.target.value)} placeholder={t.description} rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
+                        <input value={applyPhone} onChange={e => setApplyPhone(e.target.value)} placeholder={t.phone} className={`${inputCls} border-[var(--color-border)]`} />
 
                         {/* Embedded map */}
                         <div className="space-y-2">
-                            <p className="text-[12px] font-semibold text-[var(--color-hint)]">Joylashuv — xaritaga bosib tanlang</p>
+                            <p className="text-[12px] font-semibold text-[var(--color-hint)]">{t.location_pick_hint}</p>
                             {mounted && <InlineMapPicker
                                 key={`apply-map-${mapKey}`}
                                 onPick={(lat, lng) => handleMapPick(lat, lng, 'apply')}
                             />}
                             {applyGeoLoading && (
                                 <div className="flex items-center gap-2 text-[12px] text-[var(--color-hint)]">
-                                    <Loader2 size={13} className="animate-spin" /> Manzil aniqlanmoqda...
+                                    <Loader2 size={13} className="animate-spin" /> {t.address_resolving}
                                 </div>
                             )}
                             {applyAddressLabel && !applyGeoLoading && (
@@ -368,7 +370,7 @@ export default function ProfileStoresPage() {
                         {error && <p className="text-red-500 text-[13px]">{error}</p>}
                         <button onClick={handleApplySubmit} disabled={submitting} className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
                             {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                            Ariza yuborish
+                            {t.submit_application}
                         </button>
                     </div>
                 </div>
@@ -388,9 +390,9 @@ export default function ProfileStoresPage() {
                 />
                 <div className="px-4 pb-8">
                     <button onClick={() => { setView('list'); setError(''); setEditErrors({}); }} className="flex items-center gap-2 mb-5 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Orqaga
+                        <ArrowLeft size={18} /> {t.back}
                     </button>
-                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">Do&apos;konni tahrirlash</h2>
+                    <h2 className="text-[20px] font-bold text-[var(--color-text)] mb-5">{t.edit_store_title}</h2>
 
                     <div className="space-y-3">
                         <div
@@ -401,7 +403,7 @@ export default function ProfileStoresPage() {
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={editImgPreview} alt="preview" className="w-full h-full object-cover" />
                             ) : (
-                                <><ImageIcon size={28} className="text-[var(--color-hint)]" /><p className="text-[13px] text-[var(--color-hint)]">Rasm o&apos;zgartirish</p></>
+                                <><ImageIcon size={28} className="text-[var(--color-hint)]" /><p className="text-[13px] text-[var(--color-hint)]">{t.change_image}</p></>
                             )}
                             <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={e => {
                                 const f = e.target.files?.[0];
@@ -413,24 +415,24 @@ export default function ProfileStoresPage() {
                             <input
                                 value={editName}
                                 onChange={e => { setEditName(e.target.value); if (editErrors.name) setEditErrors(p => ({ ...p, name: false })); }}
-                                placeholder="Do'kon nomi *"
+                                placeholder={`${t.store_name} *`}
                                 className={`${inputCls} ${editErrors.name ? 'border-red-500' : 'border-[var(--color-border)]'}`}
                             />
-                            {editErrors.name && <p className="mt-1 text-[12px] text-red-500">Do&apos;kon nomi majburiy</p>}
+                            {editErrors.name && <p className="mt-1 text-[12px] text-red-500">{t.store_name_required}</p>}
                         </div>
-                        <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Tavsif" rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefon" className={`${inputCls} border-[var(--color-border)]`} />
+                        <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder={t.description} rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
+                        <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder={t.phone} className={`${inputCls} border-[var(--color-border)]`} />
 
                         {/* Embedded map */}
                         <div className="space-y-2">
-                            <p className="text-[12px] font-semibold text-[var(--color-hint)]">Joylashuvni yangilash — xaritaga bosib tanlang</p>
+                            <p className="text-[12px] font-semibold text-[var(--color-hint)]">{t.update_location_hint}</p>
                             {mounted && <InlineMapPicker
                                 key={`edit-map-${mapKey}`}
                                 onPick={(lat, lng) => handleMapPick(lat, lng, 'edit')}
                             />}
                             {editGeoLoading && (
                                 <div className="flex items-center gap-2 text-[12px] text-[var(--color-hint)]">
-                                    <Loader2 size={13} className="animate-spin" /> Manzil aniqlanmoqda...
+                                    <Loader2 size={13} className="animate-spin" /> {t.address_resolving}
                                 </div>
                             )}
                             {(editAddressLabel || displayAddress(editAddress)) && !editGeoLoading && (
@@ -446,7 +448,7 @@ export default function ProfileStoresPage() {
                         {error && <p className="text-red-500 text-[13px]">{error}</p>}
                         <button onClick={handleEditSubmit} disabled={submitting} className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all">
                             {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                            Saqlash
+                            {t.save_changes}
                         </button>
                     </div>
                 </div>
@@ -466,15 +468,15 @@ export default function ProfileStoresPage() {
             <div className="px-4 pb-8">
                 <div className="flex items-center justify-between mb-5">
                     <Link href="/telegram/profile" className="flex items-center gap-2 text-[var(--color-hint)] text-[14px] font-medium">
-                        <ArrowLeft size={18} /> Profil
+                        <ArrowLeft size={18} /> {t.profile}
                     </Link>
-                    <h2 className="text-[17px] font-bold text-[var(--color-text)]">Mening do&apos;konlarim</h2>
+                    <h2 className="text-[17px] font-bold text-[var(--color-text)]">{t.my_stores}</h2>
                     <div className="w-16" />
                 </div>
 
                 {stores.length > 0 && (
                     <div className="space-y-3 mb-5">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-hint)]">Faol do&apos;konlar</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-hint)]">{t.active_stores}</p>
                         {stores.map(store => (
                             <div key={store.id} className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-border)] p-3">
                                 <div className="flex items-center gap-3">
@@ -495,13 +497,13 @@ export default function ProfileStoresPage() {
                                 </div>
                                 <div className="flex gap-2 mt-3">
                                     <Link href={TELEGRAM_ROUTES.STORE(store.id)} className="flex-1 h-9 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all">
-                                        <Eye size={14} /> Ko&apos;rish
+                                        <Eye size={14} /> {t.view}
                                     </Link>
                                     <button onClick={() => handleEditOpen(store)} className="flex-1 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all">
-                                        <Edit3 size={14} /> Tahrir
+                                        <Edit3 size={14} /> {t.edit}
                                     </button>
                                     <button onClick={() => handleDelete(store.id)} className="flex-1 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center gap-1.5 text-[12px] font-bold active:scale-95 transition-all">
-                                        <Trash2 size={14} /> O&apos;chirish
+                                        <Trash2 size={14} /> {t.delete}
                                     </button>
                                 </div>
                             </div>
@@ -511,7 +513,7 @@ export default function ProfileStoresPage() {
 
                 {requests.length > 0 && (
                     <div className="space-y-2 mb-5">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-hint)]">Arizalar</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-hint)]">{t.applications}</p>
                         {requests.map(req => (
                             <div key={req.id} className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-border)] p-4">
                                 <div className="flex items-center justify-between">
@@ -537,8 +539,8 @@ export default function ProfileStoresPage() {
                         <div className="w-14 h-14 rounded-full bg-[var(--color-surface2)] border border-[var(--color-border)] flex items-center justify-center mb-3">
                             <Store size={24} className="text-[var(--color-hint)]" />
                         </div>
-                        <p className="text-[16px] font-bold text-[var(--color-text)]">Do&apos;kon yo&apos;q</p>
-                        <p className="text-[13px] text-[var(--color-hint)] mt-1">Do&apos;kon ochish uchun ariza bering</p>
+                        <p className="text-[16px] font-bold text-[var(--color-text)]">{t.no_store_yet}</p>
+                        <p className="text-[13px] text-[var(--color-hint)] mt-1">{t.apply_for_store}</p>
                     </div>
                 )}
 
@@ -548,7 +550,7 @@ export default function ProfileStoresPage() {
                         className="w-full h-12 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_4px_14px_rgba(26,229,80,0.25)]"
                     >
                         <Plus size={18} />
-                        Do&apos;kon ochish arizasi
+                        {t.store_open_request}
                     </button>
                 )}
             </div>
