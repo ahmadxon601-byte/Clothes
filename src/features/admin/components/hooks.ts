@@ -16,7 +16,6 @@ export function useAdminSSE() {
     const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
     if (!token) return;
 
-    const base = `${window.location.protocol}//${window.location.hostname}:3001`;
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -28,11 +27,12 @@ export function useAdminSSE() {
       categories:      ['admin', 'categories'],
       banners:         ['admin', 'banners'],
       orders:          ['admin', 'orders'],
+      support:         ['admin', 'support'],
     };
 
     const connect = () => {
       if (es) { try { es.close(); } catch {} }
-      es = new EventSource(`${base}/api/admin/events?token=${encodeURIComponent(token)}`);
+      es = new EventSource(`/api/admin/events?token=${encodeURIComponent(token)}`);
 
       es.onmessage = (e) => {
         try {
@@ -71,7 +71,7 @@ export function useApplications(params: Record<string, string | number>) {
   return useQuery({
     queryKey: ['admin', 'applications', params],
     queryFn: () => adminApi.getApplications(params),
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -107,7 +107,10 @@ export function useStoreMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) => adminApi.updateStore(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'stores'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'stores'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'applications'] });
+    },
   });
 }
 

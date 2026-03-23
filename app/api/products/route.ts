@@ -3,6 +3,8 @@ import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, paginate, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
+import { getProductReviewSupport } from "@/src/lib/productReview";
+import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 // ── GET /api/products ────────────────────────────────────────────────────────
 // Query params: sort (newest|popular|price_asc|price_desc), category, search,
@@ -23,7 +25,11 @@ export async function GET(req: NextRequest) {
     const createdTo   = s.get("created_to")?.trim()   || null;
     const { page, limit, offset } = paginate(s.get("page"), s.get("limit"));
 
+    const reviewSupport = await getProductReviewSupport();
     const conditions: string[] = ["p.is_active = TRUE", "st.is_active = TRUE"];
+    if (reviewSupport.hasReviewStatus) {
+      conditions.push("p.review_status = 'approved'");
+    }
     const params: unknown[] = [];
 
     if (categoryId) {
@@ -204,12 +210,22 @@ export async function POST(req: NextRequest) {
       await client.query("BEGIN");
 
       // Insert product
-      const productResult = await client.query(
-        `INSERT INTO products (store_id, category_id, name, description, base_price, sku)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [storeId, category_id ?? null, name, description ?? null, base_price, sku]
-      );
+      const reviewSupport = await getProductReviewSupport();
+      const reviewStatus = actualRole === "admin" ? "approved" : "pending";
+      const isActive = reviewSupport.hasReviewStatus ? actualRole === "admin" : true;
+      const productResult = reviewSupport.hasReviewStatus
+        ? await client.query(
+            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, review_status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [storeId, category_id ?? null, name, description ?? null, base_price, sku, isActive, reviewStatus]
+          )
+        : await client.query(
+            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING *`,
+            [storeId, category_id ?? null, name, description ?? null, base_price, sku, true]
+          );
       const product = productResult.rows[0];
 
       // Insert images
@@ -245,7 +261,27 @@ export async function POST(req: NextRequest) {
 
       await client.query("COMMIT");
       emitAdminEvent({ type: "products", action: "created" });
-      return ok({ product }, 201);
+      if (reviewSupport.hasReviewStatus && reviewStatus === "pending") {
+        await notifyAdminsViaTelegram({
+          text:
+            `Yangi mahsulot moderatsiyaga yuborildi.\n\n` +
+            `Mahsulot: ${name}\n` +
+            `Do'kon ID: ${storeId}\n` +
+            `Narx: ${base_price.toLocaleString()} UZS\n` +
+            `Holat: Kutilmoqda`,
+          route: "/admin/products",
+        });
+      }
+      return ok(
+        {
+          product,
+          message:
+            reviewSupport.hasReviewStatus && reviewStatus === "pending"
+              ? "Product submitted for admin approval"
+              : "Product created",
+        },
+        201
+      );
     } catch (e) {
       await client.query("ROLLBACK");
       throw e;

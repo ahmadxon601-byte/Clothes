@@ -4,6 +4,8 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
+import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { notifySellerDecisionViaTelegram } from "@/src/server/telegram/seller-notifier";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,6 +19,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");
     const { id } = await params;
+    const support = await getSellerRequestSupport();
 
     const body = await req.json();
     const parsed = schema.safeParse(body);
@@ -25,7 +28,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { action, note } = parsed.data;
 
     const reqResult = await query(
-      "SELECT * FROM seller_requests WHERE id = $1",
+      `SELECT sr.*, u.telegram_id
+       FROM seller_requests sr
+       LEFT JOIN users u ON u.id = sr.user_id
+       WHERE sr.id = $1`,
       [id]
     );
     if (reqResult.rows.length === 0) return fail("Request not found", 404);
@@ -50,30 +56,63 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
 
       if (action === "approve") {
-        // Create the store
-        await client.query(
-          `INSERT INTO stores (owner_id, name, description, phone, address)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            sellerReq.user_id,
-            sellerReq.store_name,
-            sellerReq.store_description,
-            sellerReq.phone,
-            sellerReq.address,
-          ]
-        );
+        const isStoreUpdate =
+          support.hasRequestType &&
+          sellerReq.request_type === "store_update" &&
+          support.hasTargetStoreId &&
+          sellerReq.target_store_id;
 
-        // Promote user to seller
-        await client.query(
-          "UPDATE users SET role = 'seller', updated_at = NOW() WHERE id = $1",
-          [sellerReq.user_id]
-        );
+        if (isStoreUpdate) {
+          await client.query(
+            `UPDATE stores
+             SET name = $1, description = $2, phone = $3, address = $4, updated_at = NOW()
+             WHERE id = $5 AND owner_id = $6`,
+            [
+              sellerReq.store_name,
+              sellerReq.store_description,
+              sellerReq.phone,
+              sellerReq.address,
+              sellerReq.target_store_id,
+              sellerReq.user_id,
+            ]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO stores (owner_id, name, description, phone, address)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+              sellerReq.user_id,
+              sellerReq.store_name,
+              sellerReq.store_description,
+              sellerReq.phone,
+              sellerReq.address,
+            ]
+          );
+
+          await client.query(
+            "UPDATE users SET role = 'seller', updated_at = NOW() WHERE id = $1",
+            [sellerReq.user_id]
+          );
+        }
       }
 
       await client.query("COMMIT");
       emitAdminEvent({ type: "seller_requests", action: "updated" });
       emitAdminEvent({ type: "stores", action: "updated" });
       logAction({ admin, action, entity: "seller_request", entityId: id, details: { note, newStatus } });
+
+      if (sellerReq.telegram_id) {
+        await notifySellerDecisionViaTelegram({
+          telegramId: Number(sellerReq.telegram_id),
+          status: newStatus,
+          storeName: sellerReq.store_name,
+          note: note ?? sellerReq.admin_note ?? null,
+          isUpdate:
+            Boolean(support.hasRequestType) &&
+            sellerReq.request_type === "store_update",
+        });
+      }
+
       return ok({ message: `Request ${newStatus}` });
     } catch (e) {
       await client.query("ROLLBACK");

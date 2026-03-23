@@ -6,7 +6,11 @@ import { adminApi, TOKEN_STORAGE_KEY, type AdminUser } from '../lib/adminApi';
 interface AdminAuthCtx {
   user: AdminUser | null;
   loading: boolean;
-  login: (login: string, password: string) => Promise<void>;
+  telegramAccessLoading: boolean;
+  telegramAccessChecked: boolean;
+  telegramAllowed: boolean;
+  telegramAccessError: string;
+  login: (login: string, password: string, initData?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -15,9 +19,52 @@ const AdminAuthContext = createContext<AdminAuthCtx | null>(null);
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [telegramAccessLoading, setTelegramAccessLoading] = useState(false);
+  const [telegramAccessChecked, setTelegramAccessChecked] = useState(false);
+  const [telegramAllowed, setTelegramAllowed] = useState(true);
+  const [telegramAccessError, setTelegramAccessError] = useState('');
+
+  useEffect(() => {
+    async function verifyTelegramAccess() {
+      if (typeof window === 'undefined') return;
+      const initData = window.Telegram?.WebApp?.initData;
+      if (!initData) {
+        setTelegramAllowed(true);
+        setTelegramAccessError('');
+        setTelegramAccessChecked(true);
+        return;
+      }
+
+      setTelegramAccessLoading(true);
+      try {
+        await adminApi.checkTelegramAccess(initData);
+        setTelegramAllowed(true);
+        setTelegramAccessError('');
+      } catch (error) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setUser(null);
+        setTelegramAllowed(false);
+        setTelegramAccessError(error instanceof Error ? error.message : 'Telegram access denied');
+      } finally {
+        setTelegramAccessLoading(false);
+        setTelegramAccessChecked(true);
+      }
+    }
+
+    void verifyTelegramAccess();
+  }, []);
 
   useEffect(() => {
     async function bootstrap() {
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData && !telegramAccessChecked) {
+        return;
+      }
+
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData && !telegramAllowed) {
+        setLoading(false);
+        return;
+      }
+
       const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
       if (!storedToken) {
         setLoading(false);
@@ -45,10 +92,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
 
     void bootstrap();
-  }, []);
+  }, [telegramAccessChecked, telegramAllowed]);
 
-  async function login(login: string, password: string) {
-    const result = (await adminApi.adminLogin(login, password)) as { token: string; user: AdminUser };
+  async function login(login: string, password: string, initData?: string) {
+    const result = (await adminApi.adminLogin(login, password, initData)) as { token: string; user: AdminUser };
     if (result.user.role !== 'admin') {
       throw new Error('Admin access required');
     }
@@ -62,7 +109,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+  const value = useMemo(
+    () => ({ user, loading, telegramAccessLoading, telegramAccessChecked, telegramAllowed, telegramAccessError, login, logout }),
+    [user, loading, telegramAccessLoading, telegramAccessChecked, telegramAllowed, telegramAccessError]
+  );
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }
 

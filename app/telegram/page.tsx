@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -19,14 +19,14 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
 const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
 const FALLBACK_CATEGORIES: ApiCategory[] = [
-    { id: 'accessories', name: 'Accessories', name_uz: null, name_ru: null, name_en: 'Accessories', slug: 'accessories' },
-    { id: 'dresses', name: 'Dresses', name_uz: null, name_ru: null, name_en: 'Dresses', slug: 'dresses' },
-    { id: 'outerwear', name: 'Outerwear', name_uz: null, name_ru: null, name_en: 'Outerwear', slug: 'outerwear' },
-    { id: 'pants', name: 'Pants', name_uz: null, name_ru: null, name_en: 'Pants', slug: 'pants' },
-    { id: 'shirts', name: 'Shirts', name_uz: null, name_ru: null, name_en: 'Shirts', slug: 'shirts' },
-    { id: 'shoes', name: 'Shoes', name_uz: null, name_ru: null, name_en: 'Shoes', slug: 'shoes' },
-    { id: 'sportswear', name: 'Sportswear', name_uz: null, name_ru: null, name_en: 'Sportswear', slug: 'sportswear' },
-    { id: 'jackets', name: 'Jackets', name_uz: null, name_ru: null, name_en: 'Jackets', slug: 'jackets' },
+    { id: 'accessories', name: 'Aksessuarlar', name_uz: 'Aksessuarlar', name_ru: 'Аксессуары', name_en: 'Accessories', slug: 'accessories' },
+    { id: 'dresses', name: "Ko'ylaklar", name_uz: "Ko'ylaklar", name_ru: 'Платья', name_en: 'Dresses', slug: 'dresses' },
+    { id: 'outerwear', name: 'Ustki kiyim', name_uz: 'Ustki kiyim', name_ru: 'Верхняя одежда', name_en: 'Outerwear', slug: 'outerwear' },
+    { id: 'pants', name: 'Shimlar', name_uz: 'Shimlar', name_ru: 'Брюки', name_en: 'Pants', slug: 'pants' },
+    { id: 'shirts', name: "Ko'ylaklar", name_uz: "Ko'ylaklar", name_ru: 'Рубашки', name_en: 'Shirts', slug: 'shirts' },
+    { id: 'shoes', name: 'Poyabzal', name_uz: 'Poyabzal', name_ru: 'Обувь', name_en: 'Shoes', slug: 'shoes' },
+    { id: 'sportswear', name: 'Sport kiyimlari', name_uz: 'Sport kiyimlari', name_ru: 'Спортивная одежда', name_en: 'Sportswear', slug: 'sportswear' },
+    { id: 'jackets', name: 'Kurtkalar', name_uz: 'Kurtkalar', name_ru: 'Куртки', name_en: 'Jackets', slug: 'jackets' },
 ];
 
 function formatDateLabel(iso: string) {
@@ -107,7 +107,8 @@ export default function TgHomePage() {
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
     const [search, setSearch] = useState('');
-    const [activeCat, setActiveCat] = useState('');
+    const [activeParentCat, setActiveParentCat] = useState('');
+    const [activeSubCat, setActiveSubCat] = useState('');
     const [loading, setLoading] = useState(true);
     const [favs, setFavs] = useState<Set<string>>(new Set());
 
@@ -128,7 +129,7 @@ export default function TgHomePage() {
         } catch { /* ignore */ }
     }, []);
 
-    const clearFiltersLabel = language === 'en' ? 'Clear filters' : language === 'ru' ? 'Очистить фильтры' : 'Filtrlarni tozalash';
+    const clearFiltersLabel = t.clear_filters;
 
     const categoryLabel = (cat: ApiCategory) => {
         if (language === 'ru' && cat.name_ru) return cat.name_ru;
@@ -136,7 +137,7 @@ export default function TgHomePage() {
         if (cat.name_uz) return cat.name_uz;
         const key = (cat.slug || cat.name || '').toLowerCase();
         if (key.includes('accessor')) return t.cat_accessories;
-        if (key.includes('dress')) return language === 'uz' ? 'Ko\'ylaklar' : language === 'ru' ? 'Платья' : 'Dresses';
+        if (key.includes('dress')) return language === 'uz' ? "Ko'ylaklar" : language === 'ru' ? 'Платья' : 'Dresses';
         if (key.includes('outerwear')) return language === 'uz' ? 'Ustki kiyim' : language === 'ru' ? 'Верхняя одежда' : 'Outerwear';
         if (key.includes('pant')) return t.cat_pants;
         if (key.includes('shirt')) return t.cat_shirts;
@@ -147,6 +148,15 @@ export default function TgHomePage() {
         if (key.includes('tshirt') || key.includes('t-shirt')) return t.cat_tshirts;
         return cat.name;
     };
+
+    const parentCategories = useMemo(
+        () => categories.filter(cat => !cat.parent_id),
+        [categories]
+    );
+    const subcategories = useMemo(
+        () => categories.filter(cat => cat.parent_id === activeParentCat),
+        [categories, activeParentCat]
+    );
 
     const activeFilterCount =
         (minPrice ? 1 : 0) +
@@ -177,11 +187,11 @@ export default function TgHomePage() {
 
     const triggerFetch = useCallback((immediate = false) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        const go = () => loadProducts({ search, category: activeCat, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
+        const go = () => loadProducts({ search, category: activeSubCat || (subcategories.length === 0 ? activeParentCat : ''), minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
         if (immediate) go();
         else debounceRef.current = setTimeout(go, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, activeCat, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, loadProducts]);
+    }, [search, activeParentCat, activeSubCat, subcategories.length, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, loadProducts]);
 
     useEffect(() => {
         fetchCategories()
@@ -287,12 +297,12 @@ export default function TgHomePage() {
 
                     {/* Date from */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Yaratilgan sana (dan)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.created_from}</p>
                         {createdFrom ? (
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[12px] font-semibold text-[var(--color-primary)]">
                                     <CalendarDays size={13} />
-                                    {formatDateLabel(createdFrom)} dan
+                                    {formatDateLabel(createdFrom)}
                                 </span>
                                 <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
                                     className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--color-hint)]/10">
@@ -300,7 +310,7 @@ export default function TgHomePage() {
                                 </button>
                                 <button onClick={() => setCalOpen(o => !o)}
                                     className="text-[12px] font-semibold text-[var(--color-hint)] underline">
-                                    O&apos;zgartirish
+                                    {t.change_value}
                                 </button>
                             </div>
                         ) : (
@@ -311,7 +321,7 @@ export default function TgHomePage() {
                                         : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'
                                 )}>
                                 <CalendarDays size={14} />
-                                Sana tanlash
+                                {t.choose_date}
                             </button>
                         )}
                         {calOpen && (
@@ -326,7 +336,7 @@ export default function TgHomePage() {
 
                     {/* Price range */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Narx oralig&apos;i (so&apos;m)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.price_range}</p>
                         <div className="grid grid-cols-2 gap-2">
                             <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min"
                                 type="number"
@@ -339,7 +349,7 @@ export default function TgHomePage() {
 
                     {/* Size */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">O&apos;lcham</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.size}</p>
                         <div className="flex flex-wrap gap-1.5">
                             {SIZES.map(s => (
                                 <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
@@ -356,12 +366,12 @@ export default function TgHomePage() {
 
                     {/* Min discount */}
                     <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">Aksiya (kamida %)</p>
+                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.minimum_discount}</p>
                         <div className="flex items-center gap-2">
                             <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
                                 type="number" min="1" max="99" placeholder="20"
                                 className="h-9 w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 text-[13px] text-[var(--color-text)] outline-none focus:ring-2 ring-[var(--color-primary)]/20" />
-                            <span className="text-[12px] text-[var(--color-hint)]">% va undan ko&apos;p</span>
+                            <span className="text-[12px] text-[var(--color-hint)]">% {t.and_more}</span>
                         </div>
                     </div>
 
@@ -377,21 +387,37 @@ export default function TgHomePage() {
 
             {/* Category chips */}
             <div className="mb-3 flex flex-wrap gap-2">
-                <button onClick={() => setActiveCat('')}
+                <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
                     className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                        !activeCat ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
+                        !activeParentCat && !activeSubCat ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
                                    : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
                     <span className="block max-w-[42vw] truncate">{t.all}</span>
                 </button>
-                {categories.map(cat => (
-                    <button key={cat.id} onClick={() => setActiveCat(activeCat === cat.id ? '' : cat.id)}
+                {parentCategories.map(cat => (
+                    <button key={cat.id} onClick={() => {
+                        const nextParent = activeParentCat === cat.id ? '' : cat.id;
+                        setActiveParentCat(nextParent);
+                        setActiveSubCat('');
+                    }}
                         className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                            activeCat === cat.id ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
+                            activeParentCat === cat.id ? 'bg-[var(--color-text)] text-[var(--color-bg)] border-transparent'
                                                  : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
                         <span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span>
                     </button>
                 ))}
             </div>
+            {activeParentCat && subcategories.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {subcategories.map(cat => (
+                        <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)}
+                            className={cn('max-w-full px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                                activeSubCat === cat.id ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                                                        : 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]')}>
+                            <span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="mb-3">
                 <BannerCarousel variant="telegram" productRoute={(id) => TELEGRAM_ROUTES.PRODUCT(id)} />

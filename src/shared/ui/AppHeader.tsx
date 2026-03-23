@@ -42,7 +42,7 @@ export function AppHeader() {
     let right = <div className="w-9 h-9" />;
 
     if (pathname === TELEGRAM_ROUTES.HOME || pathname === TELEGRAM_ROUTES.STORES) {
-        title = 'Clothes MP';
+        title = 'Qulaymarket';
         titleClass = 'text-[17px] font-bold text-[var(--color-text)] text-center';
         left = (
             <button onClick={toggleTheme} className={iconButtonClass}>
@@ -51,7 +51,7 @@ export function AppHeader() {
         );
         right = <LanguageSelector />;
     } else if (pathname === TELEGRAM_ROUTES.PRODUCTS) {
-        title = "Do'konlar";
+        title = "Mahsulotlar";
         titleClass = 'text-[20px] font-bold text-[var(--color-text)] text-center';
         left = (
             <button onClick={() => router.back()} className={iconButtonClass}>

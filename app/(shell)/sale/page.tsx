@@ -55,7 +55,7 @@ export default function SalePage() {
                         {w.salePage.desc}
                     </p>
                     <div className="mt-3 inline-block rounded-full border border-[#00c853]/25 bg-[#00c853]/10 px-5 py-2 text-[12px] font-black tracking-wider text-white">
-                        {w.salePage.useCode} <span className="text-[#00c853]">CLOTHES15</span>
+                        {w.salePage.useCode} <span className="text-[#00c853]">MARKET10</span>
                     </div>
                 </div>
             </div>

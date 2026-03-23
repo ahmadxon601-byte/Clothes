@@ -87,7 +87,7 @@ export default function AdminsPage() {
                         <button
                           title="Ko'rish"
                           onClick={() => setViewUser(item)}
-                          className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition hover:text-[var(--admin-muted)] hover:shadow-none'
+                          className='flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition hover:bg-transparent hover:text-[var(--admin-muted)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0'
                         >
                           <Eye size={14} />
                         </button>

@@ -224,7 +224,7 @@ export default function OpenStorePage() {
                             <div className="mt-6 flex flex-wrap justify-center gap-3">
                                 <button
                                     onClick={() => setAuthModal(true)}
-                                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[#00c853] px-7 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-7 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                                 >
                                     Kirish / Ro'yxat
                                 </button>
@@ -377,7 +377,7 @@ export default function OpenStorePage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-[#00c853] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {loading ? w.openStore.submitting : w.openStore.submit}
                         <ArrowRight size={14} />

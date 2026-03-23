@@ -3,6 +3,8 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
+import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 const schema = z.object({
   store_name: z.string().min(2).max(255),
@@ -16,6 +18,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
+    const support = await getSellerRequestSupport();
 
     // Admins cannot submit store requests
     if (jwtUser.role === "admin") {
@@ -38,21 +41,47 @@ export async function POST(req: NextRequest) {
     const { store_name, store_description, owner_name, phone, address } =
       parsed.data;
 
-    await query(
-      `INSERT INTO seller_requests
-         (user_id, store_name, store_description, owner_name, phone, address)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        jwtUser.userId,
-        store_name,
-        store_description ?? null,
-        owner_name,
-        phone ?? null,
-        address ?? null,
-      ]
-    );
+    if (support.hasRequestType) {
+      await query(
+        `INSERT INTO seller_requests
+           (user_id, store_name, store_description, owner_name, phone, address, request_type)
+         VALUES ($1, $2, $3, $4, $5, $6, 'store_create')`,
+        [
+          jwtUser.userId,
+          store_name,
+          store_description ?? null,
+          owner_name,
+          phone ?? null,
+          address ?? null,
+        ]
+      );
+    } else {
+      await query(
+        `INSERT INTO seller_requests
+           (user_id, store_name, store_description, owner_name, phone, address)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          jwtUser.userId,
+          store_name,
+          store_description ?? null,
+          owner_name,
+          phone ?? null,
+          address ?? null,
+        ]
+      );
+    }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
+    await notifyAdminsViaTelegram({
+      text:
+        `Yangi do'kon arizasi tushdi.\n\n` +
+        `Do'kon: ${store_name}\n` +
+        `Arizachi: ${owner_name}\n` +
+        `${phone ? `Aloqa: ${phone}\n` : ""}` +
+        `${address ? `Manzil: ${address}\n` : ""}` +
+        `Holat: Kutilmoqda`,
+      route: "/admin/applications",
+    });
     return ok(
       { message: "Seller request submitted. Wait for admin approval." },
       201

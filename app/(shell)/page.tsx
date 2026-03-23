@@ -25,40 +25,40 @@ const WEB_LINKS = {
 
 const CATEGORY_BANNERS = [
     {
-        title: 'Casual Wear',
-        subtitle: 'Relaxed essentials, premium fabrics',
+        title: 'Daily Picks',
+        subtitle: 'Popular products for everyday shopping',
         image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?q=80&w=1800&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'TRENDING',
+        badge: 'HOT',
         isFeatured: true,
     },
     {
-        title: 'Formal Wear',
-        subtitle: 'Sharp tailoring for elevated occasions',
+        title: 'New Arrivals',
+        subtitle: 'Fresh products with useful prices',
         image: 'https://images.unsplash.com/photo-1610652492500-ded49ceeb378?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
         badge: 'NEW',
     },
     {
-        title: 'Street Style',
-        subtitle: 'Bold city-inspired silhouettes',
+        title: 'Trending Now',
+        subtitle: 'Products customers choose most often',
         image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'URBAN',
+        badge: 'TOP',
     },
     {
-        title: 'Outerwear',
-        subtitle: 'Layer-ready pieces for every season',
+        title: 'Seasonal Offers',
+        subtitle: 'Selected options for the current season',
         image: 'https://images.unsplash.com/photo-1551232864-3f0890e580d9?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
         badge: 'EDIT',
     },
     {
         title: 'Accessories',
-        subtitle: 'The final touch for a polished look',
+        subtitle: 'Small details that complete the order',
         image: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'PREMIUM',
+        badge: 'PLUS',
     },
 ];
 
@@ -187,7 +187,7 @@ export default function WebsiteHomePage() {
             <section className="relative h-[74vh] min-h-[460px] w-full overflow-hidden md:h-[84vh] md:min-h-[520px] lg:h-[92vh] lg:min-h-[580px]">
                 <img
                     src="https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?q=80&w=2000&auto=format&fit=crop"
-                    alt="Premium fashion hero"
+                    alt="Qulaymarket hero"
                     className="absolute inset-0 h-full w-full scale-[1.02] object-cover object-top transition-transform duration-[8s] hover:scale-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 md:to-transparent" />
@@ -210,7 +210,7 @@ export default function WebsiteHomePage() {
                         <div className="mt-8 flex flex-wrap gap-3">
                             <Link
                                 href={WEB_LINKS.SHOP}
-                                className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-[#00c853] px-7 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(0,200,83,0.9)]"
+                                className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-[#13ec37] px-7 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgba(0,200,83,0.9)]"
                             >
                                 {w.home.shopNow}
                                 <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
@@ -361,7 +361,7 @@ export default function WebsiteHomePage() {
                                     className={cn(
                                         'inline-flex items-center justify-center rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00c853] focus-visible:ring-offset-1',
                                         activeCategory === cat
-                                            ? 'bg-[#00c853] text-[#06200f] shadow-[0_12px_24px_-14px_rgba(0,200,83,0.75)]'
+                                            ? 'bg-[#13ec37] text-[#06200f] shadow-[0_12px_24px_-14px_rgba(0,200,83,0.75)]'
                                             : 'text-[#475467] hover:bg-white hover:text-[#111827] dark:text-[#9ca3af] dark:hover:bg-white/10 dark:hover:text-white',
                                     )}
                                 >
@@ -449,7 +449,7 @@ export default function WebsiteHomePage() {
                     </p>
                     <Link
                         href={WEB_LINKS.SHOP}
-                        className="mt-8 inline-flex h-13 items-center justify-center rounded-full bg-[#00c853] px-8 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-14px_rgba(0,200,83,0.85)]"
+                        className="mt-8 inline-flex h-13 items-center justify-center rounded-full bg-[#13ec37] px-8 text-[12px] font-black uppercase tracking-[0.14em] text-[#06200f] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-14px_rgba(0,200,83,0.85)]"
                     >
                         {w.home.claimOffer}
                     </Link>

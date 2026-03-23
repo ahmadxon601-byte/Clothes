@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
 import { fetchProducts, fetchCategories, type ApiProduct, type ApiCategory } from '../../../src/lib/apiClient';
@@ -20,8 +20,11 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
     const [search, setSearch] = useState('');
-    const [activeCat, setActiveCat] = useState('');
+    const [activeParentCat, setActiveParentCat] = useState('');
+    const [activeSubCat, setActiveSubCat] = useState('');
     const [loading, setLoading] = useState(true);
+    const parentCategories = useMemo(() => categories.filter(cat => !cat.parent_id), [categories]);
+    const subcategories = useMemo(() => categories.filter(cat => cat.parent_id === activeParentCat), [categories, activeParentCat]);
 
     const [filterOpen, setFilterOpen] = useState(false);
     const [sort, setSort] = useState<SortType>('newest');
@@ -60,11 +63,11 @@ export default function ProductsPage() {
 
     const triggerFetch = useCallback((immediate = false) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        const go = () => loadProducts({ search, category: activeCat, sort, minPrice, maxPrice, sizeFilter, onSale });
+        const go = () => loadProducts({ search, category: activeSubCat || (subcategories.length === 0 ? activeParentCat : ''), sort, minPrice, maxPrice, sizeFilter, onSale });
         if (immediate) go();
         else debounceRef.current = setTimeout(go, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, activeCat, sort, minPrice, maxPrice, sizeFilter, onSale, loadProducts]);
+    }, [search, activeParentCat, activeSubCat, subcategories.length, sort, minPrice, maxPrice, sizeFilter, onSale, loadProducts]);
 
     useEffect(() => {
         fetchCategories().then(setCategories).catch(() => {});
@@ -107,7 +110,7 @@ export default function ProductsPage() {
                         className={cn(
                             'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
                             filterOpen || activeFilterCount > 0
-                                ? 'bg-[#00c853] border-[#00c853] text-white'
+                                ? 'bg-[#13ec37] border-[#13ec37] text-white'
                                 : 'bg-white dark:bg-[#1a1a1a] border-black/8 dark:border-white/8 text-[#9ca3af] hover:border-[#00c853]/40'
                         )}
                     >
@@ -131,7 +134,7 @@ export default function ProductsPage() {
                                     <button key={opt.value} onClick={() => setSort(opt.value)}
                                         className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all',
                                             sort === opt.value
-                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
                                                 : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                                         )}>
                                         {opt.label}
@@ -161,7 +164,7 @@ export default function ProductsPage() {
                                     <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
                                         className={cn('w-11 h-11 rounded-xl text-[13px] font-bold border transition-all',
                                             sizeFilter === s
-                                                ? 'bg-[#00c853] text-white border-[#00c853]'
+                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
                                                 : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                                         )}>
                                         {s}
@@ -176,7 +179,7 @@ export default function ProductsPage() {
                                 <p className="text-[14px] font-semibold text-[#111111] dark:text-white">Faqat aksiyada</p>
                                 <button onClick={() => setOnSale(o => !o)}
                                     className={cn('w-11 h-6 rounded-full border transition-all relative',
-                                        onSale ? 'bg-[#00c853] border-[#00c853]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
+                                        onSale ? 'bg-[#13ec37] border-[#13ec37]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
                                     )}>
                                     <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all',
                                         onSale ? 'left-[calc(100%-22px)]' : 'left-0.5')} />
@@ -194,19 +197,35 @@ export default function ProductsPage() {
 
                 {/* Category chips */}
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
-                    <button onClick={() => setActiveCat('')}
+                    <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
                         className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                            !activeCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                            !activeParentCat && !activeSubCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                         )}>Barchasi</button>
-                    {categories.map(cat => (
-                        <button key={cat.id} onClick={() => setActiveCat(activeCat === cat.id ? '' : cat.id)}
+                    {parentCategories.map(cat => (
+                        <button key={cat.id} onClick={() => {
+                            const nextParent = activeParentCat === cat.id ? '' : cat.id;
+                            setActiveParentCat(nextParent);
+                            setActiveSubCat('');
+                        }}
                             className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                                activeCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                activeParentCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                             )}>
                             {cat.name}
                         </button>
                     ))}
                 </div>
+                {activeParentCat && subcategories.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
+                        {subcategories.map(cat => (
+                            <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)}
+                                className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                                    activeSubCat === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37]' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                )}>
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Products grid */}
                 {loading ? (

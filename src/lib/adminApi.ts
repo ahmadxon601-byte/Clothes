@@ -80,16 +80,26 @@ const paged = <T extends z.ZodTypeAny>(key: string, item: T) =>
 
 export const adminApi = {
   getMe: (signal?: AbortSignal) => request<AdminUser>('/api/auth/me', { signal }, adminUserSchema),
+  checkTelegramAccess: (initData: string) =>
+    request<{ username: string; role: 'admin' | 'superadmin'; telegram_id: number }>(
+      '/api/auth/admin-telegram-access',
+      { method: 'POST', body: JSON.stringify({ initData }) },
+      z.object({
+        username: z.string(),
+        role: z.enum(['admin', 'superadmin']),
+        telegram_id: z.number(),
+      })
+    ),
   login: (email: string, password: string) =>
     request(
       '/api/auth/login',
       { method: 'POST', body: JSON.stringify({ email, password }) },
       z.object({ token: z.string(), user: adminUserSchema })
     ),
-  adminLogin: (login: string, password: string) =>
+  adminLogin: (login: string, password: string, initData?: string) =>
     request(
       '/api/auth/admin-login',
-      { method: 'POST', body: JSON.stringify({ login, password }) },
+      { method: 'POST', body: JSON.stringify({ login, password, initData }) },
       z.object({ token: z.string(), user: adminUserSchema })
     ),
   updateProfile: (name: string) =>
@@ -132,9 +142,9 @@ export const adminApi = {
 
   getAuditLogs: (params: QueryParams) => request<{ logs: AuditLog[]; pagination: Pagination }>('/api/admin/audit-logs?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('logs', auditLogSchema)),
 
-  createCategory: (payload: { name: string; name_uz?: string; name_ru?: string; name_en?: string; slug: string }) =>
+  createCategory: (payload: { name: string; name_uz?: string; name_ru?: string; name_en?: string; slug: string; parent_id?: string | null }) =>
     request('/api/admin/categories', { method: 'POST', body: JSON.stringify(payload) }),
-  updateCategory: (id: string, payload: { name?: string; name_uz?: string; name_ru?: string; name_en?: string; slug?: string }) =>
+  updateCategory: (id: string, payload: { name?: string; name_uz?: string; name_ru?: string; name_en?: string; slug?: string; parent_id?: string | null }) =>
     request(`/api/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteCategory: (id: string) =>
     request(`/api/admin/categories/${id}`, { method: 'DELETE' }),

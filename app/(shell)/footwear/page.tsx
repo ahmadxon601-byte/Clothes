@@ -42,7 +42,7 @@ export default function FootwearPage() {
             {products.length === 0 ? (
                 <div className="py-24 text-center">
                     <p className="text-[#9ca3af] text-[15px]">{w.footwearPage.empty}</p>
-                    <Link href="/shop" className="mt-6 inline-flex h-11 items-center rounded-full bg-[#111111] px-7 text-[11px] font-black uppercase tracking-[0.14em] text-white hover:bg-[#00c853] hover:text-[#06200f] transition-all">
+                    <Link href="/shop" className="mt-6 inline-flex h-11 items-center rounded-full bg-[#111111] px-7 text-[11px] font-black uppercase tracking-[0.14em] text-white hover:bg-[#13ec37] hover:text-[#06200f] transition-all">
                         {w.footwearPage.browseAll}
                     </Link>
                 </div>

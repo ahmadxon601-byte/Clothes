@@ -14,10 +14,7 @@ export function useSSERefetch(watchTypes: string[], refetch: () => void) {
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
 
-    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const sseUrl = isLocalHost
-      ? `${window.location.protocol}//${window.location.hostname}:3001/api/events`
-      : '/api/events';
+    const sseUrl = '/api/events';
 
     const connect = () => {
       if (disposed) return;

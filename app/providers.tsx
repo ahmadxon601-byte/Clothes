@@ -16,10 +16,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const handleWindowError = (event: ErrorEvent) => {
-                const message = String(event?.message ?? '');
-                const eventAsString = String((event as unknown as { error?: unknown })?.error ?? '');
-                if (message === '[object Event]' || eventAsString === '[object Event]') {
+            const handleWindowError = (event: Event) => {
+                const maybeErrorEvent = event as ErrorEvent & { error?: unknown };
+                const message = String(maybeErrorEvent?.message ?? '');
+                const rawError = maybeErrorEvent?.error;
+                const eventAsString = String(rawError ?? '');
+                const target = (event as { target?: EventTarget | null }).target;
+                const isDomEventObject =
+                    typeof rawError === 'object' &&
+                    rawError !== null &&
+                    typeof (rawError as Event).type === 'string';
+                const isScriptLoadEvent =
+                    event.type === 'error' &&
+                    target instanceof HTMLScriptElement;
+
+                if (message === '[object Event]' || eventAsString === '[object Event]' || isDomEventObject || isScriptLoadEvent) {
                     event.preventDefault();
                 }
             };

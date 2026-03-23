@@ -13,6 +13,7 @@ import {
   Globe,
   LayoutDashboard,
   Menu,
+  MessageCircleMore,
   Moon,
   Package,
   Settings,
@@ -20,6 +21,7 @@ import {
   ShoppingBag,
   Store,
   Sun,
+  LogOut,
   Users,
   X,
 } from 'lucide-react';
@@ -48,7 +50,9 @@ const primaryNav: NavItem[] = [
 const moreNav: NavItem[] = [
   { href: '/admin/admins', labelKey: 'nav.admins', icon: Shield },
   { href: '/admin/categories', labelKey: 'nav.categories', icon: Boxes },
+  { href: '/admin/subcategories', labelKey: 'nav.subcategories', icon: Package },
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
+  { href: '/admin/support', labelKey: 'nav.support', icon: MessageCircleMore },
   { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
   { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
@@ -176,7 +180,8 @@ export function AdminShell({ title, children, actions }: { title: string; childr
     if (pathname.includes('/products')) return t('dashboard.subtitle');
     if (pathname.includes('/applications')) return t('applications.subtitle');
     if (pathname.includes('/shops')) return t('stores.title');
-    return 'Clothes MP admin workspace';
+    if (pathname.includes('/support')) return 'Support chat';
+    return 'Qulaymarket admin workspace';
   }, [pathname, t]);
 
   if (loading) {
@@ -194,7 +199,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
       {/* Sidebar — md+ dan doim ko'rinadi */}
       <aside className='fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 min-[1000px]:flex'>
         <div className='mb-4 rounded-2xl bg-[var(--admin-pill)] p-3'>
-          <p className='text-xl font-extrabold'>Clothes MP</p>
+          <p className='text-xl font-extrabold'>Qulaymarket</p>
           <p className='text-xs text-[var(--admin-muted)]'>Admin Panel</p>
         </div>
         <div className='flex-1 space-y-1 overflow-y-auto pr-1'>
@@ -214,8 +219,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
             logout();
             router.replace('/admin/login');
           }}
-          className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50'
+          className='mt-4 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
         >
+          <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
+            <LogOut className='size-4' />
+          </span>
           {t('layout.logout')}
         </button>
       </aside>
@@ -239,7 +247,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
               className='fixed inset-y-0 left-0 z-[61] flex w-[260px] flex-col border-r border-[var(--admin-border)] bg-[var(--admin-card)] p-4 min-[1000px]:hidden'
             >
               <div className='mb-4 flex items-center justify-between'>
-                <p className='text-lg font-bold'>Clothes MP</p>
+                <p className='text-lg font-bold'>Qulaymarket</p>
                 <button data-admin-nav='true' onClick={() => setDrawerOpen(false)} className='rounded-xl border border-[var(--admin-border)] p-2'>
                   <X className='size-4' />
                 </button>
@@ -259,8 +267,11 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                   logout();
                   router.replace('/admin/login');
                 }}
-                className='mt-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400'
+                className='mt-4 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
               >
+                <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
+                  <LogOut className='size-4' />
+                </span>
                 {t('layout.logout')}
               </button>
             </motion.aside>

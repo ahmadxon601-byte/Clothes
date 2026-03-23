@@ -4,13 +4,17 @@ import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
 import { generateAccessKey } from "@/src/lib/accessKey";
+import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
 
 export async function GET(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
+    const accessKeySupported = await hasAccessKeyColumn();
 
     const result = await query(
-      "SELECT id, name, email, role, phone, telegram_id, created_at, access_key FROM users WHERE id = $1",
+      `SELECT id, name, email, role, phone, telegram_id, created_at${
+        accessKeySupported ? ", access_key" : ", NULL::text AS access_key"
+      } FROM users WHERE id = $1`,
       [jwtUser.userId]
     );
 
@@ -21,7 +25,7 @@ export async function GET(req: NextRequest) {
     const user = result.rows[0];
 
     // Lazily generate access_key for existing users
-    if (!user.access_key) {
+    if (accessKeySupported && !user.access_key) {
       const key = generateAccessKey();
       await query("UPDATE users SET access_key = $1 WHERE id = $2", [key, user.id]);
       user.access_key = key;

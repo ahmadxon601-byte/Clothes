@@ -20,7 +20,8 @@ export type AdminEventPayload =
   | { type: "stores"; action: "created" | "updated" | "deleted" }
   | { type: "categories"; action: "created" | "updated" | "deleted" }
   | { type: "banners"; action: "created" | "updated" | "deleted" }
-  | { type: "orders"; action: "created" | "updated" };
+  | { type: "orders"; action: "created" | "updated" }
+  | { type: "support"; action: "updated" };
 
 export function emitAdminEvent(payload: AdminEventPayload): void {
   adminEvents.emit("event", payload);

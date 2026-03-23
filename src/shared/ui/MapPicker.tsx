@@ -33,7 +33,7 @@ export function MapPicker({ value, onChange, height = '220px' }: MapPickerProps)
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=uz`,
-                { headers: { 'User-Agent': 'ClothesMarketplace/1.0' } }
+                { headers: { 'User-Agent': 'QulaymarketUz/1.0' } }
             );
             const data = await res.json();
             const parts = [

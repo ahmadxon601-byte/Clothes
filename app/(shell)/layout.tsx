@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Facebook, Globe, Heart, Instagram, Moon, Package, Search, Sun, User, Youtube, LogIn, UserPlus, Store } from 'lucide-react';
+import { Globe, Heart, Moon, Package, Search, Sun, User, LogIn, UserPlus, Store } from 'lucide-react';
 import { BottomNav } from '../../src/shared/ui/BottomNav';
 import { ToastProvider } from '../../src/shared/ui/Toast';
 import { AppHeader, hasUnifiedHeader } from '../../src/shared/ui/AppHeader';
 import { AuthModal } from '../../src/shared/ui/AuthModal';
+import { SupportChatModal } from '../../src/shared/ui/SupportChatModal';
 import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
 import { usePathname } from 'next/navigation';
 import { cn } from '../../src/shared/lib/utils';
@@ -24,6 +25,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const [langOpen, setLangOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({ open: false, tab: 'login' });
+    const [supportOpen, setSupportOpen] = useState(false);
     const langRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const isDark = settings.themeMode === 'dark';
@@ -51,6 +53,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             SHOPS: '/shops',
             CLOTHING: '/clothing',
             FOOTWEAR: '/footwear',
+            PRODUCTS: '/products',
+            SETTINGS: '/settings',
             STORE_APPLY: '/open-store',
             MY_STORE: '/my-store',
             SEARCH: '/clothing',
@@ -72,9 +76,20 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         const langOptions: WebLanguage[] = ['uz', 'ru', 'en'];
         const langLabels: Record<WebLanguage, string> = { uz: "O'zbek", en: 'English', ru: 'Русский' };
 
-        const footerGroups = [
-            { title: w.footer.about, items: [{ href: WEB_LINKS.HOME, label: w.footer.aboutClothes }, { href: WEB_LINKS.SHOPS, label: w.footer.ourStory }, { href: WEB_LINKS.SHOPS, label: w.footer.careers }] },
-            { title: w.footer.customerService, items: [{ href: WEB_LINKS.SHOPS, label: w.footer.helpCenter }, { href: WEB_LINKS.SHOPS, label: w.footer.shipping }, { href: WEB_LINKS.SHOPS, label: w.footer.returns }] },
+        type FooterItem = {
+            label: string;
+            href?: string;
+            onClick?: () => void;
+        };
+
+        type FooterGroup = {
+            title: string;
+            items: FooterItem[];
+        };
+
+        const footerGroups: FooterGroup[] = [
+            { title: w.footer.about, items: [{ href: WEB_LINKS.HOME, label: w.footer.aboutBrand }, { href: WEB_LINKS.SHOPS, label: w.footer.ourStory }, { href: WEB_LINKS.STORE_APPLY, label: w.footer.careers }] },
+            { title: w.footer.customerService, items: [{ label: w.footer.helpCenter, onClick: () => setSupportOpen(true) }] },
             { title: w.footer.categories, items: [{ href: WEB_LINKS.CLOTHING, label: w.footer.men }, { href: WEB_LINKS.CLOTHING, label: w.footer.women }, { href: WEB_LINKS.FOOTWEAR, label: w.footer.shoes }] },
         ];
 
@@ -88,10 +103,18 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     onClose={() => setAuthModal({ open: false, tab: 'login' })}
                     defaultTab={authModal.tab}
                 />
+                <SupportChatModal
+                    open={supportOpen}
+                    onClose={() => setSupportOpen(false)}
+                    onRequireAuth={() => {
+                        setSupportOpen(false);
+                        setAuthModal({ open: true, tab: 'login' });
+                    }}
+                />
                 <header className="sticky top-0 z-30 border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-[#111111]/80">
                     <div className="mx-auto flex h-[72px] w-full max-w-[1280px] items-center justify-between px-4 md:h-[84px]">
                         <Link href={WEB_LINKS.HOME} className="text-[24px] font-black leading-none tracking-tight text-[#111111] dark:text-white md:text-[30px]">
-                            Clothes<span className="text-[#00c853]">.</span>
+                            Qulaymarket
                         </Link>
                         <nav className="hidden items-center gap-8 lg:flex">
                             {links.map((link) => {
@@ -227,7 +250,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     </button>
                                     <button
                                         onClick={() => setAuthModal({ open: true, tab: 'register' })}
-                                        className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#00c853] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
+                                        className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#13ec37] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
                                     >
                                         <UserPlus size={13} />
                                         Ro&apos;yxat
@@ -268,20 +291,26 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-14">
                         <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
                             <div>
-                                <h3 className="text-[30px] font-black tracking-tight">Clothes<span className="text-[#00c853]">.</span></h3>
+                                <h3 className="text-[30px] font-black tracking-tight">Qulaymarket</h3>
                                 <p className="mt-3 max-w-sm text-[14px] leading-7 text-[#6b7280] dark:text-[#9ca3af]">{w.footer.desc}</p>
-                                <div className="mt-5 flex items-center gap-2 text-[#6b7280] dark:text-[#9ca3af]">
-                                    <button className="rounded-full border border-black/10 p-2 transition-colors hover:border-[#00c853]/40 hover:text-[#111111] dark:border-white/15 dark:hover:text-white"><Instagram size={16} /></button>
-                                    <button className="rounded-full border border-black/10 p-2 transition-colors hover:border-[#00c853]/40 hover:text-[#111111] dark:border-white/15 dark:hover:text-white"><Facebook size={16} /></button>
-                                    <button className="rounded-full border border-black/10 p-2 transition-colors hover:border-[#00c853]/40 hover:text-[#111111] dark:border-white/15 dark:hover:text-white"><Youtube size={16} /></button>
-                                </div>
                             </div>
                             {footerGroups.map((group) => (
                                 <div key={group.title}>
                                     <h4 className="text-[14px] font-bold uppercase tracking-[0.1em] text-[#111111] dark:text-white">{group.title}</h4>
                                     <div className="mt-4 space-y-3">
                                         {group.items.map((item) => (
-                                            <Link key={`${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">{item.label}</Link>
+                                            item.href ? (
+                                                <Link key={`${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">{item.label}</Link>
+                                            ) : (
+                                                <button
+                                                    key={`${group.title}-${item.label}`}
+                                                    type='button'
+                                                    onClick={item.onClick}
+                                                    className='block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white'
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            )
                                         ))}
                                     </div>
                                 </div>

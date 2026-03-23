@@ -16,14 +16,14 @@ const defaultSellerProducts: SellerProduct[] = mockProducts.map((item, index) =>
 const defaultPromotions: SellerPromotion[] = [
   {
     id: "promo-1",
-    title: "New User Discount",
+    title: "Yangi mijoz chegirmasi",
     code: "WELCOME10",
     discountPercent: 10,
     active: true
   },
   {
     id: "promo-2",
-    title: "Weekend Flash",
+    title: "Hafta oxiri aksiyasi",
     code: "FLASH15",
     discountPercent: 15,
     active: false
@@ -31,7 +31,7 @@ const defaultPromotions: SellerPromotion[] = [
 ];
 
 const defaultSettings: SellerSettings = {
-  shopName: "Clothes Seller Studio",
+  shopName: "Qulaymarket Seller Studio",
   supportPhone: "+998 90 111 22 33",
   autoConfirmOrders: false
 };

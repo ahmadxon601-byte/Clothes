@@ -3,6 +3,8 @@ import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
+import { getProductReviewSupport } from "@/src/lib/productReview";
+import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -46,11 +48,40 @@ const PRODUCT_DETAIL_SQL = `
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const viewer = getUser(req);
+    const reviewSupport = await getProductReviewSupport();
 
-    // increment views (fire-and-forget)
-    query("UPDATE products SET views = views + 1 WHERE id = $1", [id]).catch(
-      () => {}
-    );
+    if (!viewer) {
+      const visibleResult = await query(
+        `SELECT id FROM products
+         WHERE id = $1
+           AND is_active = TRUE
+           ${reviewSupport.hasReviewStatus ? "AND review_status = 'approved'" : ""}`,
+        [id]
+      );
+      if (visibleResult.rows.length === 0) return fail("Product not found", 404);
+    } else if (viewer.role !== "admin") {
+      const visibleResult = await query(
+        `SELECT p.id
+         FROM products p
+         LEFT JOIN stores st ON st.id = p.store_id
+         WHERE p.id = $1
+           AND (
+             (p.is_active = TRUE ${reviewSupport.hasReviewStatus ? "AND p.review_status = 'approved'" : ""})
+             OR st.owner_id = $2
+           )`,
+        [id, viewer.userId]
+      );
+      if (visibleResult.rows.length === 0) return fail("Product not found", 404);
+    }
+
+    query(
+      `UPDATE products SET views = views + 1
+       WHERE id = $1
+         AND is_active = TRUE
+         ${reviewSupport.hasReviewStatus ? "AND review_status = 'approved'" : ""}`,
+      [id]
+    ).catch(() => {});
 
     const result = await query(PRODUCT_DETAIL_SQL, [id]);
     if (result.rows.length === 0) return fail("Product not found", 404);
@@ -93,16 +124,22 @@ export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const jwtUser = requireRole(req, "seller", "admin");
     const { id } = await params;
+    const reviewSupport = await getProductReviewSupport();
 
-    // Ownership check for sellers
+    let existingProduct:
+      | { id: string; sku: string; review_status?: string | null }
+      | null = null;
+
     if (jwtUser.role === "seller") {
       const own = await query(
-        `SELECT p.id FROM products p
+        `SELECT p.id, p.sku, p.name${reviewSupport.hasReviewStatus ? ", p.review_status" : ""}
+         FROM products p
          JOIN stores st ON st.id = p.store_id
          WHERE p.id = $1 AND st.owner_id = $2`,
         [id, jwtUser.userId]
       );
       if (own.rows.length === 0) return fail("Forbidden", 403);
+      existingProduct = own.rows[0] as { id: string; sku: string; name?: string; review_status?: string | null };
     }
 
     const body = await req.json();
@@ -111,13 +148,69 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     const { images, variants, ...rest } = parsed.data;
 
+    const sellerChangedData =
+      images !== undefined ||
+      variants !== undefined ||
+      Object.entries(rest).some(([key, val]) => key !== "is_active" && val !== undefined);
+
+    if (
+      jwtUser.role === "seller" &&
+      sellerChangedData &&
+      reviewSupport.hasPendingUpdatePayload &&
+      (existingProduct?.review_status ?? "approved") === "approved"
+    ) {
+      const pendingPayload: Record<string, unknown> & {
+        name?: string;
+        base_price?: number;
+      } = {
+        ...Object.fromEntries(Object.entries(rest).filter(([, val]) => val !== undefined && val !== null)),
+        ...(Object.entries(rest).some(([, val]) => val === null) ? Object.fromEntries(Object.entries(rest).filter(([, val]) => val === null)) : {}),
+        ...(images !== undefined ? { images } : {}),
+        ...(variants !== undefined ? { variants } : {}),
+      };
+
+      await query(
+        `UPDATE products
+         SET pending_update_payload = $1::jsonb,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify(pendingPayload), id]
+      );
+
+      emitAdminEvent({ type: "products", action: "updated" });
+      await notifyAdminsViaTelegram({
+        text:
+          `Mahsulot o'zgarishi ko'rib chiqishga yuborildi.\n\n` +
+          `Mahsulot: ${(existingProduct as { name?: string } | null)?.name || id}\n` +
+          `${pendingPayload.name ? `Yangi nom: ${String(pendingPayload.name)}\n` : ""}` +
+          `${pendingPayload.base_price ? `Yangi narx: ${Number(pendingPayload.base_price).toLocaleString()} UZS\n` : ""}` +
+          `Holat: Kutilmoqda`,
+        route: "/admin/products",
+      });
+      return ok({ message: "Product update request submitted for admin approval" });
+    }
+
     const fields: string[] = [];
     const vals: unknown[] = [];
 
     for (const [key, val] of Object.entries(rest)) {
       if (val === undefined) continue;
+      if (jwtUser.role === "seller" && key === "is_active") continue;
       vals.push(val);
       fields.push(`${key} = $${vals.length}`);
+    }
+
+    if (
+      jwtUser.role === "seller" &&
+      sellerChangedData
+    ) {
+      if (reviewSupport.hasReviewStatus) {
+        fields.push(`review_status = 'pending'`);
+        fields.push(`is_active = FALSE`);
+      }
+      if (reviewSupport.hasReviewNote) {
+        fields.push(`review_note = NULL`);
+      }
     }
 
     const client = await pool.connect();
@@ -152,7 +245,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
       if (variants !== undefined) {
         await client.query("DELETE FROM product_variants WHERE product_id = $1", [id]);
-        const sku = (product as { sku?: string }).sku ?? "PRD";
+        const sku = (product as { sku?: string }).sku ?? existingProduct?.sku ?? "PRD";
         for (const v of variants) {
           const vSku = genVariantSku(sku, v.size, v.color);
           await client.query(

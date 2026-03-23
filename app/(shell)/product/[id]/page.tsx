@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, MapPin, Package, Store } from 'lucide-react';
+import { RichTextContent } from '../../../../src/shared/ui/RichTextContent';
+import { getVariantMeta, getDepartmentBySlug } from '../../../../src/shared/lib/productCategoryMeta';
 
 interface ProductImage {
   id: string;
@@ -30,6 +32,7 @@ interface ProductDetail {
   created_at: string;
   category_id: string | null;
   category_name: string | null;
+  category_slug?: string | null;
   store_id: string;
   store_name: string;
   store_address?: string | null;
@@ -78,6 +81,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   }, [variants, selectedSize, selectedColor]);
   const displayPrice = selectedVariant ? selectedVariant.price : product?.base_price ?? 0;
   const storeAddress = (product?.store_address || '').replace(/\s*Coordinates:.*$/i, '').trim();
+  const variantLabel = getVariantMeta(getDepartmentBySlug(product?.category_slug ?? null)).label;
 
   useEffect(() => {
     fetch(`/api/products/${id}`)
@@ -206,13 +210,18 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               )}
             </div>
 
-            {product.description && <p className="mt-4 text-[14px] leading-relaxed text-[#6b7280]">{product.description}</p>}
+            {product.description && (
+              <RichTextContent
+                html={product.description}
+                className="mt-4 text-[14px] leading-relaxed text-[#6b7280] [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:ml-5 [&_ul]:list-disc"
+              />
+            )}
 
             {variants.length > 0 && (
               <div className="mt-6 space-y-4 rounded-2xl border border-black/8 bg-[#fafafa] p-4 dark:border-white/10 dark:bg-[#111111]">
                 {sizeOptions.length > 0 && (
                   <div>
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">O&apos;lcham</p>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{variantLabel}</p>
                     <div className="flex flex-wrap gap-2">
                       {sizeOptions.map((size) => (
                         <button

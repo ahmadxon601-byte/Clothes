@@ -113,7 +113,7 @@ export default function ShopsPage() {
             <StoreIcon size={42} className="mx-auto mb-4 text-[#d1d5db]" />
             <p className="text-[15px] text-[#9ca3af]">{w.shops.none}</p>
             {search && (
-              <button onClick={() => setSearch('')} className="mt-5 inline-flex h-10 items-center rounded-full bg-[#111111] px-6 text-[11px] font-black uppercase tracking-[0.14em] text-white hover:bg-[#00c853] hover:text-[#06200f] transition-all">
+              <button onClick={() => setSearch('')} className="mt-5 inline-flex h-10 items-center rounded-full bg-[#111111] px-6 text-[11px] font-black uppercase tracking-[0.14em] text-white hover:bg-[#13ec37] hover:text-[#06200f] transition-all">
                 {w.shops.clear}
               </button>
             )}
@@ -138,7 +138,7 @@ export default function ShopsPage() {
                       {store.product_count} {w.shops.items}
                     </span>
                   )}
-                  <div className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white opacity-0 shadow-lg transition-all duration-300 group-hover:opacity-100 group-hover:bg-[#00c853]">
+                  <div className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white opacity-0 shadow-lg transition-all duration-300 group-hover:opacity-100 group-hover:bg-[#13ec37]">
                     <ArrowRight size={14} className="text-[#06200f]" />
                   </div>
                 </div>

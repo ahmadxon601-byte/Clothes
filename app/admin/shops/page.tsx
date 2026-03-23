@@ -104,7 +104,7 @@ export default function ShopsPage() {
                     </TD>
                     <TD className="text-right">
                       <div className="inline-flex items-center gap-1.5">
-                        <button title="Ko'rish" onClick={() => setViewStore(item)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition hover:text-[var(--admin-muted)] hover:shadow-none">
+                        <button title="Ko'rish" onClick={() => setViewStore(item)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] shadow-none outline-none transition hover:bg-transparent hover:text-[var(--admin-muted)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">
                           <Eye size={14} />
                         </button>
                         <button title={item.is_active ? t('common.suspend') : t('common.activate')} onClick={() => toggleShop(item.id, item.is_active)} className="rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none">
