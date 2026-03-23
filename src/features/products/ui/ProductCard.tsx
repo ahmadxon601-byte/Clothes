@@ -65,7 +65,7 @@ export function ProductCard({
                 )}
             </div>
             <div className="mt-1.5 px-1">
-                <p className="text-[8.5px] text-[var(--color-hint)] font-medium uppercase tracking-wider mb-0.5">{product.brand || 'Luxury Wear'}</p>
+                <p className="text-[8.5px] text-[var(--color-hint)] font-medium uppercase tracking-wider mb-0.5">{product.brand || 'Qulaymarket Choice'}</p>
                 <h3 className="text-[12px] font-semibold text-[var(--color-text)] line-clamp-1">{product.title}</h3>
                 <div className="mt-0.5 flex items-center justify-between">
                     <div className="flex flex-col leading-tight">

@@ -25,40 +25,40 @@ const WEB_LINKS = {
 
 const CATEGORY_BANNERS = [
     {
-        title: 'Casual Wear',
-        subtitle: 'Relaxed essentials, premium fabrics',
+        title: 'Daily Picks',
+        subtitle: 'Popular products for everyday shopping',
         image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?q=80&w=1800&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'TRENDING',
+        badge: 'HOT',
         isFeatured: true,
     },
     {
-        title: 'Formal Wear',
-        subtitle: 'Sharp tailoring for elevated occasions',
+        title: 'New Arrivals',
+        subtitle: 'Fresh products with useful prices',
         image: 'https://images.unsplash.com/photo-1610652492500-ded49ceeb378?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
         badge: 'NEW',
     },
     {
-        title: 'Street Style',
-        subtitle: 'Bold city-inspired silhouettes',
+        title: 'Trending Now',
+        subtitle: 'Products customers choose most often',
         image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'URBAN',
+        badge: 'TOP',
     },
     {
-        title: 'Outerwear',
-        subtitle: 'Layer-ready pieces for every season',
+        title: 'Seasonal Offers',
+        subtitle: 'Selected options for the current season',
         image: 'https://images.unsplash.com/photo-1551232864-3f0890e580d9?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
         badge: 'EDIT',
     },
     {
         title: 'Accessories',
-        subtitle: 'The final touch for a polished look',
+        subtitle: 'Small details that complete the order',
         image: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1200&auto=format&fit=crop',
         href: WEB_LINKS.CATEGORIES,
-        badge: 'PREMIUM',
+        badge: 'PLUS',
     },
 ];
 
@@ -187,7 +187,7 @@ export default function WebsiteHomePage() {
             <section className="relative h-[74vh] min-h-[460px] w-full overflow-hidden md:h-[84vh] md:min-h-[520px] lg:h-[92vh] lg:min-h-[580px]">
                 <img
                     src="https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?q=80&w=2000&auto=format&fit=crop"
-                    alt="Premium fashion hero"
+                    alt="Qulaymarket hero"
                     className="absolute inset-0 h-full w-full scale-[1.02] object-cover object-top transition-transform duration-[8s] hover:scale-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 md:to-transparent" />

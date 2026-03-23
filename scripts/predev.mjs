@@ -1,7 +1,10 @@
 import { execSync } from "node:child_process";
+import { existsSync, rmSync } from "node:fs";
+import { join } from "node:path";
 
 const PORT = 3010;
 const isWindows = process.platform === "win32";
+const nextDir = join(process.cwd(), ".next");
 
 function getListeningPids(port) {
   try {
@@ -43,7 +46,12 @@ function stopPids(pids) {
 try {
   const pids = getListeningPids(PORT);
   if (pids.length) stopPids(pids);
-  console.log("[predev] keeping .next cache for faster dev startup");
+  if (existsSync(nextDir)) {
+    rmSync(nextDir, { recursive: true, force: true });
+    console.log("[predev] cleared .next to avoid stale manifest errors");
+  } else {
+    console.log("[predev] no .next directory to clear");
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.warn(`[predev] non-fatal setup issue: ${message}`);

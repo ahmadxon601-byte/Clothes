@@ -8,7 +8,7 @@ import { hasAccessKeyColumn } from "../../lib/accessKeySupport";
 export const registerTelegramHandlers = (bot: Bot): void => {
   const marketplaceButton = () => {
     const url = `${getMarketplaceUrl()}/tg-auth`;
-    return new InlineKeyboard().webApp("Do'konni ochish", url);
+    return new InlineKeyboard().webApp("Ilovani ochish", url);
   };
 
   const clearReplyKeyboard = () =>
@@ -62,7 +62,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
     await ctx.reply(
       `Assalomu alaykum ${ctx.from?.first_name || "foydalanuvchi"}.\n\n` +
-        `Qulaymarket.Uz'ga xush kelibsiz.\n\n` +
+        `Qulaymarket'ga xush kelibsiz.\n\n` +
         `Davom etish uchun:\n` +
         `• Telefon raqamingizni yuboring` +
         (accessKeySupported ? `\n• Yoki desktop profilingizdagi kalit so'zni yuboring` : ""),
@@ -139,7 +139,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
     await sendMarketplaceReady(
       ctx,
       `Akkountingiz tayyor, ${contact.first_name}.\n\n` +
-        `Endi pastdagi tugma orqali do'konni oching.\n` +
+        `Endi pastdagi tugma orqali ilovani oching.\n` +
         `Siz avtomatik tarzda tizimga kirasiz.`
     );
   });
@@ -201,7 +201,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
       await sendMarketplaceReady(
         ctx,
         `Muvaffaqiyatli. ${user.name} akkountiga ulandingiz.\n\n` +
-          `Endi pastdagi tugma orqali do'konni oching.`
+          `Endi pastdagi tugma orqali ilovani oching.`
       );
     } catch (err) {
       console.error("[bot] key login error:", err);

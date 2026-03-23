@@ -26,8 +26,8 @@ export async function notifySellerDecisionViaTelegram({
   const text =
     status === "approved"
       ? isUpdate
-        ? `Do'koningiz bo'yicha o'zgarishlar tasdiqlandi.\n\nDo'kon: ${storeName}\n\nMarketplace ichida yangilangan ma'lumotlarni ko'rishingiz mumkin.`
-        : `Tabriklaymiz! Do'koningiz tasdiqlandi.\n\nDo'kon: ${storeName}\n\nIshlaringizga omad. Marketplace ichida do'koningizni ochishingiz mumkin.`
+        ? `Do'koningiz bo'yicha o'zgarishlar tasdiqlandi.\n\nDo'kon: ${storeName}\n\nQulaymarket ichida yangilangan ma'lumotlarni ko'rishingiz mumkin.`
+        : `Tabriklaymiz! Do'koningiz tasdiqlandi.\n\nDo'kon: ${storeName}\n\nIshlaringizga omad. Qulaymarket ichida do'koningizni ochishingiz mumkin.`
       : `Do'kon arizangiz rad etildi.\n\nDo'kon: ${storeName}\n${cleanNote ? `\nRad etish sababi: ${cleanNote}\n` : "\nRad etish sababi ko'rsatilmagan.\n"}\nTuzatib, qayta ariza yuborishingiz mumkin.`;
 
   const keyboard =

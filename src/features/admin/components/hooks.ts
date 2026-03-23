@@ -27,6 +27,7 @@ export function useAdminSSE() {
       categories:      ['admin', 'categories'],
       banners:         ['admin', 'banners'],
       orders:          ['admin', 'orders'],
+      support:         ['admin', 'support'],
     };
 
     const connect = () => {

@@ -19,14 +19,14 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
 const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
 const FALLBACK_CATEGORIES: ApiCategory[] = [
-    { id: 'accessories', name: 'Accessories', name_uz: null, name_ru: null, name_en: 'Accessories', slug: 'accessories' },
-    { id: 'dresses', name: 'Dresses', name_uz: null, name_ru: null, name_en: 'Dresses', slug: 'dresses' },
-    { id: 'outerwear', name: 'Outerwear', name_uz: null, name_ru: null, name_en: 'Outerwear', slug: 'outerwear' },
-    { id: 'pants', name: 'Pants', name_uz: null, name_ru: null, name_en: 'Pants', slug: 'pants' },
-    { id: 'shirts', name: 'Shirts', name_uz: null, name_ru: null, name_en: 'Shirts', slug: 'shirts' },
-    { id: 'shoes', name: 'Shoes', name_uz: null, name_ru: null, name_en: 'Shoes', slug: 'shoes' },
-    { id: 'sportswear', name: 'Sportswear', name_uz: null, name_ru: null, name_en: 'Sportswear', slug: 'sportswear' },
-    { id: 'jackets', name: 'Jackets', name_uz: null, name_ru: null, name_en: 'Jackets', slug: 'jackets' },
+    { id: 'accessories', name: 'Aksessuarlar', name_uz: 'Aksessuarlar', name_ru: 'Аксессуары', name_en: 'Accessories', slug: 'accessories' },
+    { id: 'dresses', name: "Ko'ylaklar", name_uz: "Ko'ylaklar", name_ru: 'Платья', name_en: 'Dresses', slug: 'dresses' },
+    { id: 'outerwear', name: 'Ustki kiyim', name_uz: 'Ustki kiyim', name_ru: 'Верхняя одежда', name_en: 'Outerwear', slug: 'outerwear' },
+    { id: 'pants', name: 'Shimlar', name_uz: 'Shimlar', name_ru: 'Брюки', name_en: 'Pants', slug: 'pants' },
+    { id: 'shirts', name: "Ko'ylaklar", name_uz: "Ko'ylaklar", name_ru: 'Рубашки', name_en: 'Shirts', slug: 'shirts' },
+    { id: 'shoes', name: 'Poyabzal', name_uz: 'Poyabzal', name_ru: 'Обувь', name_en: 'Shoes', slug: 'shoes' },
+    { id: 'sportswear', name: 'Sport kiyimlari', name_uz: 'Sport kiyimlari', name_ru: 'Спортивная одежда', name_en: 'Sportswear', slug: 'sportswear' },
+    { id: 'jackets', name: 'Kurtkalar', name_uz: 'Kurtkalar', name_ru: 'Куртки', name_en: 'Jackets', slug: 'jackets' },
 ];
 
 function formatDateLabel(iso: string) {
