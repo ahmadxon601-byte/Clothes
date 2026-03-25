@@ -92,6 +92,27 @@ export async function POST(req: NextRequest) {
       return fail("End time must be after start time", 422);
     }
 
+    const existingCampaignResult = await query(
+      `
+      SELECT id
+      FROM daily_deal_campaigns
+      WHERE created_by = $1
+        AND title = $2
+        AND message = $3
+        AND starts_at = $4
+        AND ends_at = $5
+        AND status = 'active'
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [admin.userId, title, message, starts_at, ends_at]
+    );
+
+    const existingCampaignId = existingCampaignResult.rows[0]?.id as string | undefined;
+    if (existingCampaignId) {
+      return ok({ created: false, campaign_id: existingCampaignId, duplicate: true });
+    }
+
     const storesResult = store_ids?.length
       ? await query(
           `
