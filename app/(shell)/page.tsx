@@ -137,8 +137,10 @@ export default function WebsiteHomePage() {
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [heroBanner, setHeroBanner] = useState<HeroBanner | null>(null);
     const [dailyDealProducts, setDailyDealProducts] = useState<ApiProduct[]>([]);
+    const [dailyDealEndsAt, setDailyDealEndsAt] = useState<string | null>(null);
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
     const [authModal, setAuthModal] = useState(false);
+    const [countdownText, setCountdownText] = useState('00 : 00 : 00');
 
     const heroCopy = HERO_COPY[language] ?? HERO_COPY.uz;
     const sectionCopy = SECTION_COPY[language] ?? SECTION_COPY.uz;
@@ -153,8 +155,10 @@ export default function WebsiteHomePage() {
             const json = await res.json().catch(() => ({}));
             if (!res.ok) return;
             setDailyDealProducts(json?.data?.products ?? json?.products ?? []);
+            setDailyDealEndsAt(json?.data?.expires_at ?? json?.expires_at ?? null);
         } catch {
             setDailyDealProducts([]);
+            setDailyDealEndsAt(null);
         }
     }, []);
 
@@ -197,6 +201,26 @@ export default function WebsiteHomePage() {
         if (authLoading) return;
         void loadWishlist();
     }, [authLoading, loadWishlist, user]);
+
+    useEffect(() => {
+        const formatCountdown = (target: string | null) => {
+            if (!target) return '00 : 00 : 00';
+            const diff = new Date(target).getTime() - Date.now();
+            if (diff <= 0) return '00 : 00 : 00';
+            const totalSeconds = Math.floor(diff / 1000);
+            const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            return `${hours} : ${minutes} : ${seconds}`;
+        };
+
+        setCountdownText(formatCountdown(dailyDealEndsAt));
+        const timer = window.setInterval(() => {
+            setCountdownText(formatCountdown(dailyDealEndsAt));
+        }, 1000);
+
+        return () => window.clearInterval(timer);
+    }, [dailyDealEndsAt]);
 
     useSSERefetch(['products', 'banners', 'daily_deals'], () => {
         loadProducts();
@@ -366,7 +390,7 @@ export default function WebsiteHomePage() {
                             <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-black tracking-tight uppercase">{sectionCopy.dealsTitle}</h2>
                             <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#6b7280] shadow-[0_12px_36px_-28px_rgba(17,24,39,0.35)] dark:bg-white/10 dark:text-white/70">
                                 <Clock3 size={14} className="text-[#10be33]" />
-                                12 : 45 : 08
+                                {countdownText}
                             </div>
                         </div>
                         <Link
