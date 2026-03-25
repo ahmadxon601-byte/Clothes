@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check, Package } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
+import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 
 const MapDisplay = dynamic(
     () => import('../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
@@ -21,6 +22,7 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 
 export default function SiteProfilePage() {
     const { user, loading, storeStatus, refreshUser } = useWebAuth();
+    const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; is_read: boolean; created_at: string }>>([]);
     const [keyCopied, setKeyCopied] = useState(false);
     const [accessKey, setAccessKey] = useState<string | null>(null);
     const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({ open: false, tab: 'login' });
@@ -38,6 +40,15 @@ export default function SiteProfilePage() {
     const [pwdError, setPwdError] = useState('');
     const [pwdSuccess, setPwdSuccess] = useState('');
 
+    const loadNotifications = () => {
+        const token = getToken();
+        if (!token) return;
+        fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : null)
+            .then(json => setNotifications(json?.data ?? []))
+            .catch(() => {});
+    };
+
     useEffect(() => {
         if (user) {
             setEditName(user.name);
@@ -49,9 +60,14 @@ export default function SiteProfilePage() {
                     .then(r => r.ok ? r.json() : null)
                     .then(json => { if (json?.data?.access_key) setAccessKey(json.data.access_key); })
                     .catch(() => {});
+                loadNotifications();
             }
         }
     }, [user]);
+
+    useSSERefetch(['notifications', 'daily_deals'], () => {
+        loadNotifications();
+    });
 
     const initials = useMemo(() => {
         if (!user) return '?';
@@ -226,6 +242,20 @@ export default function SiteProfilePage() {
 
             {/* Store status block */}
             <div className="mt-5">
+                {notifications.length > 0 && (
+                    <div className="mb-5 rounded-3xl border border-black/10 bg-white p-5 dark:border-white/10 dark:bg-[#1a1a1a]">
+                        <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Bildirishnomalar</h2>
+                        <div className="mt-4 space-y-3">
+                            {notifications.slice(0, 3).map((item) => (
+                                <div key={item.id} className="rounded-2xl border border-black/8 bg-[#f8faf8] px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                                    <p className="text-[13px] font-bold text-[#111111] dark:text-white">{item.title}</p>
+                                    <p className="mt-1 text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{item.body}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {storeApproved && storeStatus?.status === 'approved' && (
                     <div className="rounded-3xl border border-[#00c853]/30 bg-[#f0faf4] p-5 dark:bg-[#0e2e1a] dark:border-[#00c853]/20">
                         <div className="flex items-center justify-between">

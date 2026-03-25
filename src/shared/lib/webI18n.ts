@@ -1,10 +1,11 @@
 'use client';
 
 import { useSettingsStore } from '../../features/settings/model';
+import { repairTextTree } from './repairText';
 
 export type WebLanguage = 'uz' | 'en' | 'ru';
 
-const CATEGORY_LABELS: Record<WebLanguage, Record<string, string>> = {
+const RAW_CATEGORY_LABELS: Record<WebLanguage, Record<string, string>> = {
     uz: {
         All: 'Barchasi',
         'All Clothing': 'Barcha Kiyimlar',
@@ -43,7 +44,7 @@ const CATEGORY_LABELS: Record<WebLanguage, Record<string, string>> = {
     },
 };
 
-const WEB_TRANSLATIONS = {
+const RAW_WEB_TRANSLATIONS = {
     uz: {
         navbar: {
             home: 'Bosh Sahifa',
@@ -501,6 +502,9 @@ const WEB_TRANSLATIONS = {
         },
     },
 } as const;
+
+const CATEGORY_LABELS = repairTextTree(RAW_CATEGORY_LABELS);
+const WEB_TRANSLATIONS = repairTextTree(RAW_WEB_TRANSLATIONS);
 
 export function useWebI18n() {
     const language = (useSettingsStore((s) => s.settings.language) || 'uz') as WebLanguage;

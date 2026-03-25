@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   Bell,
@@ -29,6 +30,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTheme } from 'next-themes';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useAdminI18n } from '../../context/AdminI18nContext';
+import { adminApi } from '../../lib/adminApi';
 import { cn } from '../../shared/lib/utils';
 import { useAdminSSE } from './components/hooks';
 
@@ -53,11 +55,12 @@ const moreNav: NavItem[] = [
   { href: '/admin/subcategories', labelKey: 'nav.subcategories', icon: Package },
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
   { href: '/admin/support', labelKey: 'nav.support', icon: MessageCircleMore },
+  { href: '/admin/daily-deals', labelKey: 'nav.dailyDeals', icon: Bell },
   { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
   { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
-function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
+function NavLink({ item, onClick, badgeCount = 0 }: { item: NavItem; onClick?: () => void; badgeCount?: number }) {
   const pathname = usePathname();
   const { t } = useAdminI18n();
   const active = pathname === item.href;
@@ -76,11 +79,16 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
     >
       <span
         className={cn(
-          'grid size-9 place-items-center rounded-xl border border-[var(--admin-border)] transition-colors',
+          'relative grid size-9 place-items-center rounded-xl border border-[var(--admin-border)] transition-colors',
           active ? 'bg-[var(--admin-accent)]/20 text-[var(--admin-accent)]' : 'bg-[var(--admin-card)]',
         )}
       >
         <Icon className='size-4' />
+        {badgeCount > 0 ? (
+          <span className='absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-[var(--admin-accent)] px-1 text-[9px] font-bold leading-4 text-white'>
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </span>
+        ) : null}
       </span>
       <span className='text-sm font-medium'>{t(item.labelKey)}</span>
     </Link>
@@ -169,6 +177,18 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const isSupportRoute = pathname.includes('/support');
+  const supportUnreadQuery = useQuery({
+    queryKey: ['admin', 'support', 'nav-unread'],
+    queryFn: async () => {
+      const result = await adminApi.get<{ conversations: Array<{ unread_count?: number }> }>('/api/admin/support');
+      const conversations = Array.isArray(result?.conversations) ? result.conversations : [];
+      return conversations.reduce((sum: number, item: { unread_count?: number }) => sum + (item.unread_count ?? 0), 0);
+    },
+    enabled: Boolean(user),
+    refetchInterval: 15000,
+  });
+  const supportUnreadCount = supportUnreadQuery.data ?? 0;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -202,30 +222,30 @@ export function AdminShell({ title, children, actions }: { title: string; childr
           <p className='text-xl font-extrabold'>Qulaymarket</p>
           <p className='text-xs text-[var(--admin-muted)]'>Admin Panel</p>
         </div>
-        <div className='flex-1 space-y-1 overflow-y-auto pr-1'>
+        <div className='admin-scrollbar flex-1 space-y-1 overflow-y-auto pr-1'>
           {primaryNav.map((item) => (
-            <NavLink key={item.href} item={item} />
+            <NavLink key={item.href} item={item} badgeCount={item.href === '/admin/support' ? supportUnreadCount : 0} />
           ))}
           <div className='my-2 h-px bg-[var(--admin-border)]' />
           {moreNav
             .filter((item) => !primaryNav.some((base) => base.href === item.href))
             .map((item) => (
-              <NavLink key={item.href} item={item} />
+              <NavLink key={item.href} item={item} badgeCount={item.href === '/admin/support' ? supportUnreadCount : 0} />
             ))}
+          <button
+            data-admin-nav='true'
+            onClick={() => {
+              logout();
+              router.replace('/admin/login');
+            }}
+            className='mt-4 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
+          >
+            <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
+              <LogOut className='size-4' />
+            </span>
+            {t('layout.logout')}
+          </button>
         </div>
-        <button
-          data-admin-nav='true'
-          onClick={() => {
-            logout();
-            router.replace('/admin/login');
-          }}
-          className='mt-4 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 dark:text-red-400'
-        >
-          <span className='grid size-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 transition-colors'>
-            <LogOut className='size-4' />
-          </span>
-          {t('layout.logout')}
-        </button>
       </aside>
 
       {/* Mobile drawer — faqat md dan kichik ekranlar uchun */}
@@ -252,13 +272,23 @@ export function AdminShell({ title, children, actions }: { title: string; childr
                   <X className='size-4' />
                 </button>
               </div>
-              <div className='flex-1 space-y-1 overflow-y-auto'>
+              <div className='admin-scrollbar flex-1 space-y-1 overflow-y-auto'>
                 {primaryNav.map((item) => (
-                  <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    onClick={() => setDrawerOpen(false)}
+                    badgeCount={item.href === '/admin/support' ? supportUnreadCount : 0}
+                  />
                 ))}
                 <div className='my-2 h-px bg-[var(--admin-border)]' />
                 {moreNav.map((item) => (
-                  <NavLink key={item.href} item={item} onClick={() => setDrawerOpen(false)} />
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    onClick={() => setDrawerOpen(false)}
+                    badgeCount={item.href === '/admin/support' ? supportUnreadCount : 0}
+                  />
                 ))}
               </div>
               <button
@@ -280,85 +310,89 @@ export function AdminShell({ title, children, actions }: { title: string; childr
       </AnimatePresence>
 
       <div className='min-[1000px]:pl-[260px]'>
-        <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur min-[1000px]:px-6'>
-          <button
-            data-admin-nav='true'
-            onClick={() => setDrawerOpen(true)}
-            className='rounded-xl border border-[var(--admin-border)] p-2 min-[1000px]:hidden'
-          >
-            <Menu className='size-4' />
-          </button>
-          <div className='min-w-0'>
-            <h1 className='truncate text-lg font-bold'>{title}</h1>
-            <p className='hidden text-xs text-[var(--admin-muted)] min-[1000px]:block'>{subtitle}</p>
-          </div>
-
-          <div className='ml-auto flex items-center gap-2'>
-            {actions}
-
-            {/* Language switcher */}
-            <div className='relative'>
-              <button
-                onClick={() => setLangOpen(!langOpen)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition hover:-translate-y-0.5',
-                  langOpen
-                    ? 'border-[var(--admin-accent)] text-[var(--admin-accent)]'
-                    : 'border-[var(--admin-border)] bg-[var(--admin-pill)] text-[var(--admin-muted)]',
-                )}
-              >
-                <Globe className='size-3.5' />
-                {locale.toUpperCase()}
-              </button>
-              <AnimatePresence>
-                {langOpen && (
-                  <>
-                    <div className='fixed inset-0 z-40' onClick={() => setLangOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className='absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] shadow-[var(--admin-shadow)]'
-                    >
-                      {(['uz', 'ru', 'en'] as const).map((lang) => (
-                        <button
-                          key={lang}
-                          onClick={() => {
-                            setLocale(lang);
-                            setLangOpen(false);
-                          }}
-                          className={cn(
-                            'w-full px-4 py-3 text-left text-sm font-medium transition-colors',
-                            locale === lang
-                              ? 'bg-[var(--admin-accent)] text-white'
-                              : 'text-[var(--admin-text)] hover:bg-[var(--admin-pill)]',
-                          )}
-                        >
-                          {t(`lang.${lang}`)}
-                        </button>
-                      ))}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
+        {!isSupportRoute ? (
+          <header className='sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/90 px-4 backdrop-blur min-[1000px]:px-6'>
+            <button
+              data-admin-nav='true'
+              onClick={() => setDrawerOpen(true)}
+              className='rounded-xl border border-[var(--admin-border)] p-2 min-[1000px]:hidden'
+            >
+              <Menu className='size-4' />
+            </button>
+            <div className='min-w-0'>
+              <h1 className='truncate text-lg font-bold'>{title}</h1>
+              <p className='hidden text-xs text-[var(--admin-muted)] min-[1000px]:block'>{subtitle}</p>
             </div>
 
-            {/* Theme toggle */}
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] p-2 transition hover:-translate-y-0.5'
-            >
-              {theme === 'dark' ? <Sun className='size-4' /> : <Moon className='size-4' />}
-            </button>
-          </div>
-        </header>
+            <div className='ml-auto flex items-center gap-2'>
+              {actions}
+
+              <div className='relative'>
+                <button
+                  onClick={() => setLangOpen(!langOpen)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition hover:-translate-y-0.5',
+                    langOpen
+                      ? 'border-[var(--admin-accent)] text-[var(--admin-accent)]'
+                      : 'border-[var(--admin-border)] bg-[var(--admin-pill)] text-[var(--admin-muted)]',
+                  )}
+                >
+                  <Globe className='size-3.5' />
+                  {locale.toUpperCase()}
+                </button>
+                <AnimatePresence>
+                  {langOpen && (
+                    <>
+                      <div className='fixed inset-0 z-40' onClick={() => setLangOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className='absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-card)] shadow-[var(--admin-shadow)]'
+                      >
+                        {(['uz', 'ru', 'en'] as const).map((lang) => (
+                          <button
+                            key={lang}
+                            onClick={() => {
+                              setLocale(lang);
+                              setLangOpen(false);
+                            }}
+                            className={cn(
+                              'w-full px-4 py-3 text-left text-sm font-medium transition-colors',
+                              locale === lang
+                                ? 'bg-[var(--admin-accent)] text-white'
+                                : 'text-[var(--admin-text)] hover:bg-[var(--admin-pill)]',
+                            )}
+                          >
+                            {t(`lang.${lang}`)}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] p-2 transition hover:-translate-y-0.5'
+              >
+                {theme === 'dark' ? <Sun className='size-4' /> : <Moon className='size-4' />}
+              </button>
+            </div>
+          </header>
+        ) : null}
 
         <motion.main
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className='px-4 pb-24 pt-4 min-[1000px]:px-6 min-[1000px]:pb-6'
+          className={cn(
+            isSupportRoute
+              ? 'h-screen overflow-hidden pb-0 pt-0'
+              : 'px-4 pb-24 pt-4 min-[1000px]:px-6 min-[1000px]:pb-6',
+          )}
         >
           {children}
         </motion.main>

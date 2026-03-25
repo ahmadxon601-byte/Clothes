@@ -1,6 +1,7 @@
 import { useSettingsStore } from '../../features/settings/model';
+import { repairTextTree } from './repairText';
 
-export const translations = {
+const rawTranslations = {
     uz: {
         search: 'Mahsulot qidirish...',
         all: 'Barchasi',
@@ -162,6 +163,23 @@ export const translations = {
         minimum_discount: 'Aksiya (kamida %)',
         and_more: 'va undan ko‘p',
         clear_filters: 'Filtrlarni tozalash',
+        stores_search_placeholder: "Do'kon qidirish...",
+        stores_not_found: "Do'konlar topilmadi",
+        items_count: '{count} ta mahsulot',
+        products_page_title: 'Mahsulotlar',
+        min: 'Min',
+        max: 'Max',
+        invalid_price: "To'g'ri narx kiriting",
+        authDesc: "Saqlangan mahsulotlarni ko'rish uchun kirish kerak",
+        emptyTitle: "Hali sevimlilar yo'q",
+        emptyDesc: 'Yoqqan mahsulotlarni saqlashni boshlang',
+        emptyAction: "Mahsulotlarni ko'rish",
+        searchPlaceholder: 'Sevimlilar ichida qidirish...',
+        product_not_found: 'Mahsulot topilmadi',
+        similar_products: "O'xshash mahsulotlar",
+        available_count: '{count} dona mavjud',
+        sold_out: 'Tugagan',
+        translating: 'Tarjima qilinmoqda...',
     },
     ru: {
         search: 'Поиск товаров...',
@@ -324,6 +342,23 @@ export const translations = {
         minimum_discount: 'Скидка (минимум %)',
         and_more: 'и больше',
         clear_filters: 'Очистить фильтры',
+        stores_search_placeholder: 'Поиск магазинов...',
+        stores_not_found: 'Магазины не найдены',
+        items_count: '{count} товаров',
+        products_page_title: 'Товары',
+        min: 'От',
+        max: 'До',
+        invalid_price: 'Введите корректную цену',
+        authDesc: 'Войдите, чтобы смотреть сохраненные товары',
+        emptyTitle: 'Избранного пока нет',
+        emptyDesc: 'Начните сохранять понравившиеся товары',
+        emptyAction: 'Смотреть товары',
+        searchPlaceholder: 'Поиск по избранному...',
+        product_not_found: 'Товар не найден',
+        similar_products: 'Похожие товары',
+        available_count: 'В наличии: {count} шт.',
+        sold_out: 'Нет в наличии',
+        translating: 'Переводим...',
     },
     en: {
         search: 'Search products...',
@@ -486,8 +521,27 @@ export const translations = {
         minimum_discount: 'Discount (minimum %)',
         and_more: 'and more',
         clear_filters: 'Clear filters',
+        stores_search_placeholder: 'Search shops...',
+        stores_not_found: 'No shops found',
+        items_count: '{count} items',
+        products_page_title: 'Products',
+        min: 'Min',
+        max: 'Max',
+        invalid_price: 'Enter a valid price',
+        authDesc: 'Sign in to view saved products',
+        emptyTitle: 'No favorites yet',
+        emptyDesc: 'Start saving products you like',
+        emptyAction: 'Browse products',
+        searchPlaceholder: 'Search in favorites...',
+        product_not_found: 'Product not found',
+        similar_products: 'Similar products',
+        available_count: '{count} in stock',
+        sold_out: 'Sold out',
+        translating: 'Translating...',
     },
 };
+
+export const translations = repairTextTree(rawTranslations);
 
 export type Language = keyof typeof translations;
 

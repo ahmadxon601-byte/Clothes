@@ -46,6 +46,20 @@ interface Category {
   parent_id?: string | null;
 }
 
+interface DailyDealInvite {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  store_id: string;
+  store_name: string;
+  campaign_id: string;
+  title: string;
+  message: string;
+  starts_at: string;
+  ends_at: string;
+  campaign_status: string;
+  selected_items: Array<{ product_id: string }>;
+}
+
 const getToken = () =>
   typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
 
@@ -63,6 +77,7 @@ export default function MyProductsPage() {
   });
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [dailyDealInvites, setDailyDealInvites] = useState<DailyDealInvite[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -97,6 +112,8 @@ export default function MyProductsPage() {
   const [formError, setFormError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [inviteSavingId, setInviteSavingId] = useState<string | null>(null);
+  const [inviteSelections, setInviteSelections] = useState<Record<string, string[]>>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState('');
   const [parentCategoryMenuOpen, setParentCategoryMenuOpen] = useState(false);
@@ -174,17 +191,67 @@ export default function MyProductsPage() {
     }
   };
 
+  const loadDailyDealInvites = async () => {
+    try {
+      const res = await fetch('/api/daily-deals/my-invites', { headers: authHeader() });
+      const json = await res.json().catch(() => ({}));
+      const invites = json.data?.invites ?? json.invites ?? [];
+      setDailyDealInvites(invites);
+      setInviteSelections((prev) => {
+        const next = { ...prev };
+        for (const invite of invites as DailyDealInvite[]) {
+          if (!next[invite.id]) {
+            next[invite.id] = Array.isArray(invite.selected_items) ? invite.selected_items.map((item) => item.product_id) : [];
+          }
+        }
+        return next;
+      });
+    } catch {
+      setDailyDealInvites([]);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadProducts();
       loadStores();
       loadCategories();
+      loadDailyDealInvites();
     } else if (!loading) {
       setFetching(false);
     }
   }, [user, loading]);
 
-  useSSERefetch(['products'], loadProducts);
+  useSSERefetch(['products', 'daily_deals'], () => {
+    loadProducts();
+    loadDailyDealInvites();
+  });
+
+  const respondToInvite = async (invite: DailyDealInvite, status: 'accepted' | 'rejected') => {
+    setFormError('');
+    setSuccessMessage('');
+    if (status === 'accepted' && !(inviteSelections[invite.id]?.length)) {
+      setFormError('Kunlik chegirma uchun kamida bitta mahsulot tanlang.');
+      return;
+    }
+
+    setInviteSavingId(invite.id);
+    try {
+      const res = await fetch(`/api/daily-deals/invites/${invite.id}`, {
+        method: 'PATCH',
+        headers: authHeader(),
+        body: JSON.stringify({ status, product_ids: inviteSelections[invite.id] ?? [] }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? 'Taklifga javob berib bo‘lmadi');
+      setSuccessMessage(status === 'accepted' ? 'Kunlik chegirmaga mahsulotlar yuborildi.' : 'Taklif rad etildi.');
+      loadDailyDealInvites();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Taklifga javob berib bo‘lmadi');
+    } finally {
+      setInviteSavingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!categories.length || !parentCategoryId) return;
@@ -466,6 +533,100 @@ export default function MyProductsPage() {
       {successMessage ? (
         <div className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
           {successMessage}
+        </div>
+      ) : null}
+
+      {dailyDealInvites.length > 0 ? (
+        <div className="mb-6 space-y-4">
+          {dailyDealInvites.map((invite) => {
+            const storeProducts = products.filter((product) => product.store_id === invite.store_id && product.review_status === 'approved');
+            const selectedIds = inviteSelections[invite.id] ?? [];
+
+            return (
+              <div key={invite.id} className="rounded-3xl border border-[#13ec37]/20 bg-[#effff2] p-5 dark:border-[#13ec37]/20 dark:bg-[#0f2012]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#0d8f2a]">Chegirma taklifi</p>
+                    <h2 className="mt-2 text-[20px] font-black text-[#111111] dark:text-white">{invite.title}</h2>
+                    <p className="mt-2 max-w-[70ch] text-[14px] text-[#46604c] dark:text-[#b7d7be]">{invite.message}</p>
+                    <p className="mt-2 text-[12px] text-[#46604c] dark:text-[#b7d7be]">
+                      {invite.store_name} · {new Date(invite.starts_at).toLocaleString()} - {new Date(invite.ends_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] ${invite.status === 'accepted' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : invite.status === 'rejected' ? 'bg-red-500/15 text-red-600 dark:text-red-300' : 'bg-white text-[#0d8f2a]'}`}>
+                    {invite.status}
+                  </span>
+                </div>
+
+                {invite.status === 'pending' ? (
+                  <>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {storeProducts.map((product) => {
+                        const checked = selectedIds.includes(product.id);
+                        return (
+                          <label key={product.id} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition-transform duration-200 hover:-translate-y-0.5 ${checked ? 'border-[#13ec37] bg-white dark:bg-[#16351d]' : 'border-[#13ec37]/15 bg-white/70 dark:bg-[#132417]'}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) =>
+                                setInviteSelections((prev) => ({
+                                  ...prev,
+                                  [invite.id]: e.target.checked
+                                    ? [...(prev[invite.id] ?? []), product.id]
+                                    : (prev[invite.id] ?? []).filter((id) => id !== product.id),
+                                }))
+                              }
+                            />
+                            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white dark:border-white/10 dark:bg-[#0d170f]">
+                              {product.thumbnail ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={product.thumbnail} alt={product.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="grid h-full w-full place-items-center text-[#13ec37]">
+                                  <Package size={18} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-bold text-[#111111] dark:text-white">{product.name}</p>
+                              <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{Number(product.sale_price ?? product.base_price).toLocaleString()} UZS</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {storeProducts.length === 0 ? (
+                      <div className="mt-4 rounded-2xl border border-dashed border-[#13ec37]/20 bg-white/60 px-4 py-5 text-[13px] text-[#46604c] dark:bg-[#132417] dark:text-[#b7d7be]">
+                        Bu do'konda hali tasdiqlangan mahsulot topilmadi. Avval mahsulot qo'shib, admin tasdig'idan o'tkazing.
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        onClick={() => respondToInvite(invite, 'accepted')}
+                        disabled={inviteSavingId === invite.id}
+                        className="inline-flex items-center gap-2 rounded-full bg-[#13ec37] px-5 py-2.5 text-[13px] font-bold text-[#06200f]"
+                      >
+                        {inviteSavingId === invite.id ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                        Qabul qilish
+                      </button>
+                      <button
+                        onClick={() => respondToInvite(invite, 'rejected')}
+                        disabled={inviteSavingId === invite.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-5 py-2.5 text-[13px] font-bold text-red-600 dark:bg-[#1a1a1a]"
+                      >
+                        Rad etish
+                      </button>
+                    </div>
+                  </>
+                ) : invite.status === 'accepted' ? (
+                  <p className="mt-4 text-[13px] font-semibold text-[#0d8f2a] dark:text-[#72f58a]">{selectedIds.length} ta mahsulot kunlik chegirmaga yuborilgan.</p>
+                ) : (
+                  <p className="mt-4 text-[13px] font-semibold text-red-600 dark:text-red-300">Bu taklif rad etilgan.</p>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : null}
 

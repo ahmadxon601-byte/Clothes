@@ -20,6 +20,8 @@ export type AdminEventPayload =
   | { type: "stores"; action: "created" | "updated" | "deleted" }
   | { type: "categories"; action: "created" | "updated" | "deleted" }
   | { type: "banners"; action: "created" | "updated" | "deleted" }
+  | { type: "daily_deals"; action: "created" | "updated" | "deleted" }
+  | { type: "notifications"; action: "created" | "updated" | "deleted" }
   | { type: "orders"; action: "created" | "updated" }
   | { type: "support"; action: "updated" };
 

@@ -11,7 +11,7 @@ export async function PATCH(
     const user = requireAuth(req);
     const { id } = await params;
     await query(
-      `UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2`,
+      `UPDATE notifications SET is_read = TRUE WHERE id::text = $1 AND user_id = $2`,
       [id, user.userId]
     );
     return ok({ updated: true });

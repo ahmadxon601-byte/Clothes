@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Headset, Loader2, MessageCircleMore, Send, ShieldCheck } from 'lucide-react';
+import { Loader2, MessageCircleMore, Plus, Send, Smile, UserRound } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { useWebAuth } from '../../context/WebAuthContext';
@@ -29,6 +29,13 @@ function getToken(): string | null {
     return localStorage.getItem('marketplace_token');
 }
 
+function formatMessageTime(value: string) {
+    return new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value));
+}
+
 export function SupportChatModal({
     open,
     onClose,
@@ -46,18 +53,19 @@ export function SupportChatModal({
     const [sending, setSending] = useState(false);
     const [draft, setDraft] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const copy = useMemo(() => {
         if (language === 'ru') {
             return {
                 title: 'Поддержка',
-                subtitle: 'Ответим по заказам, возвратам и работе магазина.',
-                empty: 'Напишите в поддержку, и администратор ответит в этом чате.',
+                subtitle: 'Чат с администратором магазина',
+                empty: 'Напишите в поддержку, и ответ появится здесь.',
                 placeholder: 'Напишите сообщение...',
                 send: 'Отправить',
-                loginTitle: 'Войдите, чтобы написать в поддержку',
+                loginTitle: 'Войдите, чтобы открыть чат поддержки',
                 loginAction: 'Войти',
-                admin: 'Поддержка',
+                admin: 'Support',
                 you: 'Вы',
                 loadError: 'Не удалось загрузить чат поддержки',
                 sendError: 'Не удалось отправить сообщение',
@@ -66,11 +74,11 @@ export function SupportChatModal({
         if (language === 'en') {
             return {
                 title: 'Support',
-                subtitle: 'Get help with orders, returns, and store issues.',
-                empty: 'Write to support and an admin will reply here.',
+                subtitle: 'Chat with store admin support',
+                empty: 'Write to support and the reply will appear here.',
                 placeholder: 'Type your message...',
                 send: 'Send',
-                loginTitle: 'Sign in to chat with support',
+                loginTitle: 'Sign in to open support chat',
                 loginAction: 'Sign in',
                 admin: 'Support',
                 you: 'You',
@@ -80,11 +88,11 @@ export function SupportChatModal({
         }
         return {
             title: 'Yordam markazi',
-            subtitle: 'Buyurtma, qaytarish va do‘kon bo‘yicha savollarga shu yerda javob olasiz.',
-            empty: 'Savolingizni yozing, admin shu chat ichida javob beradi.',
+            subtitle: 'Admin bilan to‘g‘ridan to‘g‘ri chat',
+            empty: 'Savolingizni yozing, javob shu yerda chiqadi.',
             placeholder: 'Xabaringizni yozing...',
             send: 'Yuborish',
-            loginTitle: 'Support chat uchun tizimga kiring',
+            loginTitle: 'Support chatni ochish uchun tizimga kiring',
             loginAction: 'Kirish',
             admin: 'Support',
             you: 'Siz',
@@ -130,6 +138,13 @@ export function SupportChatModal({
         node.scrollTop = node.scrollHeight;
     }, [data.messages, open]);
 
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.style.height = '0px';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    }, [draft]);
+
     const sendMessage = async () => {
         const message = draft.trim();
         if (!message || sending) return;
@@ -168,57 +183,34 @@ export function SupportChatModal({
     return (
         <Modal isOpen={open} onClose={onClose} title={copy.title}>
             {!user ? (
-                <div className='space-y-4'>
-                    <div className='overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,var(--color-surface),var(--color-bg))]'>
-                        <div className='border-b border-[var(--color-border)]/60 p-5'>
-                            <div className='mb-3 flex size-11 items-center justify-center rounded-2xl bg-[var(--color-primary)]/12 text-[var(--color-primary)]'>
-                                <Headset className='size-5' />
-                            </div>
-                            <p className='text-base font-bold text-[var(--color-text)]'>{copy.title}</p>
-                            <p className='mt-1 text-sm leading-6 text-[var(--color-hint)]'>{copy.subtitle}</p>
+                <div className='overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)]'>
+                    <div className='border-b border-[var(--color-border)] bg-[var(--color-surface)] p-5'>
+                        <div className='mb-3 flex size-11 items-center justify-center rounded-2xl bg-[var(--color-primary)]/12 text-[var(--color-primary)]'>
+                            <MessageCircleMore className='size-5' />
                         </div>
-                        <div className='p-5 text-center'>
-                            <MessageCircleMore className='mx-auto mb-3 size-8 text-[var(--color-primary)]' />
-                            <p className='text-sm font-semibold text-[var(--color-text)]'>{copy.loginTitle}</p>
-                        </div>
+                        <p className='text-base font-bold text-[var(--color-text)]'>{copy.title}</p>
+                        <p className='mt-1 text-sm leading-6 text-[var(--color-muted)]'>{copy.subtitle}</p>
                     </div>
-                    <Button className='w-full' onClick={onRequireAuth}>
-                        {copy.loginAction}
-                    </Button>
+                    <div className='bg-[var(--color-bg)] p-5 text-center'>
+                        <p className='mb-4 text-sm font-semibold text-[var(--color-text)]'>{copy.loginTitle}</p>
+                        <Button className='w-full' onClick={onRequireAuth}>
+                            {copy.loginAction}
+                        </Button>
+                    </div>
                 </div>
             ) : (
-                <div className='space-y-4'>
-                    <div className='overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,var(--color-surface),var(--color-bg))]'>
-                        <div className='flex items-start justify-between gap-3 p-5'>
-                            <div className='min-w-0'>
-                                <div className='mb-2 flex size-11 items-center justify-center rounded-2xl bg-[var(--color-primary)]/12 text-[var(--color-primary)]'>
-                                    <Headset className='size-5' />
-                                </div>
-                                <p className='text-base font-bold text-[var(--color-text)]'>{copy.title}</p>
-                                <p className='mt-1 text-sm leading-6 text-[var(--color-hint)]'>{copy.subtitle}</p>
-                            </div>
-                            <div className='shrink-0 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-600'>
-                                Online
-                            </div>
+                <div className='flex h-[min(72vh,680px)] flex-col overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)]'>
+                    <div className='flex items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3'>
+                        <div className='flex size-10 items-center justify-center rounded-full bg-[var(--color-primary)]/12 text-[var(--color-primary)]'>
+                            <UserRound className='size-5' />
                         </div>
-                        <div className='grid gap-2 border-t border-[var(--color-border)]/60 px-5 py-4 sm:grid-cols-2'>
-                            <div className='rounded-2xl bg-[var(--color-bg)] px-4 py-3'>
-                                <p className='text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-hint)]'>Support</p>
-                                <p className='mt-1 text-sm font-medium text-[var(--color-text)]'>Jonli yordam</p>
-                            </div>
-                            <div className='rounded-2xl bg-[var(--color-bg)] px-4 py-3'>
-                                <div className='flex items-center gap-2'>
-                                    <ShieldCheck className='size-4 text-emerald-500' />
-                                    <p className='text-sm font-medium text-[var(--color-text)]'>Admin bilan to‘g‘ridan-to‘g‘ri chat</p>
-                                </div>
-                            </div>
+                        <div className='min-w-0'>
+                            <p className='truncate text-sm font-semibold text-[var(--color-text)]'>{copy.title}</p>
+                            <p className='truncate text-xs text-[var(--color-muted)]'>{copy.subtitle}</p>
                         </div>
                     </div>
 
-                    <div
-                        ref={scrollRef}
-                        className='max-h-[46vh] min-h-[280px] space-y-3 overflow-y-auto rounded-[28px] border border-[var(--color-border)] bg-[var(--color-bg)] p-4'
-                    >
+                    <div ref={scrollRef} className='soft-scrollbar min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg)] px-4 py-4'>
                         {loading ? (
                             <div className='flex h-40 items-center justify-center'>
                                 <Loader2 className='size-5 animate-spin text-[var(--color-primary)]' />
@@ -226,48 +218,68 @@ export function SupportChatModal({
                         ) : data.messages.length === 0 ? (
                             <div className='flex h-full min-h-[240px] items-center justify-center'>
                                 <div className='max-w-[280px] text-center'>
-                                    <div className='mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]'>
+                                    <div className='mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--color-primary)]/12 text-[var(--color-primary)]'>
                                         <MessageCircleMore className='size-7' />
                                     </div>
                                     <p className='text-sm font-semibold text-[var(--color-text)]'>{copy.title}</p>
-                                    <p className='mt-2 text-sm leading-6 text-[var(--color-hint)]'>{copy.empty}</p>
+                                    <p className='mt-2 text-sm leading-6 text-[var(--color-muted)]'>{copy.empty}</p>
                                 </div>
                             </div>
                         ) : (
-                            data.messages.map((message) => {
-                                const mine = message.sender_role === 'user';
-                                return (
-                                    <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                                        <div
-                                            className={`max-w-[85%] rounded-[22px] px-4 py-3 text-sm shadow-sm ${
-                                                mine
-                                                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-contrast)]'
-                                                    : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
-                                            }`}
-                                        >
-                                            <p className='mb-1 text-[11px] font-semibold opacity-80'>
-                                                {mine ? copy.you : copy.admin}
-                                            </p>
-                                            <p className='whitespace-pre-wrap break-words'>{message.body}</p>
+                            <div className='space-y-3'>
+                                {data.messages.map((message) => {
+                                    const mine = message.sender_role === 'user';
+                                    return (
+                                        <div key={message.id} className={`flex w-full ${mine ? 'justify-end' : 'justify-start'}`}>
+                                            <div
+                                                className={`max-w-[78%] rounded-[18px] px-3 py-2 text-sm ${
+                                                    mine
+                                                        ? 'rounded-br-[6px] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]'
+                                                        : 'rounded-bl-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                                }`}
+                                            >
+                                                <div className='flex items-end gap-2'>
+                                                    <p className='min-w-0 flex-1 whitespace-pre-wrap break-words text-[13px] leading-5'>{message.body}</p>
+                                                    <span className={`shrink-0 text-[10px] ${mine ? 'text-[var(--color-primary-contrast)]/70' : 'text-[var(--color-muted)]'}`}>
+                                                        {formatMessageTime(message.created_at)}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
 
-                    <div className='rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3'>
-                        <div className='flex items-end gap-3'>
+                    <div className='shrink-0 bg-[var(--color-bg)] px-4 pb-4 pt-3'>
+                        <div className='flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_oklab,var(--color-surface2)_92%,var(--color-surface))] px-4 py-2.5'>
+                            <button
+                                type='button'
+                                className='flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--color-muted)]'
+                            >
+                                <Plus className='size-5' />
+                            </button>
                             <textarea
+                                ref={textareaRef}
                                 value={draft}
                                 onChange={(event) => setDraft(event.target.value)}
                                 placeholder={copy.placeholder}
-                                rows={2}
-                                className='min-h-[64px] flex-1 resize-none rounded-[22px] bg-[var(--color-bg)] px-4 py-3 text-sm text-[var(--color-text)] outline-none'
+                                rows={1}
+                                className='min-h-[24px] flex-1 resize-none overflow-hidden bg-transparent py-2 text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-muted)]'
                             />
-                            <Button className='h-12 shrink-0 px-5' onClick={sendMessage} isLoading={sending}>
-                                <Send className='mr-2 size-4' />
-                                {copy.send}
+                            <button
+                                type='button'
+                                className='flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--color-muted)]'
+                            >
+                                <Smile className='size-5' />
+                            </button>
+                            <Button
+                                className='h-11 w-11 shrink-0 rounded-full px-0 shadow-none'
+                                onClick={sendMessage}
+                                isLoading={sending}
+                            >
+                                <Send className='size-4' />
                             </Button>
                         </div>
                     </div>

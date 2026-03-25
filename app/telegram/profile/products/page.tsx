@@ -7,6 +7,7 @@ import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/li
 import { useTelegram } from '../../../../src/telegram/useTelegram';
 import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
+import { formatPrice } from '../../../../src/shared/lib/formatPrice';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { RichTextEditor } from '../../../../src/shared/ui/RichTextEditor';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
@@ -71,7 +72,7 @@ async function uploadImage(file: File): Promise<string> {
 
 export default function ProfileProductsPage() {
   const { WebApp, isReady } = useTelegram();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [products, setProducts] = useState<MyProduct[]>([]);
   const [stores, setStores] = useState<MyStore[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -533,10 +534,10 @@ export default function ProfileProductsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-bold text-[var(--color-text)]">{product.name}</p>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="text-[13px] font-bold text-[var(--color-primary)]">{current.toLocaleString('ru-RU')} so&apos;m</p>
+                        <p className="text-[13px] font-bold text-[var(--color-primary)]">{formatPrice(current, 'UZS', language)}</p>
                         {hasDiscount && (
                           <>
-                            <span className="text-[11px] text-[var(--color-hint)] line-through">{base.toLocaleString('ru-RU')}</span>
+                            <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(base, 'UZS', language)}</span>
                             <span className="rounded-full bg-red-500 px-1 py-0.5 text-[9px] font-bold text-white">-{discount}%</span>
                           </>
                         )}

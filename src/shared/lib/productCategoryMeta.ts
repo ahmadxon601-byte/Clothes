@@ -1,4 +1,5 @@
 export type DepartmentKey = 'electronics' | 'food' | 'furniture';
+type UiLanguage = 'uz' | 'ru' | 'en';
 
 export const DEPARTMENTS: Array<{
   key: DepartmentKey;
@@ -42,7 +43,8 @@ const DEPARTMENT_SLUGS: Record<DepartmentKey, string[]> = {
   ],
 };
 
-const VARIANT_META: Record<DepartmentKey, { label: string; placeholder: string; options: string[] }> = {
+const VARIANT_META: Record<UiLanguage, Record<DepartmentKey, { label: string; placeholder: string; options: string[] }>> = {
+  uz: {
   electronics: {
     label: 'Konfiguratsiya',
     placeholder: 'Konfiguratsiya tanlang',
@@ -58,6 +60,41 @@ const VARIANT_META: Record<DepartmentKey, { label: string; placeholder: string; 
     placeholder: "Mebel turini tanlang",
     options: ['Kichik', "O'rta", 'Katta', 'Bir kishilik', 'Ikki kishilik', 'Standart'],
   },
+  },
+  ru: {
+  electronics: {
+    label: 'Конфигурация',
+    placeholder: 'Выберите конфигурацию',
+    options: ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', 'Wi-Fi', 'Pro', 'Max', 'Стандарт'],
+  },
+  food: {
+    label: 'Вес / Объём',
+    placeholder: 'Выберите вес или объём',
+    options: ['250 г', '500 г', '1 кг', '1.5 кг', '330 мл', '500 мл', '1 л', '1.5 л', '2 л'],
+  },
+  furniture: {
+    label: 'Размер / Тип',
+    placeholder: 'Выберите тип мебели',
+    options: ['Маленький', 'Средний', 'Большой', 'Односпальная', 'Двуспальная', 'Стандарт'],
+  },
+  },
+  en: {
+  electronics: {
+    label: 'Configuration',
+    placeholder: 'Choose configuration',
+    options: ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', 'Wi-Fi', 'Pro', 'Max', 'Standard'],
+  },
+  food: {
+    label: 'Weight / Volume',
+    placeholder: 'Choose weight or volume',
+    options: ['250 g', '500 g', '1 kg', '1.5 kg', '330 ml', '500 ml', '1 L', '1.5 L', '2 L'],
+  },
+  furniture: {
+    label: 'Size / Type',
+    placeholder: 'Choose furniture type',
+    options: ['Small', 'Medium', 'Large', 'Single', 'Double', 'Standard'],
+  },
+  },
 };
 
 export function getDepartmentBySlug(slug?: string | null): DepartmentKey {
@@ -69,6 +106,6 @@ export function getDepartmentBySlug(slug?: string | null): DepartmentKey {
   return 'electronics';
 }
 
-export function getVariantMeta(department: DepartmentKey) {
-  return VARIANT_META[department];
+export function getVariantMeta(department: DepartmentKey, language: UiLanguage = 'uz') {
+  return VARIANT_META[language][department];
 }

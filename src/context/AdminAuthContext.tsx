@@ -36,8 +36,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
 
       setTelegramAccessLoading(true);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        await adminApi.checkTelegramAccess(initData);
+        await adminApi.checkTelegramAccess(initData, controller.signal);
         setTelegramAllowed(true);
         setTelegramAccessError('');
       } catch (error) {
@@ -46,6 +48,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setTelegramAllowed(false);
         setTelegramAccessError(error instanceof Error ? error.message : 'Telegram access denied');
       } finally {
+        clearTimeout(timeout);
         setTelegramAccessLoading(false);
         setTelegramAccessChecked(true);
       }

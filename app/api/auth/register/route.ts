@@ -5,6 +5,7 @@ import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
 import { generateAccessKey } from "@/src/lib/accessKey";
+import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -30,13 +31,21 @@ export async function POST(req: NextRequest) {
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const accessKey = generateAccessKey();
-    const result = await query(
-      `INSERT INTO users (name, email, password_hash, access_key)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, created_at, access_key`,
-      [name, email, hash, accessKey]
-    );
+    const accessKeySupported = await hasAccessKeyColumn();
+    const accessKey = accessKeySupported ? generateAccessKey() : null;
+    const result = accessKeySupported
+      ? await query(
+          `INSERT INTO users (name, email, password_hash, access_key)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, name, email, role, created_at, access_key`,
+          [name, email, hash, accessKey]
+        )
+      : await query(
+          `INSERT INTO users (name, email, password_hash)
+           VALUES ($1, $2, $3)
+           RETURNING id, name, email, role, created_at, NULL::text AS access_key`,
+          [name, email, hash]
+        );
 
     const user = result.rows[0];
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
@@ -49,6 +58,9 @@ export async function POST(req: NextRequest) {
         ? String((e as { code?: unknown }).code ?? "")
         : "";
     const msg = e instanceof Error ? e.message : "";
+    if (errCode === "23505") {
+      return fail("Email already in use", 409);
+    }
     if (
       msg.includes("password must be a string") ||
       msg.includes("ECONNREFUSED") ||
@@ -61,6 +73,9 @@ export async function POST(req: NextRequest) {
       ["ECONNREFUSED", "28P01", "3D000", "ENOTFOUND"].includes(errCode)
     ) {
       return fail("Database connection error. Backend DB sozlamalarini tekshiring.", 503);
+    }
+    if (["42703", "42P01"].includes(errCode)) {
+      return fail("Database schema error. Migratsiyalarni ishga tushiring.", 500);
     }
     return fail("Internal server error", 500);
   }

@@ -2,22 +2,33 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Search, X, Heart, Loader2, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { fetchProducts, fetchCategories, toggleFavorite, getApiToken, type ApiProduct, type ApiCategory } from '../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../src/shared/config/constants';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
+import { repairText } from '../../src/shared/lib/repairText';
 import { cn } from '../../src/shared/lib/utils';
 import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 import { useTranslation } from '../../src/shared/lib/i18n';
-const BannerCarousel = dynamic(() => import('../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
 const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
-const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
+const CALENDAR_TEXT = {
+    uz: {
+        months: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
+        days: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
+    },
+    ru: {
+        months: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+        days: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+    },
+    en: {
+        months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        days: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+    },
+} as const;
 const FALLBACK_CATEGORIES: ApiCategory[] = [
     { id: 'accessories', name: 'Aksessuarlar', name_uz: 'Aksessuarlar', name_ru: 'Аксессуары', name_en: 'Accessories', slug: 'accessories' },
     { id: 'dresses', name: "Ko'ylaklar", name_uz: "Ko'ylaklar", name_ru: 'Платья', name_en: 'Dresses', slug: 'dresses' },
@@ -29,14 +40,15 @@ const FALLBACK_CATEGORIES: ApiCategory[] = [
     { id: 'jackets', name: 'Kurtkalar', name_uz: 'Kurtkalar', name_ru: 'Куртки', name_en: 'Jackets', slug: 'jackets' },
 ];
 
-function formatDateLabel(iso: string) {
+function formatDateLabel(iso: string, language: 'uz' | 'ru' | 'en') {
     const [y, m, d] = iso.split('-');
-    return `${parseInt(d)} ${UZ_MONTHS[parseInt(m) - 1]} ${y}`;
+    return `${parseInt(d)} ${CALENDAR_TEXT[language].months[parseInt(m) - 1]} ${y}`;
 }
 
-function MiniCalendar({ selected, onSelect }: {
+function MiniCalendar({ selected, onSelect, language }: {
     selected: string;
     onSelect: (iso: string) => void;
+    language: 'uz' | 'ru' | 'en';
 }) {
     const today = new Date();
     const [year, setYear]   = useState(selected ? parseInt(selected.split('-')[0]) : today.getFullYear());
@@ -58,6 +70,8 @@ function MiniCalendar({ selected, onSelect }: {
     const toIso = (d: number) => `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const todayIso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
+    const copy = CALENDAR_TEXT[language];
+
     return (
         <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg)] p-3 select-none">
             <div className="flex items-center justify-between mb-3">
@@ -65,14 +79,14 @@ function MiniCalendar({ selected, onSelect }: {
                     <ChevronLeft size={15} className="text-[var(--color-hint)]" />
                 </button>
                 <span className="text-[13px] font-bold text-[var(--color-text)]">
-                    {UZ_MONTHS[month]} {year}
+                    {copy.months[month]} {year}
                 </span>
                 <button onClick={nextMonth} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface)] transition-colors">
                     <ChevronRight size={15} className="text-[var(--color-hint)]" />
                 </button>
             </div>
             <div className="grid grid-cols-7 mb-1">
-                {UZ_DAYS.map(d => (
+                {copy.days.map(d => (
                     <div key={d} className="text-center text-[10px] font-bold text-[var(--color-hint)] py-1">{d}</div>
                 ))}
             </div>
@@ -132,9 +146,9 @@ export default function TgHomePage() {
     const clearFiltersLabel = t.clear_filters;
 
     const categoryLabel = (cat: ApiCategory) => {
-        if (language === 'ru' && cat.name_ru) return cat.name_ru;
-        if (language === 'en' && cat.name_en) return cat.name_en;
-        if (cat.name_uz) return cat.name_uz;
+        if (language === 'ru' && cat.name_ru) return repairText(cat.name_ru);
+        if (language === 'en' && cat.name_en) return repairText(cat.name_en);
+        if (cat.name_uz) return repairText(cat.name_uz);
         const key = (cat.slug || cat.name || '').toLowerCase();
         if (key.includes('accessor')) return t.cat_accessories;
         if (key.includes('dress')) return language === 'uz' ? "Ko'ylaklar" : language === 'ru' ? 'Платья' : 'Dresses';
@@ -146,7 +160,7 @@ export default function TgHomePage() {
         if (key.includes('jacket')) return t.cat_jackets;
         if (key.includes('hood')) return t.cat_hoodies;
         if (key.includes('tshirt') || key.includes('t-shirt')) return t.cat_tshirts;
-        return cat.name;
+        return repairText(cat.name);
     };
 
     const parentCategories = useMemo(
@@ -302,7 +316,7 @@ export default function TgHomePage() {
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[12px] font-semibold text-[var(--color-primary)]">
                                     <CalendarDays size={13} />
-                                    {formatDateLabel(createdFrom)}
+                                    {formatDateLabel(createdFrom, language)}
                                 </span>
                                 <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
                                     className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--color-hint)]/10">
@@ -328,6 +342,7 @@ export default function TgHomePage() {
                             <div className="mt-2">
                                 <MiniCalendar
                                     selected={createdFrom}
+                                    language={language}
                                     onSelect={iso => { setCreatedFrom(iso); setCalOpen(false); }}
                                 />
                             </div>
@@ -419,10 +434,6 @@ export default function TgHomePage() {
                 </div>
             )}
 
-            <div className="mb-3">
-                <BannerCarousel variant="telegram" productRoute={(id) => TELEGRAM_ROUTES.PRODUCT(id)} />
-            </div>
-
             {loading ? (
                 <div className="flex justify-center py-16">
                     <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
@@ -459,11 +470,11 @@ export default function TgHomePage() {
                                     const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
                                     return (
                                         <div className="mt-1">
-                                            <p className="text-[14px] font-black text-[var(--color-primary)]">{formatPrice(cur, 'UZS')}</p>
+                                            <p className="text-[14px] font-black text-[var(--color-primary)]">{formatPrice(cur, 'UZS', language)}</p>
                                             {hasDis && (
                                                 <div className="flex items-center gap-1 mt-0.5">
-                                                    <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(bp, 'UZS')}</span>
-                                                    <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                                                    <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(bp, 'UZS', language)}</span>
+                                                    <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">-{pct}%</span>
                                                 </div>
                                             )}
                                         </div>

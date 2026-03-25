@@ -80,10 +80,10 @@ const paged = <T extends z.ZodTypeAny>(key: string, item: T) =>
 
 export const adminApi = {
   getMe: (signal?: AbortSignal) => request<AdminUser>('/api/auth/me', { signal }, adminUserSchema),
-  checkTelegramAccess: (initData: string) =>
+  checkTelegramAccess: (initData: string, signal?: AbortSignal) =>
     request<{ username: string; role: 'admin' | 'superadmin'; telegram_id: number }>(
       '/api/auth/admin-telegram-access',
-      { method: 'POST', body: JSON.stringify({ initData }) },
+      { method: 'POST', body: JSON.stringify({ initData }), signal },
       z.object({
         username: z.string(),
         role: z.enum(['admin', 'superadmin']),

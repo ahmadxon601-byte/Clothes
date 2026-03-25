@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Package, Phone, Store as StoreIcon } from 'lucide-react';
 import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { formatPrice } from '../../../../src/shared/lib/formatPrice';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
 
 interface StoreData {
     id: string;
@@ -34,6 +35,7 @@ function parseAddress(address: string | null) {
 
 export default function TgStorePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const { t, language } = useTranslation();
     const [store, setStore] = useState<StoreData | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,10 +59,10 @@ export default function TgStorePage({ params }: { params: Promise<{ id: string }
     );
 
     if (!store) return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-8 text-center">
-            <StoreIcon size={36} className="text-[var(--color-hint)]" />
-            <p className="text-[16px] font-bold text-[var(--color-text)]">Do&apos;kon topilmadi</p>
-            <Link href={TELEGRAM_ROUTES.PRODUCTS} className="text-[14px] text-[var(--color-primary)] font-semibold">Do&apos;konlar ro&apos;yxatiga qaytish</Link>
+            <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-8 text-center">
+                <StoreIcon size={36} className="text-[var(--color-hint)]" />
+            <p className="text-[16px] font-bold text-[var(--color-text)]">{t.stores_not_found}</p>
+            <Link href={TELEGRAM_ROUTES.PRODUCTS} className="text-[14px] text-[var(--color-primary)] font-semibold">{t.back}</Link>
         </div>
     );
 
@@ -102,7 +104,7 @@ export default function TgStorePage({ params }: { params: Promise<{ id: string }
                     <div className="flex items-center justify-between">
                         <p className="text-[13px] text-[var(--color-hint)]">{store.owner_name}</p>
                         <span className="px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[12px] font-bold">
-                            {store.product_count} mahsulot
+                            {t.items_count.replace('{count}', String(store.product_count))}
                         </span>
                     </div>
                     {store.description && (
@@ -123,18 +125,18 @@ export default function TgStorePage({ params }: { params: Promise<{ id: string }
                             className="flex items-center gap-1.5 text-[13px] text-[var(--color-hint)] font-medium"
                         >
                             <MapPin size={13} className="text-[var(--color-primary)]" />
-                            Xaritada ko&apos;rish
+                            {t.view}
                         </a>
                     )}
                 </div>
 
                 {/* Products */}
                 <div>
-                    <h2 className="text-[16px] font-bold text-[var(--color-text)] mb-3">Mahsulotlar</h2>
+                    <h2 className="text-[16px] font-bold text-[var(--color-text)] mb-3">{t.products_page_title}</h2>
                     {products.length === 0 ? (
                         <div className="flex flex-col items-center py-10 text-center bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-border)]">
                             <Package size={28} className="text-[var(--color-hint)] opacity-40 mb-2" />
-                            <p className="text-[14px] text-[var(--color-hint)]">Hozircha mahsulot yo&apos;q</p>
+                            <p className="text-[14px] text-[var(--color-hint)]">{t.product_missing}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-3">
@@ -159,7 +161,7 @@ export default function TgStorePage({ params }: { params: Promise<{ id: string }
                                             <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-hint)]">{p.category_name}</p>
                                         )}
                                         <p className="text-[12px] font-bold text-[var(--color-text)] line-clamp-2 mt-0.5">{p.name}</p>
-                                        <p className="text-[13px] font-black text-[var(--color-primary)] mt-1">{formatPrice(p.base_price, 'UZS')}</p>
+                                        <p className="text-[13px] font-black text-[var(--color-primary)] mt-1">{formatPrice(p.base_price, 'UZS', language)}</p>
                                     </div>
                                 </Link>
                             ))}

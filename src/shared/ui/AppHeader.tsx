@@ -51,7 +51,7 @@ export function AppHeader() {
         );
         right = <LanguageSelector />;
     } else if (pathname === TELEGRAM_ROUTES.PRODUCTS) {
-        title = "Mahsulotlar";
+        title = t.products_page_title;
         titleClass = 'text-[20px] font-bold text-[var(--color-text)] text-center';
         left = (
             <button onClick={() => router.back()} className={iconButtonClass}>

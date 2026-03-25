@@ -10,7 +10,7 @@
     "dev:admin": "node scripts/predev.mjs && next dev --hostname 127.0.0.1 --port 3020",
     "build": "next build",
     "postbuild": "node scripts/fix-build-css.mjs",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "bot:dev": "tsx scripts/telegram-polling.ts",
     "bot:admin:dev": "tsx scripts/admin-telegram-polling.ts"

@@ -1,26 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Heart, Moon, Package, Search, Sun, User, LogIn, UserPlus, Store } from 'lucide-react';
+import { Globe, LogIn, Moon, Package, Search, Store, Sun, User } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
+import { useSettingsStore } from '../../src/features/settings/model';
+import { isTelegramRoute } from '../../src/shared/config/constants';
+import { cn } from '../../src/shared/lib/utils';
+import { useWebI18n } from '../../src/shared/lib/webI18n';
 import { BottomNav } from '../../src/shared/ui/BottomNav';
-import { ToastProvider } from '../../src/shared/ui/Toast';
 import { AppHeader, hasUnifiedHeader } from '../../src/shared/ui/AppHeader';
 import { AuthModal } from '../../src/shared/ui/AuthModal';
 import { SupportChatModal } from '../../src/shared/ui/SupportChatModal';
-import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
-import { usePathname } from 'next/navigation';
-import { cn } from '../../src/shared/lib/utils';
-import { isTelegramRoute } from '../../src/shared/config/constants';
-import { useEffect, useRef, useState } from 'react';
-import { useSettingsStore } from '../../src/features/settings/model';
-import { type WebLanguage, useWebI18n } from '../../src/shared/lib/webI18n';
+import { ToastProvider } from '../../src/shared/ui/Toast';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isTelegram = isTelegramRoute(pathname);
     const hasHeader = hasUnifiedHeader(pathname);
     const { w } = useWebI18n();
-    const { settings, loadSettings, updateSettings } = useSettingsStore();
+    const settings = useSettingsStore((s) => s.settings);
+    const loadSettings = useSettingsStore((s) => s.loadSettings);
+    const updateSettings = useSettingsStore((s) => s.updateSettings);
     const { user, storeStatus, logout } = useWebAuth();
     const [langOpen, setLangOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -40,8 +42,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const onDocClick = (event: MouseEvent) => {
-            if (langRef.current && !langRef.current.contains(event.target as Node)) setLangOpen(false);
-            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) setUserMenuOpen(false);
+            if (langRef.current && !langRef.current.contains(event.target as Node)) {
+                setLangOpen(false);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
         };
         document.addEventListener('mousedown', onDocClick);
         return () => document.removeEventListener('mousedown', onDocClick);
@@ -54,27 +60,24 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             CLOTHING: '/clothing',
             FOOTWEAR: '/footwear',
             PRODUCTS: '/products',
-            SETTINGS: '/settings',
             STORE_APPLY: '/open-store',
             MY_STORE: '/my-store',
-            SEARCH: '/clothing',
-            FAVORITES: '/favorites',
+            SEARCH: '/products',
             PROFILE: '/profile',
         };
 
         const storeApproved = storeStatus?.status === 'approved';
-        const storePending = storeStatus?.status === 'pending';
-
-        const baseLinks = [
-            { href: WEB_LINKS.HOME, label: w.navbar.home },
-            { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
-            { href: WEB_LINKS.CLOTHING, label: w.navbar.clothing },
+        const links = [
+            { href: WEB_LINKS.HOME, label: 'Bosh Sahifa' },
+            { href: WEB_LINKS.SHOPS, label: "Do'konlar" },
+            { href: WEB_LINKS.CLOTHING, label: 'Kategoriyalar' },
+            { href: WEB_LINKS.PRODUCTS, label: 'Mahsulotlar' },
         ];
-
-        const links = baseLinks;
-
-        const langOptions: WebLanguage[] = ['uz', 'ru', 'en'];
-        const langLabels: Record<WebLanguage, string> = { uz: "O'zbek", en: 'English', ru: 'Русский' };
+        const languages = [
+            { code: 'uz', label: "O'zbek" },
+            { code: 'ru', label: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439' },
+            { code: 'en', label: 'English' },
+        ] as const;
 
         type FooterItem = {
             label: string;
@@ -93,7 +96,15 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             { title: w.footer.categories, items: [{ href: WEB_LINKS.CLOTHING, label: w.footer.men }, { href: WEB_LINKS.CLOTHING, label: w.footer.women }, { href: WEB_LINKS.FOOTWEAR, label: w.footer.shoes }] },
         ];
 
-        const iconBtnClass = "flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/70 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#00c853]/40 hover:text-[#111111] hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.7)] dark:border-white/15 dark:bg-white/10 dark:hover:text-white max-[380px]:h-8 max-[380px]:w-8 md:h-10 md:w-10";
+        const toggleTheme = () => {
+            const nextTheme = settings.themeMode === 'dark' ? 'light' : 'dark';
+            document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+            updateSettings({ themeMode: nextTheme });
+        };
+        const selectLanguage = (code: 'uz' | 'ru' | 'en') => {
+            updateSettings({ language: code });
+            setLangOpen(false);
+        };
 
         return (
             <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-[#f8f9fb] text-[#111111] dark:bg-[#0f0f0f] dark:text-white">
@@ -111,12 +122,14 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                         setAuthModal({ open: true, tab: 'login' });
                     }}
                 />
-                <header className="sticky top-0 z-30 border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-[#111111]/80">
-                    <div className="mx-auto flex h-[72px] w-full max-w-[1280px] items-center justify-between px-4 md:h-[84px]">
-                        <Link href={WEB_LINKS.HOME} className="text-[24px] font-black leading-none tracking-tight text-[#111111] dark:text-white md:text-[30px]">
-                            Qulaymarket
+
+                <header className="fixed inset-x-0 top-0 z-[160] isolate bg-transparent px-2 py-3">
+                    <div className="mx-auto grid w-full max-w-[1232px] grid-cols-[auto_1fr_auto] items-center gap-4 rounded-full border border-white/10 bg-[rgba(18,18,18,0.58)] px-4 py-2.5 shadow-[0_24px_45px_-30px_rgba(15,23,42,0.5)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.62)] md:px-6">
+                        <Link href={WEB_LINKS.HOME} className="shrink-0 text-[18px] font-black tracking-tight text-[#13ec37] dark:text-[#5df57a] md:text-[21px]">
+                            Qulaymarket.Uz
                         </Link>
-                        <nav className="hidden items-center gap-8 lg:flex">
+
+                        <nav className="hidden items-center justify-self-center gap-6 xl:flex">
                             {links.map((link) => {
                                 const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
                                 return (
@@ -124,78 +137,80 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         key={`${link.href}-${link.label}`}
                                         href={link.href}
                                         className={cn(
-                                            'relative text-[13px] font-bold uppercase tracking-[0.14em] transition-all duration-300 after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-[#00c853] after:transition-all after:duration-300 hover:text-[#111111] dark:hover:text-white hover:after:w-full',
-                                            active ? 'text-[#111111] dark:text-white after:w-full' : 'text-[#6b7280] dark:text-[#9ca3af]',
+                                            'relative whitespace-nowrap pb-1 text-[14px] font-semibold text-[#4b5563] transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-[#13ec37] after:transition-transform after:duration-200 hover:text-[#111827] hover:after:scale-x-100 dark:text-[#d1d5db] dark:hover:text-white',
+                                            active && 'text-[#13ec37] after:scale-x-100 dark:text-[#5df57a]',
                                         )}
                                     >
                                         {link.label}
                                     </Link>
                                 );
                             })}
-                            {storePending && user && (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-orange-600">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
-                                    Kutilmoqda
-                                </span>
-                            )}
                         </nav>
-                        <div className="flex items-center gap-1 text-[#6b7280] dark:text-[#9ca3af] md:gap-2">
-                            {/* Language */}
-                            <div className="relative" ref={langRef}>
-                                <button onClick={() => setLangOpen((p) => !p)} aria-label={w.navbar.lang} className={iconBtnClass}>
-                                    <Globe className="h-[16px] w-[16px] max-[380px]:h-[14px] max-[380px]:w-[14px]" />
+
+                        <div className="hidden items-center justify-end gap-3 lg:flex">
+                            <button
+                                type="button"
+                                onClick={() => window.location.href = WEB_LINKS.SEARCH}
+                                aria-label="Mahsulotlarni qidirish"
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                            >
+                                <Search className="h-4 w-4 shrink-0" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                aria-label="Toggle theme"
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                            >
+                                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                            </button>
+
+                            <div className="relative shrink-0" ref={langRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setLangOpen((prev) => !prev)}
+                                    title="Tilni almashtirish"
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                >
+                                    <Globe className="h-4 w-4" />
                                 </button>
                                 {langOpen && (
-                                    <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-[22px] border border-black/8 bg-[#f4f5f7] shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] z-50 dark:border-white/10 dark:bg-[#1a1a1a] md:w-48">
-                                        {langOptions.map((code) => (
+                                    <div className="absolute right-0 z-[170] mt-2 w-36 overflow-hidden rounded-[18px] border border-[#13ec37]/20 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:bg-[#111411]">
+                                        {languages.map((language) => (
                                             <button
-                                                key={code}
-                                                onClick={() => { updateSettings({ language: code }); setLangOpen(false); }}
+                                                key={language.code}
+                                                type="button"
+                                                onClick={() => selectLanguage(language.code)}
                                                 className={cn(
-                                                    'block w-full px-6 py-4 text-left transition-all duration-200',
-                                                    settings.language === code ? 'bg-[#17e235] text-[#031f0b]' : 'text-[#111111] hover:bg-white/70 dark:text-white dark:hover:bg-white/10',
+                                                    'block w-full px-4 py-3 text-left text-[13px] font-semibold transition-colors',
+                                                    settings.language === language.code
+                                                        ? 'bg-[#effff2] text-[#0d8f2a] dark:bg-[#16351d] dark:text-[#72f58a]'
+                                                        : 'text-[#111111] hover:bg-[#f5fff7] dark:text-white dark:hover:bg-[#16351d]',
                                                 )}
                                             >
-                                                <span className="text-[16px] font-black leading-none tracking-tight">{langLabels[code]}</span>
+                                                {language.label}
                                             </button>
                                         ))}
                                     </div>
                                 )}
                             </div>
-                            {/* Theme */}
-                            <button onClick={() => updateSettings({ themeMode: isDark ? 'light' : 'dark' })} aria-label="Toggle theme" className={iconBtnClass}>
-                                {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
-                            </button>
-                            {/* Search */}
-                            <Link href={WEB_LINKS.SEARCH} aria-label="Search" className={iconBtnClass}>
-                                <Search className="h-[15px] w-[15px]" />
-                            </Link>
-                            {/* Favorites — requires auth */}
+
                             {user ? (
-                                <Link href={WEB_LINKS.FAVORITES} aria-label="Favorites" className={iconBtnClass}>
-                                    <Heart className="h-[15px] w-[15px]" />
-                                </Link>
-                            ) : (
-                                <button
-                                    onClick={() => setAuthModal({ open: true, tab: 'login' })}
-                                    aria-label="Favorites"
-                                    className={iconBtnClass}
-                                >
-                                    <Heart className="h-[15px] w-[15px]" />
-                                </button>
-                            )}
-                            {/* Auth area */}
-                            {user ? (
-                                <div className="relative" ref={userMenuRef}>
+                                <div className="relative shrink-0" ref={userMenuRef}>
                                     <button
-                                        onClick={() => setUserMenuOpen((p) => !p)}
-                                        className={cn(iconBtnClass, 'bg-[#111111] text-white hover:bg-[#333333] dark:bg-white/15 dark:text-white dark:hover:bg-white/25')}
+                                        type="button"
+                                        onClick={() => setUserMenuOpen((prev) => !prev)}
+                                        className="inline-flex h-10 items-center gap-2 rounded-full bg-[#13ec37] px-3.5 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                                         aria-label="Profile"
                                     >
-                                        <span className="text-[12px] font-black">{user.name.charAt(0).toUpperCase()}</span>
+                                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[12px] font-black">
+                                            {user.name.charAt(0).toUpperCase()}
+                                        </span>
+                                        <span className="max-w-[140px] truncate">{user.name}</span>
                                     </button>
                                     {userMenuOpen && (
-                                        <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-[20px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] z-50 dark:border-white/10 dark:bg-[#1a1a1a]">
+                                        <div className="absolute right-0 z-[170] mt-3 w-56 overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:border-white/10 dark:bg-[#1a1a1a]">
                                             <div className="border-b border-black/8 px-5 py-4 dark:border-white/10">
                                                 <p className="text-[13px] font-bold text-[#111111] dark:text-white">{user.name}</p>
                                                 <p className="mt-0.5 text-[11px] text-[#6b7280]">{user.email}</p>
@@ -230,7 +245,11 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                     </>
                                                 )}
                                                 <button
-                                                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        logout();
+                                                        setUserMenuOpen(false);
+                                                    }}
                                                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                                                 >
                                                     Chiqish
@@ -240,28 +259,29 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     )}
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        onClick={() => setAuthModal({ open: true, tab: 'login' })}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-black/10 bg-white/70 px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#111111] transition-all hover:-translate-y-0.5 hover:border-[#00c853]/40 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.7)] dark:border-white/15 dark:bg-white/10 dark:text-white md:h-10 md:px-4"
-                                    >
-                                        <LogIn size={13} />
-                                        Kirish
-                                    </button>
-                                    <button
-                                        onClick={() => setAuthModal({ open: true, tab: 'register' })}
-                                        className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-[#13ec37] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(0,200,83,0.8)] md:h-10"
-                                    >
-                                        <UserPlus size={13} />
-                                        Ro&apos;yxat
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthModal({ open: true, tab: 'login' })}
+                                    className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                >
+                                    <LogIn size={15} />
+                                    Kirish
+                                </button>
                             )}
                         </div>
                     </div>
-                    {/* Mobile nav links */}
-                    <div className="mx-auto w-full max-w-[1280px] px-4 pb-3 lg:hidden">
-                        <div className="no-scrollbar flex w-full items-center gap-4 overflow-x-auto">
+
+                    <div className="mx-auto flex w-full max-w-[1232px] flex-col gap-3 px-4 pt-3 lg:hidden">
+                        <button
+                            type="button"
+                            onClick={() => window.location.href = WEB_LINKS.SEARCH}
+                            aria-label="Mahsulotlarni qidirish"
+                            className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                        >
+                            <Search className="h-4 w-4 shrink-0" />
+                        </button>
+
+                        <div className="no-scrollbar flex items-center gap-3 overflow-x-auto rounded-full border border-white/10 bg-[rgba(18,18,18,0.58)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.45)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.62)]">
                             {links.map((link) => {
                                 const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
                                 return (
@@ -269,24 +289,48 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         key={`mobile-${link.href}-${link.label}`}
                                         href={link.href}
                                         className={cn(
-                                            'relative shrink-0 py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition-all duration-300 sm:text-[12px] sm:tracking-[0.14em] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-[#00c853] after:transition-all after:duration-300 hover:text-[#111111] dark:hover:text-white hover:after:w-full',
-                                            active ? 'text-[#111111] dark:text-white after:w-full' : 'text-[#6b7280] dark:text-[#9ca3af]',
+                                            'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors duration-200',
+                                            active ? 'bg-[#effff2] text-[#0d8f2a] dark:bg-[#0f2012] dark:text-[#72f58a]' : 'text-[#4b5563] dark:text-[#d1d5db]',
                                         )}
                                     >
                                         {link.label}
                                     </Link>
                                 );
                             })}
-                            {storePending && user && (
-                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-orange-600">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
-                                    Kutilmoqda
-                                </span>
+
+                            <button
+                                type="button"
+                                onClick={() => selectLanguage(settings.language === 'uz' ? 'ru' : settings.language === 'ru' ? 'en' : 'uz')}
+                                title="Tilni almashtirish"
+                                className="inline-flex h-9 shrink-0 items-center rounded-full border border-[#13ec37]/20 bg-[#effff2] px-3 text-[12px] font-semibold text-[#0d8f2a] dark:border-[#13ec37]/20 dark:bg-[#0f2012] dark:text-[#72f58a]"
+                            >
+                                {(settings.language ?? 'uz').toUpperCase()}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                aria-label="Toggle theme"
+                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] dark:bg-[#13ec37] dark:text-[#06200f]"
+                            >
+                                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                            </button>
+
+                            {!user && (
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthModal({ open: true, tab: 'login' })}
+                                    className="inline-flex h-9 shrink-0 items-center rounded-full bg-[#13ec37] px-4 text-[13px] font-semibold text-[#06200f] dark:bg-[#13ec37] dark:text-[#06200f]"
+                                >
+                                    Kirish
+                                </button>
                             )}
                         </div>
                     </div>
                 </header>
-                <main className="w-full overflow-x-hidden">{children}</main>
+
+                <main className="relative z-0 w-full overflow-x-hidden pt-[112px] lg:pt-[88px]">{children}</main>
+
                 <footer className="mt-12 border-t border-black/10 bg-white dark:border-white/10 dark:bg-[#111111]">
                     <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-14">
                         <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
@@ -298,20 +342,22 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 <div key={group.title}>
                                     <h4 className="text-[14px] font-bold uppercase tracking-[0.1em] text-[#111111] dark:text-white">{group.title}</h4>
                                     <div className="mt-4 space-y-3">
-                                        {group.items.map((item) => (
+                                        {group.items.map((item) =>
                                             item.href ? (
-                                                <Link key={`${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">{item.label}</Link>
+                                                <Link key={`${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">
+                                                    {item.label}
+                                                </Link>
                                             ) : (
                                                 <button
                                                     key={`${group.title}-${item.label}`}
-                                                    type='button'
+                                                    type="button"
                                                     onClick={item.onClick}
-                                                    className='block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white'
+                                                    className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white"
                                                 >
                                                     {item.label}
                                                 </button>
-                                            )
-                                        ))}
+                                            ),
+                                        )}
                                     </div>
                                 </div>
                             ))}

@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatPrice } from '../lib/formatPrice';
+import { useTranslation } from '../lib/i18n';
+import { useSSERefetch } from '../hooks/useSSERefetch';
 
 interface BannerProduct {
   id: string;
@@ -26,16 +28,27 @@ type Props = {
 };
 
 export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
+  const { language } = useTranslation();
   const [banner, setBanner] = useState<BannerData | null>(null);
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
 
-  useEffect(() => {
+  const loadBanner = useCallback(() => {
     fetch('/api/banners')
       .then(r => r.json())
-      .then(j => { if (j?.data?.banner) setBanner(j.data.banner); })
+      .then(j => {
+        const nextBanner = j?.data?.banner ?? null;
+        setBanner(nextBanner);
+        setCurrent(0);
+      })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    loadBanner();
+  }, [loadBanner]);
+
+  useSSERefetch(['banners'], loadBanner);
 
   const products = banner?.products ?? [];
   const count = products.length;
@@ -67,10 +80,6 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
   const cur = sp != null && sp < bp ? sp : bp;
   const hasDis = cur < bp;
   const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
-  const fmt = (n: number) => n.toLocaleString('ru-RU');
-
-  const href = productRoute ? productRoute(product.id) : `/product/${product.id}`;
-
   const isDesktop = variant === 'desktop';
 
   return (
@@ -105,7 +114,7 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
               isDesktop ? 'px-3 py-1 text-[11px]' : 'px-2 py-0.5 text-[9px]'
             }`}
           >
-            −{pct}%
+            -{pct}%
           </span>
         )}
         <h3
@@ -121,7 +130,7 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
               isDesktop ? 'text-[22px]' : 'text-[14px]'
             }`}
           >
-            {fmt(cur)} so&apos;m
+            {formatPrice(cur, 'UZS', language)}
           </span>
           {hasDis && (
             <span
@@ -129,18 +138,10 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
                 isDesktop ? 'text-[14px]' : 'text-[11px]'
               }`}
             >
-              {fmt(bp)}
+              {formatPrice(bp, 'UZS', language)}
             </span>
           )}
         </div>
-        <Link
-          href={href}
-          className={`mt-3 self-start rounded-full bg-white font-black text-[#111111] transition-opacity hover:opacity-90 active:scale-95 ${
-            isDesktop ? 'px-6 py-2.5 text-[13px]' : 'px-4 py-2 text-[11px]'
-          }`}
-        >
-          Ko&apos;rish
-        </Link>
       </div>
 
       {/* Arrows (desktop only) */}

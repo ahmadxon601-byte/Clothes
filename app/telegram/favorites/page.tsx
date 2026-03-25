@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Heart, Search, Loader2, X } from 'lucide-react';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { getApiToken } from '../../../src/lib/apiClient';
+import { formatPrice } from '../../../src/shared/lib/formatPrice';
+import { useTranslation } from '../../../src/shared/lib/i18n';
 
 const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
 
@@ -20,6 +22,7 @@ interface FavProduct {
 }
 
 export default function TgFavoritesPage() {
+    const { t, language } = useTranslation();
     const [products, setProducts] = useState<FavProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
@@ -88,10 +91,10 @@ export default function TgFavoritesPage() {
             <div className="w-16 h-16 rounded-full bg-[var(--color-surface)] flex items-center justify-center mb-4">
                 <Heart size={28} className="text-[var(--color-hint)]" />
             </div>
-            <h2 className="text-[18px] font-bold text-[var(--color-text)]">Sevimlilar</h2>
-            <p className="mt-2 text-[13px] text-[var(--color-hint)]">Saqlangan mahsulotlarni ko&apos;rish uchun kirish kerak</p>
+            <h2 className="text-[18px] font-bold text-[var(--color-text)]">{t.favorites}</h2>
+            <p className="mt-2 text-[13px] text-[var(--color-hint)]">{t.authDesc}</p>
             <Link href={TELEGRAM_ROUTES.PROFILE} className="mt-5 h-11 px-7 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full text-[13px] font-bold">
-                Profilga o&apos;tish
+                {t.profile}
             </Link>
         </div>
     );
@@ -101,11 +104,10 @@ export default function TgFavoritesPage() {
             <div className="w-16 h-16 rounded-full bg-[var(--color-surface)] flex items-center justify-center mb-4">
                 <Heart size={28} className="text-[var(--color-hint)]" />
             </div>
-            <h2 className="text-[18px] font-bold text-[var(--color-text)]">Hali sevimlilar yo&apos;q</h2>
-            <p className="mt-2 text-[13px] text-[var(--color-hint)]">Yoqqan mahsulotlarni saqlashni boshlang</p>
-            {/* Link to /telegram (product list) */}
+            <h2 className="text-[18px] font-bold text-[var(--color-text)]">{t.emptyTitle}</h2>
+            <p className="mt-2 text-[13px] text-[var(--color-hint)]">{t.emptyDesc}</p>
             <Link href={TELEGRAM_ROUTES.HOME} className="mt-5 h-11 px-7 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full text-[13px] font-bold active:scale-95 transition-transform">
-                Mahsulotlarni ko&apos;rish
+                {t.emptyAction}
             </Link>
         </div>
     );
@@ -114,7 +116,7 @@ export default function TgFavoritesPage() {
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-4 py-3">
             <div className="relative mb-3">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-hint)]" />
-                <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Sevimlilar ichida qidirish..."
+                <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.searchPlaceholder}
                     className="h-11 w-full bg-[var(--color-surface)] rounded-full pl-10 pr-10 text-[13px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] border border-[var(--color-border)] outline-none" />
                 {query && (
                     <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-[var(--color-hint)]/10 rounded-full">
@@ -146,11 +148,11 @@ export default function TgFavoritesPage() {
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-hint)] truncate">{product.brand}</p>
                                 <h3 className="text-[13px] font-bold text-[var(--color-text)] line-clamp-2 mt-0.5">{product.title}</h3>
                                 <div className="mt-1">
-                                    <p className="text-[14px] font-black text-[var(--color-primary)]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
+                                    <p className="text-[14px] font-black text-[var(--color-primary)]">{formatPrice(cur, 'UZS', language)}</p>
                                     {hasDis && (
                                         <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="text-[11px] text-[var(--color-hint)] line-through">{bp.toLocaleString('ru-RU')} so&apos;m</span>
-                                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                                            <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(bp, 'UZS', language)}</span>
+                                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">-{pct}%</span>
                                         </div>
                                     )}
                                 </div>
