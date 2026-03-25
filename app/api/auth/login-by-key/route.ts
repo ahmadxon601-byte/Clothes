@@ -2,9 +2,11 @@ import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
+import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
 
 export async function POST(req: NextRequest) {
   try {
+    await hasAccessKeyColumn();
     const { key } = await req.json();
     if (!key || typeof key !== "string") return fail("Kalit so'z kiritilmadi", 422);
 
