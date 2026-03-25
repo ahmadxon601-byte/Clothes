@@ -11,6 +11,8 @@ import { InlineMapPicker } from '../../../../src/shared/ui/InlineMapPicker';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
 
+const TELEGRAM_LOGOUT_KEY = 'tg_webapp_logged_out';
+
 interface MyStore {
     id: string;
     name: string;
@@ -142,7 +144,13 @@ export default function ProfileStoresPage() {
     useEffect(() => {
         if (!isReady) return;
         const initData = WebApp?.initData;
+        const isLoggedOut =
+            typeof window !== 'undefined' && localStorage.getItem(TELEGRAM_LOGOUT_KEY) === '1';
         if (initData) {
+            if (isLoggedOut) {
+                fetchAll();
+                return;
+            }
             telegramWebAppAuth(initData)
                 .then(t => { setApiToken(t); })
                 .catch(() => {})

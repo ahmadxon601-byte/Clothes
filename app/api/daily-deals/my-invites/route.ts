@@ -23,8 +23,24 @@ export async function GET(req: NextRequest) {
         c.status AS campaign_status,
         COALESCE(
           (
-            SELECT json_agg(json_build_object('product_id', di.product_id))
+            SELECT json_agg(
+              json_build_object(
+                'product_id', di.product_id,
+                'name', p.name,
+                'base_price', p.base_price,
+                'sale_price', p.sale_price,
+                'thumbnail',
+                  (
+                    SELECT pi.url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.sort_order
+                    LIMIT 1
+                  )
+              )
+            )
             FROM daily_deal_items di
+            JOIN products p ON p.id = di.product_id
             WHERE di.invite_id = i.id
           ),
           '[]'::json

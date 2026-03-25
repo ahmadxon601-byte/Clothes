@@ -12,6 +12,8 @@ import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { RichTextEditor } from '../../../../src/shared/ui/RichTextEditor';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
 
+const TELEGRAM_LOGOUT_KEY = 'tg_webapp_logged_out';
+
 interface MyProduct {
   id: string;
   name: string;
@@ -222,7 +224,13 @@ export default function ProfileProductsPage() {
   useEffect(() => {
     if (!isReady) return;
     const initData = WebApp?.initData;
+    const isLoggedOut =
+      typeof window !== 'undefined' && localStorage.getItem(TELEGRAM_LOGOUT_KEY) === '1';
     if (initData) {
+      if (isLoggedOut) {
+        fetchAll();
+        return;
+      }
       telegramWebAppAuth(initData)
         .then((token) => {
           setApiToken(token);

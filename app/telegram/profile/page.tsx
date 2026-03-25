@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
-import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
+import { clearApiToken, getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 
@@ -17,6 +17,9 @@ interface MeUser {
     telegram_id: number | null;
     access_key: string | null;
 }
+
+const TELEGRAM_SESSION_KEY = 'tg_auth_session';
+const TELEGRAM_LOGOUT_KEY = 'tg_webapp_logged_out';
 
 export default function TelegramProfilePage() {
     const { WebApp, user: tgUser, isReady } = useTelegram();
@@ -44,7 +47,14 @@ export default function TelegramProfilePage() {
     useEffect(() => {
         if (!isReady) return;
         const initData = WebApp?.initData;
+        const isLoggedOut =
+            typeof window !== 'undefined' && localStorage.getItem(TELEGRAM_LOGOUT_KEY) === '1';
         if (initData) {
+            if (isLoggedOut) {
+                setToken(getApiToken());
+                setAuthResolved(true);
+                return;
+            }
             // Always refresh token from Telegram initData to get latest role
             telegramWebAppAuth(initData)
                 .then(newToken => { setApiToken(newToken); setToken(newToken); })
@@ -73,6 +83,9 @@ export default function TelegramProfilePage() {
         if (!initData) return;
         setLoggingIn(true);
         try {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(TELEGRAM_LOGOUT_KEY);
+            }
             const newToken = await telegramWebAppAuth(initData);
             setApiToken(newToken);
             setToken(newToken);
@@ -85,10 +98,13 @@ export default function TelegramProfilePage() {
 
     const handleLogout = () => {
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('marketplace_token');
+            clearApiToken();
+            localStorage.removeItem(TELEGRAM_SESSION_KEY);
+            localStorage.setItem(TELEGRAM_LOGOUT_KEY, '1');
         }
         setToken(null);
         setMe(null);
+        setAuthResolved(true);
     };
 
     const displayName = me?.name || tgUser?.first_name || '';
@@ -269,6 +285,22 @@ export default function TelegramProfilePage() {
                             <div>
                                 <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.my_products}</p>
                                 <p className="text-[11px] text-[var(--color-hint)] font-medium">{t.manage_products}</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
+                    </Link>
+
+                    <Link
+                        href={TELEGRAM_ROUTES.PROFILE_DEALS}
+                        className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"
+                    >
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                                <Bookmark size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.deal_products}</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{t.manage_deal_products}</p>
                             </div>
                         </div>
                         <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />

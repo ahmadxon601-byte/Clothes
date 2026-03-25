@@ -19,6 +19,12 @@ export function setApiToken(token: string): void {
     }
 }
 
+export function clearApiToken(): void {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem(TOKEN_KEY);
+    }
+}
+
 function authHeaders(): Record<string, string> {
     const token = getApiToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
