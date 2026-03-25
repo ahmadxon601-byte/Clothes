@@ -41,6 +41,20 @@ interface Category {
   parent_id?: string | null;
 }
 
+interface DailyDealInvite {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  store_id: string;
+  store_name: string;
+  campaign_id: string;
+  title: string;
+  message: string;
+  starts_at: string;
+  ends_at: string;
+  campaign_status: string;
+  selected_items: Array<{ product_id: string }>;
+}
+
 type View = 'list' | 'create' | 'edit';
 
 const fieldClass =
@@ -74,6 +88,7 @@ export default function ProfileProductsPage() {
   const { WebApp, isReady } = useTelegram();
   const { t, language } = useTranslation();
   const [products, setProducts] = useState<MyProduct[]>([]);
+  const [dailyDealInvites, setDailyDealInvites] = useState<DailyDealInvite[]>([]);
   const [stores, setStores] = useState<MyStore[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +97,10 @@ export default function ProfileProductsPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
+  const [inviteSavingId, setInviteSavingId] = useState<string | null>(null);
+  const [inviteSelections, setInviteSelections] = useState<Record<string, string[]>>({});
   const [parentCategoryMenuOpen, setParentCategoryMenuOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
@@ -140,8 +158,36 @@ export default function ProfileProductsPage() {
     return String(Math.round((1 - c / b) * 100));
   };
 
-  const fetchAll = async () => {
-    const token = getApiToken();
+  const loadDailyDealInvites = async (tokenArg?: string | null) => {
+    const token = tokenArg ?? getApiToken();
+    if (!token) {
+      setDailyDealInvites([]);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/daily-deals/my-invites', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      const invites = json.data?.invites ?? json.invites ?? [];
+      setDailyDealInvites(invites);
+      setInviteSelections((prev) => {
+        const next = { ...prev };
+        for (const invite of invites as DailyDealInvite[]) {
+          next[invite.id] = Array.isArray(invite.selected_items)
+            ? invite.selected_items.map((item) => item.product_id)
+            : [];
+        }
+        return next;
+      });
+    } catch {
+      setDailyDealInvites([]);
+    }
+  };
+
+  const fetchAll = async (tokenArg?: string | null) => {
+    const token = tokenArg ?? getApiToken();
     if (!token) {
       setLoading(false);
       return;
@@ -166,6 +212,7 @@ export default function ProfileProductsPage() {
       if (nextStores.length > 0) {
         setForm((prev) => ({ ...prev, store_id: prev.store_id || nextStores[0].id }));
       }
+      await loadDailyDealInvites(token);
     } catch {
     } finally {
       setLoading(false);
@@ -177,15 +224,18 @@ export default function ProfileProductsPage() {
     const initData = WebApp?.initData;
     if (initData) {
       telegramWebAppAuth(initData)
-        .then((token) => setApiToken(token))
+        .then((token) => {
+          setApiToken(token);
+          return fetchAll(token);
+        })
         .catch(() => {})
-        .finally(() => fetchAll());
+        .finally(() => {});
     } else {
       fetchAll();
     }
   }, [isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useSSERefetch(['products'], fetchAll);
+  useSSERefetch(['products', 'daily_deals'], () => fetchAll());
 
   useEffect(() => {
     if (!categories.length || !parentCategoryId) return;
@@ -218,9 +268,40 @@ export default function ProfileProductsPage() {
     });
     setFormImages([]);
     setFormError('');
+    setSuccessMessage('');
     setFormErrors({});
     setParentCategoryMenuOpen(false);
     setCategoryMenuOpen(false);
+  };
+
+  const respondToInvite = async (invite: DailyDealInvite, status: 'accepted' | 'rejected') => {
+    setFormError('');
+    setSuccessMessage('');
+
+    if (status === 'accepted' && !(inviteSelections[invite.id]?.length)) {
+      setFormError('Chegirma uchun kamida bitta mahsulot tanlang.');
+      return;
+    }
+
+    setInviteSavingId(invite.id);
+    try {
+      const res = await fetch(`/api/daily-deals/invites/${invite.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ status, product_ids: inviteSelections[invite.id] ?? [] }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? 'Taklifga javob berib bo‘lmadi');
+      setSuccessMessage(status === 'accepted' ? 'Mahsulotlar chegirmaga yuborildi.' : 'Taklif rad etildi.');
+      await fetchAll();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Taklifga javob berib bo‘lmadi');
+    } finally {
+      setInviteSavingId(null);
+    }
   };
 
   const openCreate = () => {
@@ -517,6 +598,142 @@ export default function ProfileProductsPage() {
           <h2 className="text-[17px] font-bold text-[var(--color-text)]">{t.my_products}</h2>
           <div className="w-16" />
         </div>
+
+        {formError ? (
+          <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] font-semibold text-red-300">
+            {formError}
+          </div>
+        ) : null}
+
+        {successMessage ? (
+          <div className="mb-4 rounded-2xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-4 py-3 text-[12px] font-semibold text-[var(--color-primary)]">
+            {successMessage}
+          </div>
+        ) : null}
+
+        {dailyDealInvites.length > 0 ? (
+          <div className="mb-5 space-y-4">
+            {dailyDealInvites.map((invite) => {
+              const storeProducts = products.filter((product) => product.store_id === invite.store_id);
+              const selectedIds = inviteSelections[invite.id] ?? [];
+
+              return (
+                <div
+                  key={invite.id}
+                  className="rounded-[24px] border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--color-primary)]">
+                        Chegirma taklifi
+                      </p>
+                      <h3 className="mt-2 text-[18px] font-black text-[var(--color-text)]">{invite.title}</h3>
+                      <p className="mt-2 text-[13px] leading-5 text-[var(--color-hint)]">{invite.message}</p>
+                      <p className="mt-2 text-[11px] text-[var(--color-hint)]">
+                        {invite.store_name} · {new Date(invite.starts_at).toLocaleString()} - {new Date(invite.ends_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${
+                        invite.status === 'accepted'
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : invite.status === 'rejected'
+                            ? 'bg-red-500/15 text-red-300'
+                            : 'bg-white/10 text-white'
+                      }`}
+                    >
+                      {invite.status}
+                    </span>
+                  </div>
+
+                  {invite.status === 'pending' ? (
+                    <>
+                      <div className="mt-4 space-y-2">
+                        {storeProducts.length > 0 ? (
+                          storeProducts.map((product) => {
+                            const checked = selectedIds.includes(product.id);
+                            const currentPrice =
+                              product.sale_price != null && product.sale_price < product.base_price
+                                ? product.sale_price
+                                : product.base_price;
+
+                            return (
+                              <label
+                                key={product.id}
+                                className={`flex items-center gap-3 rounded-[18px] border px-3 py-3 transition ${
+                                  checked
+                                    ? 'border-[var(--color-primary)]/50 bg-[var(--color-primary)]/10'
+                                    : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) =>
+                                    setInviteSelections((prev) => ({
+                                      ...prev,
+                                      [invite.id]: e.target.checked
+                                        ? [...(prev[invite.id] ?? []), product.id]
+                                        : (prev[invite.id] ?? []).filter((id) => id !== product.id),
+                                    }))
+                                  }
+                                  className="h-4 w-4 rounded border-white/20 bg-transparent text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                                />
+                                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[var(--color-surface2)]">
+                                  {product.thumbnail ? (
+                                    <img src={product.thumbnail} alt={product.name} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                      <Package size={18} className="text-[var(--color-hint)]" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-[13px] font-bold text-[var(--color-text)]">{product.name}</p>
+                                  <p className="mt-1 text-[12px] font-semibold text-[var(--color-primary)]">
+                                    {formatPrice(currentPrice, 'UZS', language)}
+                                  </p>
+                                </div>
+                              </label>
+                            );
+                          })
+                        ) : (
+                          <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[12px] text-[var(--color-hint)]">
+                            Bu do&apos;konda hali tasdiqlangan mahsulot yo&apos;q.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          onClick={() => respondToInvite(invite, 'accepted')}
+                          disabled={inviteSavingId === invite.id}
+                          className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] text-[12px] font-bold text-white disabled:opacity-60"
+                        >
+                          {inviteSavingId === invite.id ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                          Qabul qilish
+                        </button>
+                        <button
+                          onClick={() => respondToInvite(invite, 'rejected')}
+                          disabled={inviteSavingId === invite.id}
+                          className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-red-500/10 text-[12px] font-bold text-red-400 disabled:opacity-60"
+                        >
+                          Rad etish
+                        </button>
+                      </div>
+                    </>
+                  ) : invite.status === 'accepted' ? (
+                    <p className="mt-4 text-[12px] font-semibold text-[var(--color-primary)]">
+                      {selectedIds.length} ta mahsulot chegirmaga yuborilgan.
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-[12px] font-semibold text-red-400">Bu taklif rad etilgan.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
         {products.length > 0 ? (
           <div className="mb-5 space-y-3">
