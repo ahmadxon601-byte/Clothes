@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound } from 'lucide-react';
+import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound, Percent } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { clearApiToken, getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
@@ -296,7 +296,7 @@ export default function TelegramProfilePage() {
                     >
                         <div className="flex items-center gap-3.5">
                             <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                                <Bookmark size={20} />
+                                <Percent size={20} />
                             </div>
                             <div>
                                 <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.deal_products}</p>
