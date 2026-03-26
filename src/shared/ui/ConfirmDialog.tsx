@@ -5,7 +5,7 @@ import { Trash2, AlertTriangle } from 'lucide-react';
 interface Props {
     open: boolean;
     title?: string;
-    message: string;
+    message?: string;
     confirmLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
@@ -22,27 +22,29 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "O'chirish"
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-[1500] flex items-end sm:items-center justify-center px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]" onClick={onCancel}>
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4" onClick={onCancel}>
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div
-                className="relative w-full max-w-sm rounded-[24px] bg-[var(--color-surface,#fff)] dark:bg-[#1a1a1a] p-6 shadow-2xl"
+                className="relative w-full max-w-sm rounded-[28px] border border-[var(--color-border,#e5e7eb)] bg-[var(--color-surface,#fff)] p-6 shadow-[0_24px_70px_-28px_rgba(0,0,0,0.55)]"
                 onClick={e => e.stopPropagation()}
             >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${danger ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                    {danger ? <Trash2 size={22} className="text-red-500" /> : <AlertTriangle size={22} className="text-amber-500" />}
+                <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${danger ? 'bg-red-500/12' : 'bg-[var(--color-primary)]/12'}`}>
+                    {danger ? <Trash2 size={22} className="text-red-500" /> : <AlertTriangle size={22} className="text-[var(--color-primary)]" />}
                 </div>
-                {title && <h3 className="text-[17px] font-bold text-center text-[var(--color-text,#111)] dark:text-white mb-1">{title}</h3>}
-                <p className="text-[13px] text-center text-[var(--color-hint,#6b7280)] leading-relaxed">{message}</p>
+                {title ? <h3 className="mb-1 text-center text-[20px] font-black text-[var(--color-text,#111)]">{title}</h3> : null}
+                {message ? (
+                    <p className="text-center text-[13px] leading-relaxed text-[var(--color-hint,#6b7280)]">{message}</p>
+                ) : null}
                 <div className="mt-5 flex gap-3">
                     <button
                         onClick={onCancel}
-                        className="flex-1 h-11 rounded-full border border-[var(--color-border,#e5e7eb)] dark:border-white/10 text-[13px] font-bold text-[var(--color-text,#111)] dark:text-white active:scale-95 transition-all"
+                        className="h-11 flex-1 rounded-full border border-[var(--color-border,#e5e7eb)] text-[13px] font-bold text-[var(--color-text,#111)] transition-all active:scale-95"
                     >
                         Bekor qilish
                     </button>
                     <button
                         onClick={onConfirm}
-                        className={`flex-1 h-11 rounded-full text-[13px] font-bold text-white active:scale-95 transition-all ${danger ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                        className={`h-11 flex-1 rounded-full text-[13px] font-bold text-white transition-all active:scale-95 ${danger ? 'bg-red-500 hover:bg-red-600' : 'bg-[var(--color-primary)] hover:brightness-110'}`}
                     >
                         {confirmLabel}
                     </button>

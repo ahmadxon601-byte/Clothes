@@ -170,7 +170,6 @@ export default function TelegramProfilePage() {
             <ConfirmDialog
                 open={logoutDialogOpen}
                 title="Akkauntdan chiqilsinmi?"
-                message="Ha desangiz akkauntdan chiqasiz. Web App qayta ochilganda qayta kirish so'rovi chiqadi."
                 confirmLabel="Ha"
                 danger={false}
                 onConfirm={handleLogout}
