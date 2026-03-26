@@ -13,7 +13,6 @@ import { repairText } from '../../src/shared/lib/repairText';
 import { cn } from '../../src/shared/lib/utils';
 
 const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const DISCOUNTS = ['10', '20', '30', '40', '50'];
 const PRICE_PRESETS = [
     ['0', '100000'],
@@ -23,15 +22,14 @@ const PRICE_PRESETS = [
 ] as const;
 
 type SortKey = 'popular' | 'newest' | 'price_asc' | 'price_desc';
-type Filters = { sort: SortKey; onSale: boolean; minPrice: string; maxPrice: string; size: string; discount: string };
+type Filters = { sort: SortKey; minPrice: string; maxPrice: string; discount: string };
 
-const DEFAULT_FILTERS: Filters = { sort: 'popular', onSale: false, minPrice: '', maxPrice: '', size: '', discount: '' };
+const DEFAULT_FILTERS: Filters = { sort: 'popular', minPrice: '', maxPrice: '', discount: '' };
 
 function labels(language: 'uz' | 'ru' | 'en') {
     return {
         filter: language === 'ru' ? 'Фильтры' : language === 'en' ? 'Filters' : 'Filtrlar',
         apply: language === 'ru' ? 'Показать товары' : language === 'en' ? 'Show products' : "Mahsulotlarni ko'rsatish",
-        sale: language === 'ru' ? 'Только со скидкой' : language === 'en' ? 'On sale only' : 'Faqat aksiya',
         sort: language === 'ru' ? 'Сортировка' : language === 'en' ? 'Sort' : 'Saralash',
         price: language === 'ru' ? 'Цена' : language === 'en' ? 'Price' : 'Narx',
         discount: language === 'ru' ? 'Скидка' : language === 'en' ? 'Discount' : 'Chegirma',
@@ -47,9 +45,7 @@ function labels(language: 'uz' | 'ru' | 'en') {
 
 function countActiveFilters(filters: Filters) {
     return (filters.sort !== 'popular' ? 1 : 0)
-        + (filters.onSale ? 1 : 0)
         + (filters.minPrice || filters.maxPrice ? 1 : 0)
-        + (filters.size ? 1 : 0)
         + (filters.discount ? 1 : 0);
 }
 
@@ -105,11 +101,9 @@ export default function TgHomePage() {
             search: search || undefined,
             category: activeCategory || undefined,
             sort: filters.sort,
-            on_sale: filters.onSale || undefined,
             min_price: filters.minPrice ? Number(filters.minPrice) : undefined,
             max_price: filters.maxPrice ? Number(filters.maxPrice) : undefined,
             min_discount: filters.discount ? Number(filters.discount) : undefined,
-            size: filters.size || undefined,
         }).then((r) => setProducts(r.products)).catch(() => {}).finally(() => setLoading(false));
     }, [activeCategory, filters, search]);
 
@@ -162,9 +156,7 @@ export default function TgHomePage() {
 
     const chips = [
         filters.sort !== 'popular' ? { key: 'sort', label: text.sorts[filters.sort], clear: () => setFilters((s) => ({ ...s, sort: 'popular' })) } : null,
-        filters.onSale ? { key: 'sale', label: text.sale, clear: () => setFilters((s) => ({ ...s, onSale: false })) } : null,
         filters.minPrice || filters.maxPrice ? { key: 'price', label: `${text.price}: ${filters.minPrice || '0'}-${filters.maxPrice || '∞'}`, clear: () => setFilters((s) => ({ ...s, minPrice: '', maxPrice: '' })) } : null,
-        filters.size ? { key: 'size', label: `${t.size}: ${filters.size}`, clear: () => setFilters((s) => ({ ...s, size: '' })) } : null,
         filters.discount ? { key: 'discount', label: `${text.discount}: ${filters.discount}%+`, clear: () => setFilters((s) => ({ ...s, discount: '' })) } : null,
     ].filter(Boolean) as Array<{ key: string; label: string; clear: () => void }>;
 
@@ -204,18 +196,6 @@ export default function TgHomePage() {
                         </section>
 
                         <section className="mb-4 rounded-[24px] bg-[var(--color-bg)] p-4">
-                            <button onClick={() => setDraft((s) => ({ ...s, onSale: !s.onSale }))} className={cn('flex w-full items-center justify-between rounded-[18px] border px-4 py-3', draft.onSale ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/12' : 'border-[var(--color-border)] bg-[var(--color-surface)]')}>
-                                <div>
-                                    <p className="text-left text-[13px] font-bold text-[var(--color-text)]">{text.sale}</p>
-                                    <p className="mt-1 text-left text-[11px] text-[var(--color-hint)]">{text.discount}</p>
-                                </div>
-                                <div className={cn('flex h-7 w-12 items-center rounded-full p-1', draft.onSale ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]')}>
-                                    <div className={cn('h-5 w-5 rounded-full bg-white transition-all', draft.onSale ? 'translate-x-5' : 'translate-x-0')} />
-                                </div>
-                            </button>
-                        </section>
-
-                        <section className="mb-4 rounded-[24px] bg-[var(--color-bg)] p-4">
                             <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{text.price}</p>
                             <div className="mb-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                                 {PRICE_PRESETS.map(([min, max]) => <button key={`${min}-${max}`} onClick={() => setDraft((s) => ({ ...s, minPrice: min, maxPrice: max }))} className={cn('shrink-0 rounded-full border px-4 py-2.5 text-[12px] font-bold', draft.minPrice === min && draft.maxPrice === max ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}>{formatPresetLabel(min, max)}</button>)}
@@ -223,13 +203,6 @@ export default function TgHomePage() {
                             <div className="grid grid-cols-2 gap-3">
                                 <input value={draft.minPrice} onChange={(e) => setDraft((s) => ({ ...s, minPrice: e.target.value }))} type="number" placeholder="Min" className="h-11 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-[14px] text-[var(--color-text)] outline-none" />
                                 <input value={draft.maxPrice} onChange={(e) => setDraft((s) => ({ ...s, maxPrice: e.target.value }))} type="number" placeholder="Max" className="h-11 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-[14px] text-[var(--color-text)] outline-none" />
-                            </div>
-                        </section>
-
-                        <section className="mb-4 rounded-[24px] bg-[var(--color-bg)] p-4">
-                            <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{t.size}</p>
-                            <div className="flex flex-wrap gap-2">
-                                {SIZES.map((size) => <button key={size} onClick={() => setDraft((s) => ({ ...s, size: s.size === size ? '' : size }))} className={cn('min-w-[50px] rounded-[16px] border px-4 py-3 text-[13px] font-bold', draft.size === size ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}>{size}</button>)}
                             </div>
                         </section>
 

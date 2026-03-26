@@ -25,7 +25,7 @@ export function BottomNav() {
                 bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
             }}
         >
-            <div className="mx-auto w-[92%] max-w-[372px] h-[60px] bg-[var(--color-nav-bg)] rounded-[30px] shadow-[0_6px_25px_rgba(0,0,0,0.12)] border border-[var(--color-nav-border)] glass-blur pointer-events-auto">
+            <div className="mx-auto h-[60px] w-[92%] max-w-[372px] overflow-hidden rounded-[30px] border border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] shadow-[0_6px_25px_rgba(0,0,0,0.12)] glass-blur pointer-events-auto">
                 <div className="flex items-center justify-between h-full px-2.5 relative">
                     {links.map((link) => {
                         const isActive =
