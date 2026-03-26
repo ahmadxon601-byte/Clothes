@@ -4,14 +4,13 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Store, Plus, Trash2, Edit3, Eye, Loader2, Clock, CheckCircle, XCircle, Image as ImageIcon, MapPin } from 'lucide-react';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/lib/apiClient';
+import { isTelegramLoggedOutByUser } from '../../../../src/lib/telegramAuthState';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
 import { TELEGRAM_ROUTES } from '../../../../src/shared/config/constants';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
 import { InlineMapPicker } from '../../../../src/shared/ui/InlineMapPicker';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
-
-const TELEGRAM_LOGOUT_KEY = 'tg_webapp_logged_out';
 
 interface MyStore {
     id: string;
@@ -144,8 +143,7 @@ export default function ProfileStoresPage() {
     useEffect(() => {
         if (!isReady) return;
         const initData = WebApp?.initData;
-        const isLoggedOut =
-            typeof window !== 'undefined' && localStorage.getItem(TELEGRAM_LOGOUT_KEY) === '1';
+        const isLoggedOut = isTelegramLoggedOutByUser();
         if (initData) {
             if (isLoggedOut) {
                 fetchAll();
@@ -299,6 +297,26 @@ export default function ProfileStoresPage() {
             <Loader2 size={28} className="animate-spin text-[var(--color-primary)]" />
         </div>
     );
+
+    if (!getApiToken()) {
+        return (
+            <div className="px-4 py-12 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface2)]">
+                    <Store size={24} className="text-[var(--color-hint)]" />
+                </div>
+                <p className="text-[17px] font-bold text-[var(--color-text)]">Do&apos;konlar faqat akkaunt bilan ishlaydi</p>
+                <p className="mt-2 text-[13px] text-[var(--color-hint)]">
+                    Mehmon foydalanuvchi mahsulotlarni ko&apos;rishi va til yoki mavzuni almashtirishi mumkin. Do&apos;kon ochish uchun akkauntga kiring.
+                </p>
+                <Link
+                    href={TELEGRAM_ROUTES.HOME}
+                    className="mx-auto mt-5 flex h-11 w-full max-w-xs items-center justify-center rounded-full bg-[var(--color-primary)] text-[13px] font-bold text-white"
+                >
+                    Mahsulotlarga qaytish
+                </Link>
+            </div>
+        );
+    }
 
     // ── Apply form ──
     if (view === 'apply') {

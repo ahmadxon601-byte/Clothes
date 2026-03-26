@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound, Percent } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { clearApiToken, getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
+import { clearTelegramLoggedOut, isTelegramLoggedOutByUser, markTelegramLoggedOut } from '../../../src/lib/telegramAuthState';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { useTranslation } from '../../../src/shared/lib/i18n';
+import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 
 interface MeUser {
     id: string;
@@ -19,7 +21,6 @@ interface MeUser {
 }
 
 const TELEGRAM_SESSION_KEY = 'tg_auth_session';
-const TELEGRAM_LOGOUT_KEY = 'tg_webapp_logged_out';
 
 export default function TelegramProfilePage() {
     const { WebApp, user: tgUser, isReady } = useTelegram();
@@ -32,6 +33,7 @@ export default function TelegramProfilePage() {
     const [isDesktop, setIsDesktop] = useState(false);
     const [keyCopied, setKeyCopied] = useState(false);
     const [authResolved, setAuthResolved] = useState(false);
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
     // Detect desktop (no Telegram WebApp initData after SDK is given time to load)
     useEffect(() => {
@@ -47,8 +49,7 @@ export default function TelegramProfilePage() {
     useEffect(() => {
         if (!isReady) return;
         const initData = WebApp?.initData;
-        const isLoggedOut =
-            typeof window !== 'undefined' && localStorage.getItem(TELEGRAM_LOGOUT_KEY) === '1';
+        const isLoggedOut = isTelegramLoggedOutByUser();
         if (initData) {
             if (isLoggedOut) {
                 setToken(getApiToken());
@@ -83,10 +84,8 @@ export default function TelegramProfilePage() {
         if (!initData) return;
         setLoggingIn(true);
         try {
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem(TELEGRAM_LOGOUT_KEY);
-            }
             const newToken = await telegramWebAppAuth(initData);
+            clearTelegramLoggedOut();
             setApiToken(newToken);
             setToken(newToken);
         } catch {
@@ -100,11 +99,12 @@ export default function TelegramProfilePage() {
         if (typeof window !== 'undefined') {
             clearApiToken();
             localStorage.removeItem(TELEGRAM_SESSION_KEY);
-            localStorage.setItem(TELEGRAM_LOGOUT_KEY, '1');
         }
+        markTelegramLoggedOut();
         setToken(null);
         setMe(null);
         setAuthResolved(true);
+        setLogoutDialogOpen(false);
     };
 
     const displayName = me?.name || tgUser?.first_name || '';
@@ -167,6 +167,15 @@ export default function TelegramProfilePage() {
     // Logged in
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-6">
+            <ConfirmDialog
+                open={logoutDialogOpen}
+                title="Akkauntdan chiqilsinmi?"
+                message="Ha desangiz akkauntdan chiqasiz. Web App qayta ochilganda qayta kirish so'rovi chiqadi."
+                confirmLabel="Ha"
+                danger={false}
+                onConfirm={handleLogout}
+                onCancel={() => setLogoutDialogOpen(false)}
+            />
             <div className="px-4 space-y-3">
                 {/* Avatar + name */}
                 <div className="bg-[var(--color-surface)] rounded-[28px] p-5 shadow-sm border border-[var(--color-border)] flex flex-col items-center">
@@ -307,7 +316,7 @@ export default function TelegramProfilePage() {
                     </Link>
 
                     <button
-                        onClick={handleLogout}
+                        onClick={() => setLogoutDialogOpen(true)}
                         className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-red-50 dark:bg-red-950/30 rounded-[20px] border border-red-200 dark:border-red-900/40 active:scale-[0.98] transition-all"
                     >
                         <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/30 text-red-500">
