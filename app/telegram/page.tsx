@@ -133,6 +133,12 @@ export default function TgHomePage() {
     const [minDiscount, setMinDiscount] = useState('');
     const [createdFrom, setCreatedFrom] = useState('');
     const [calOpen, setCalOpen] = useState(false);
+    const [draftMinPrice, setDraftMinPrice] = useState('');
+    const [draftMaxPrice, setDraftMaxPrice] = useState('');
+    const [draftSizeFilter, setDraftSizeFilter] = useState('');
+    const [draftMinDiscount, setDraftMinDiscount] = useState('');
+    const [draftCreatedFrom, setDraftCreatedFrom] = useState('');
+    const [draftCalOpen, setDraftCalOpen] = useState(false);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -144,6 +150,11 @@ export default function TgHomePage() {
     }, []);
 
     const clearFiltersLabel = t.clear_filters;
+    const filterTitle = language === 'ru' ? 'Фильтры' : language === 'en' ? 'Filters' : 'Filtrlar';
+    const filterApplyLabel = language === 'ru' ? 'Показать товары' : language === 'en' ? 'Show products' : "Mahsulotlarni ko'rsatish";
+    const selectedDateLabel = language === 'ru' ? 'Дата' : language === 'en' ? 'Date' : 'Sana';
+    const selectedPriceLabel = language === 'ru' ? 'Цена' : language === 'en' ? 'Price' : 'Narx';
+    const selectedDiscountLabel = language === 'ru' ? 'Скидка' : language === 'en' ? 'Discount' : 'Chegirma';
 
     const categoryLabel = (cat: ApiCategory) => {
         if (language === 'ru' && cat.name_ru) return repairText(cat.name_ru);
@@ -178,6 +189,13 @@ export default function TgHomePage() {
         (sizeFilter ? 1 : 0) +
         (minDiscount ? 1 : 0) +
         (createdFrom ? 1 : 0);
+
+    const draftFilterCount =
+        (draftMinPrice ? 1 : 0) +
+        (draftMaxPrice ? 1 : 0) +
+        (draftSizeFilter ? 1 : 0) +
+        (draftMinDiscount ? 1 : 0) +
+        (draftCreatedFrom ? 1 : 0);
 
     const loadProducts = useCallback((params: {
         search: string; category: string;
@@ -255,6 +273,18 @@ export default function TgHomePage() {
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [triggerFetch]);
 
+    useEffect(() => {
+        if (!filterOpen) return;
+        setDraftMinPrice(minPrice);
+        setDraftMaxPrice(maxPrice);
+        setDraftSizeFilter(sizeFilter);
+        setDraftMinDiscount(minDiscount);
+        setDraftCreatedFrom(createdFrom);
+        setDraftCalOpen(false);
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = ''; };
+    }, [filterOpen, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom]);
+
     useSSERefetch(['products', 'stores'], () => triggerFetch(true));
 
     const handleFav = async (e: React.MouseEvent, id: string) => {
@@ -276,6 +306,27 @@ export default function TgHomePage() {
         setMinDiscount(''); setCreatedFrom(''); setCalOpen(false);
     };
 
+    const clearDraftFilters = () => {
+        setDraftMinPrice('');
+        setDraftMaxPrice('');
+        setDraftSizeFilter('');
+        setDraftMinDiscount('');
+        setDraftCreatedFrom('');
+        setDraftCalOpen(false);
+    };
+
+    const openFilters = () => setFilterOpen(true);
+
+    const applyFilters = () => {
+        setMinPrice(draftMinPrice);
+        setMaxPrice(draftMaxPrice);
+        setSizeFilter(draftSizeFilter);
+        setMinDiscount(draftMinDiscount);
+        setCreatedFrom(draftCreatedFrom);
+        setCalOpen(false);
+        setFilterOpen(false);
+    };
+
     return (
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] px-4 py-3">
             {/* Search + filter button */}
@@ -290,7 +341,7 @@ export default function TgHomePage() {
                         </button>
                     )}
                 </div>
-                <button onClick={() => setFilterOpen(o => !o)}
+                <button onClick={openFilters}
                     className={cn('relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
                         filterOpen || activeFilterCount > 0
                             ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white'
@@ -305,98 +356,211 @@ export default function TgHomePage() {
                 </button>
             </div>
 
-            {/* Filter dropdown */}
-            {filterOpen && (
-                <div className="mb-3 bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-border)] p-4 space-y-4">
-
-                    {/* Date from */}
-                    <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.created_from}</p>
-                        {createdFrom ? (
-                            <div className="flex items-center gap-2">
-                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[12px] font-semibold text-[var(--color-primary)]">
-                                    <CalendarDays size={13} />
-                                    {formatDateLabel(createdFrom, language)}
-                                </span>
-                                <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
-                                    className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--color-hint)]/10">
-                                    <X size={12} className="text-[var(--color-hint)]" />
-                                </button>
-                                <button onClick={() => setCalOpen(o => !o)}
-                                    className="text-[12px] font-semibold text-[var(--color-hint)] underline">
-                                    {t.change_value}
-                                </button>
-                            </div>
-                        ) : (
-                            <button onClick={() => setCalOpen(o => !o)}
-                                className={cn('flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] font-semibold transition-all',
-                                    calOpen
-                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                                        : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'
-                                )}>
-                                <CalendarDays size={14} />
-                                {t.choose_date}
-                            </button>
-                        )}
-                        {calOpen && (
-                            <div className="mt-2">
-                                <MiniCalendar
-                                    selected={createdFrom}
-                                    language={language}
-                                    onSelect={iso => { setCreatedFrom(iso); setCalOpen(false); }}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Price range */}
-                    <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.price_range}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min"
-                                type="number"
-                                className="h-9 w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 text-[13px] text-[var(--color-text)] outline-none focus:ring-2 ring-[var(--color-primary)]/20" />
-                            <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Max"
-                                type="number"
-                                className="h-9 w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 text-[13px] text-[var(--color-text)] outline-none focus:ring-2 ring-[var(--color-primary)]/20" />
-                        </div>
-                    </div>
-
-                    {/* Size */}
-                    <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.size}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {SIZES.map(s => (
-                                <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
-                                    className={cn('h-9 px-3 rounded-xl text-[12px] font-bold border transition-all',
-                                        sizeFilter === s
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                                            : 'bg-[var(--color-bg)] text-[var(--color-text)] border-[var(--color-border)]'
-                                    )}>
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Min discount */}
-                    <div>
-                        <p className="text-[11px] font-bold text-[var(--color-hint)] uppercase tracking-widest mb-2">{t.minimum_discount}</p>
-                        <div className="flex items-center gap-2">
-                            <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
-                                type="number" min="1" max="99" placeholder="20"
-                                className="h-9 w-24 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 text-[13px] text-[var(--color-text)] outline-none focus:ring-2 ring-[var(--color-primary)]/20" />
-                            <span className="text-[12px] text-[var(--color-hint)]">% {t.and_more}</span>
-                        </div>
-                    </div>
-
-                    {/* Clear */}
-                    {activeFilterCount > 0 && (
-                        <button onClick={clearFilters}
-                            className="w-full h-9 rounded-xl border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5">
-                            {clearFiltersLabel}
+            {activeFilterCount > 0 && (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {createdFrom && (
+                        <button
+                            onClick={() => setCreatedFrom('')}
+                            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]"
+                        >
+                            <CalendarDays size={12} />
+                            {selectedDateLabel}: {formatDateLabel(createdFrom, language)}
+                            <X size={12} />
                         </button>
                     )}
+                    {(minPrice || maxPrice) && (
+                        <button
+                            onClick={() => { setMinPrice(''); setMaxPrice(''); }}
+                            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]"
+                        >
+                            {selectedPriceLabel}: {minPrice || '0'}-{maxPrice || '∞'}
+                            <X size={12} />
+                        </button>
+                    )}
+                    {sizeFilter && (
+                        <button
+                            onClick={() => setSizeFilter('')}
+                            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]"
+                        >
+                            {t.size}: {sizeFilter}
+                            <X size={12} />
+                        </button>
+                    )}
+                    {minDiscount && (
+                        <button
+                            onClick={() => setMinDiscount('')}
+                            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]"
+                        >
+                            {selectedDiscountLabel}: {minDiscount}%+
+                            <X size={12} />
+                        </button>
+                    )}
+                    <button
+                        onClick={clearFilters}
+                        className="shrink-0 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] font-semibold text-red-400"
+                    >
+                        {clearFiltersLabel}
+                    </button>
+                </div>
+            )}
+
+            {filterOpen && (
+                <div className="fixed inset-0 z-[180]">
+                    <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setFilterOpen(false)} />
+                    <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[500px] overflow-hidden rounded-t-[30px] border border-b-0 border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_-24px_60px_-18px_rgba(0,0,0,0.5)]">
+                        <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-[var(--color-hint)]/30" />
+                        <div className="flex items-center justify-between px-4 pb-3 pt-4">
+                            <div>
+                                <p className="text-[18px] font-black text-[var(--color-text)]">{filterTitle}</p>
+                                <p className="mt-1 text-[12px] text-[var(--color-hint)]">{draftFilterCount} ta filter tanlandi</p>
+                            </div>
+                            <button
+                                onClick={() => setFilterOpen(false)}
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--color-hint)]"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="max-h-[70vh] overflow-y-auto px-4 pb-28">
+                            <div className="space-y-5">
+                                <section className="rounded-[24px] bg-[var(--color-bg)] p-4">
+                                    <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{t.created_from}</p>
+                                    {draftCreatedFrom ? (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="flex items-center gap-2 rounded-full bg-[var(--color-primary)]/10 px-3 py-2 text-[12px] font-semibold text-[var(--color-primary)]">
+                                                <CalendarDays size={13} />
+                                                {formatDateLabel(draftCreatedFrom, language)}
+                                            </span>
+                                            <button
+                                                onClick={() => { setDraftCreatedFrom(''); setDraftCalOpen(false); }}
+                                                className="rounded-full border border-[var(--color-border)] px-3 py-2 text-[12px] font-semibold text-[var(--color-text)]"
+                                            >
+                                                {clearFiltersLabel}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setDraftCalOpen(o => !o)}
+                                            className={cn(
+                                                'flex items-center gap-2 rounded-full border px-4 py-3 text-[13px] font-semibold transition-all',
+                                                draftCalOpen
+                                                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                                    : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                            )}
+                                        >
+                                            <CalendarDays size={15} />
+                                            {t.choose_date}
+                                        </button>
+                                    )}
+                                    {draftCalOpen && (
+                                        <div className="mt-3">
+                                            <MiniCalendar
+                                                selected={draftCreatedFrom}
+                                                language={language}
+                                                onSelect={iso => { setDraftCreatedFrom(iso); setDraftCalOpen(false); }}
+                                            />
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="rounded-[24px] bg-[var(--color-bg)] p-4">
+                                    <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{t.price_range}</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <label className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-hint)]">Min</span>
+                                            <input
+                                                value={draftMinPrice}
+                                                onChange={e => setDraftMinPrice(e.target.value)}
+                                                placeholder="0"
+                                                type="number"
+                                                className="mt-1 h-7 w-full bg-transparent text-[14px] font-semibold text-[var(--color-text)] outline-none"
+                                            />
+                                        </label>
+                                        <label className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-hint)]">Max</span>
+                                            <input
+                                                value={draftMaxPrice}
+                                                onChange={e => setDraftMaxPrice(e.target.value)}
+                                                placeholder="1000000"
+                                                type="number"
+                                                className="mt-1 h-7 w-full bg-transparent text-[14px] font-semibold text-[var(--color-text)] outline-none"
+                                            />
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[24px] bg-[var(--color-bg)] p-4">
+                                    <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{t.size}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SIZES.map(s => (
+                                            <button
+                                                key={s}
+                                                onClick={() => setDraftSizeFilter(draftSizeFilter === s ? '' : s)}
+                                                className={cn(
+                                                    'min-w-[50px] rounded-[16px] border px-4 py-3 text-[13px] font-bold transition-all',
+                                                    draftSizeFilter === s
+                                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[0_12px_24px_-16px_rgba(34,197,94,0.8)]'
+                                                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                                )}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-[24px] bg-[var(--color-bg)] p-4">
+                                    <p className="mb-3 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--color-hint)]">{t.minimum_discount}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['10', '20', '30', '40', '50'].map((value) => (
+                                            <button
+                                                key={value}
+                                                onClick={() => setDraftMinDiscount(draftMinDiscount === value ? '' : value)}
+                                                className={cn(
+                                                    'rounded-full border px-4 py-2.5 text-[13px] font-bold transition-all',
+                                                    draftMinDiscount === value
+                                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                                )}
+                                            >
+                                                {value}%+
+                                            </button>
+                                        ))}
+                                        <label className="flex min-w-[110px] items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
+                                            <input
+                                                value={draftMinDiscount}
+                                                onChange={e => setDraftMinDiscount(e.target.value)}
+                                                type="number"
+                                                min="1"
+                                                max="99"
+                                                placeholder="20"
+                                                className="w-full bg-transparent text-[13px] font-bold text-[var(--color-text)] outline-none"
+                                            />
+                                            <span className="text-[12px] font-semibold text-[var(--color-hint)]">%</span>
+                                        </label>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
+                        <div className="absolute inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-3">
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={clearDraftFilters}
+                                    className="h-12 flex-1 rounded-full border border-[var(--color-border)] text-[13px] font-bold text-[var(--color-text)]"
+                                >
+                                    {clearFiltersLabel}
+                                </button>
+                                <button
+                                    onClick={applyFilters}
+                                    className="h-12 flex-[1.3] rounded-full bg-[var(--color-primary)] px-5 text-[13px] font-black text-white shadow-[0_18px_30px_-18px_rgba(34,197,94,0.9)]"
+                                >
+                                    {filterApplyLabel}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
