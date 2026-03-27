@@ -5,6 +5,7 @@ import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
 import { notifySellerDecisionViaTelegram } from "@/src/server/telegram/seller-notifier";
 
 type Params = { params: Promise<{ id: string }> };
@@ -20,6 +21,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const admin = requireRole(req, "admin");
     const { id } = await params;
     const support = await getSellerRequestSupport();
+    const storeSupport = await getStoreColumnSupport();
 
     const body = await req.json();
     const parsed = schema.safeParse(body);
@@ -63,31 +65,63 @@ export async function PUT(req: NextRequest, { params }: Params) {
           sellerReq.target_store_id;
 
         if (isStoreUpdate) {
-          await client.query(
-            `UPDATE stores
-             SET name = $1, description = $2, phone = $3, address = $4, updated_at = NOW()
-             WHERE id = $5 AND owner_id = $6`,
-            [
-              sellerReq.store_name,
-              sellerReq.store_description,
-              sellerReq.phone,
-              sellerReq.address,
-              sellerReq.target_store_id,
-              sellerReq.user_id,
-            ]
-          );
+          if (storeSupport.hasStoreImageUrl) {
+            await client.query(
+              `UPDATE stores
+               SET name = $1, description = $2, phone = $3, address = $4, image_url = $5, updated_at = NOW()
+               WHERE id = $6 AND owner_id = $7`,
+              [
+                sellerReq.store_name,
+                sellerReq.store_description,
+                sellerReq.phone,
+                sellerReq.address,
+                sellerReq.image_url ?? null,
+                sellerReq.target_store_id,
+                sellerReq.user_id,
+              ]
+            );
+          } else {
+            await client.query(
+              `UPDATE stores
+               SET name = $1, description = $2, phone = $3, address = $4, updated_at = NOW()
+               WHERE id = $5 AND owner_id = $6`,
+              [
+                sellerReq.store_name,
+                sellerReq.store_description,
+                sellerReq.phone,
+                sellerReq.address,
+                sellerReq.target_store_id,
+                sellerReq.user_id,
+              ]
+            );
+          }
         } else {
-          await client.query(
-            `INSERT INTO stores (owner_id, name, description, phone, address)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [
-              sellerReq.user_id,
-              sellerReq.store_name,
-              sellerReq.store_description,
-              sellerReq.phone,
-              sellerReq.address,
-            ]
-          );
+          if (storeSupport.hasStoreImageUrl) {
+            await client.query(
+              `INSERT INTO stores (owner_id, name, description, phone, address, image_url)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                sellerReq.user_id,
+                sellerReq.store_name,
+                sellerReq.store_description,
+                sellerReq.phone,
+                sellerReq.address,
+                sellerReq.image_url ?? null,
+              ]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO stores (owner_id, name, description, phone, address)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [
+                sellerReq.user_id,
+                sellerReq.store_name,
+                sellerReq.store_description,
+                sellerReq.phone,
+                sellerReq.address,
+              ]
+            );
+          }
 
           await client.query(
             "UPDATE users SET role = 'seller', updated_at = NOW() WHERE id = $1",

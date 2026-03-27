@@ -4,6 +4,7 @@ import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
     const result = await query(
       `SELECT
-         st.id, st.name, st.description, st.phone, st.address, st.created_at,
+         st.id, st.name, st.description, st.phone, st.address, st.image_url, st.created_at,
          u.id AS owner_id, u.name AS owner_name,
          (SELECT COUNT(*) FROM products p
           WHERE p.store_id = st.id AND p.is_active = TRUE) AS product_count
@@ -46,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const jwtUser = requireAuth(req);
     const { id } = await params;
     const support = await getSellerRequestSupport();
+    const storeSupport = await getStoreColumnSupport();
 
     const storeResult = await query(
       "SELECT st.owner_id, st.name, u.name AS owner_name FROM stores st JOIN users u ON u.id = st.owner_id WHERE st.id = $1 AND st.is_active = TRUE",
@@ -108,20 +110,38 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return fail("Bu do'kon uchun pending tahrirlash arizasi allaqachon mavjud", 409);
     }
 
-    await query(
-      `INSERT INTO seller_requests
-         (user_id, store_name, store_description, owner_name, phone, address, request_type, target_store_id)
-       VALUES ($1, $2, $3, $4, $5, $6, 'store_update', $7)`,
-      [
-        jwtUser.userId,
-        parsed.data.name ?? storeResult.rows[0].name,
-        parsed.data.description ?? null,
-        storeResult.rows[0].owner_name,
-        parsed.data.phone ?? null,
-        parsed.data.address ?? null,
-        id,
-      ]
-    );
+    if (storeSupport.hasSellerRequestImageUrl) {
+      await query(
+        `INSERT INTO seller_requests
+           (user_id, store_name, store_description, owner_name, phone, address, image_url, request_type, target_store_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_update', $8)`,
+        [
+          jwtUser.userId,
+          parsed.data.name ?? storeResult.rows[0].name,
+          parsed.data.description ?? null,
+          storeResult.rows[0].owner_name,
+          parsed.data.phone ?? null,
+          parsed.data.address ?? null,
+          parsed.data.image_url ?? null,
+          id,
+        ]
+      );
+    } else {
+      await query(
+        `INSERT INTO seller_requests
+           (user_id, store_name, store_description, owner_name, phone, address, request_type, target_store_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'store_update', $7)`,
+        [
+          jwtUser.userId,
+          parsed.data.name ?? storeResult.rows[0].name,
+          parsed.data.description ?? null,
+          storeResult.rows[0].owner_name,
+          parsed.data.phone ?? null,
+          parsed.data.address ?? null,
+          id,
+        ]
+      );
+    }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
     return ok({ message: "Store update request submitted for admin approval" });

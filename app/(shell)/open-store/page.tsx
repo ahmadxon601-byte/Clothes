@@ -14,6 +14,7 @@ type FormState = {
     phone: string;
     address: string;
     description: string;
+    images: string[];
 };
 
 type MapState = {
@@ -54,6 +55,7 @@ export default function OpenStorePage() {
         phone: '',
         address: '',
         description: '',
+        images: [],
     });
     const [loading, setLoading] = useState(false);
     const [addressLoading, setAddressLoading] = useState(false);
@@ -66,8 +68,60 @@ export default function OpenStorePage() {
         zoom: 12,
     });
 
-    const onChange = (key: keyof FormState, value: string) => {
+    const onChange = (key: 'storeName' | 'ownerName' | 'phone' | 'address' | 'description', value: string) => {
         setForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleStoreImages = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files ?? []);
+        event.currentTarget.value = '';
+        if (!files.length) return;
+
+        const remainingSlots = 10 - form.images.length;
+        if (remainingSlots <= 0) {
+            setResult({ type: 'error', message: "Do'kon uchun eng ko'pi bilan 10 ta rasm yuklash mumkin." });
+            return;
+        }
+
+        const limitedFiles = files.slice(0, remainingSlots);
+        if (files.length > limitedFiles.length) {
+            setResult({ type: 'info', message: "Faqat birinchi 10 ta rasm saqlandi." });
+        }
+
+        Promise.all(
+            limitedFiles.map(
+                (file) =>
+                    new Promise<string>((resolve, reject) => {
+                        if (!file.type.startsWith('image/')) {
+                            reject(new Error('Faqat rasm yuklash mumkin.'));
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result ?? ''));
+                        reader.onerror = () => reject(new Error("Rasmni o'qib bo'lmadi."));
+                        reader.readAsDataURL(file);
+                    }),
+            ),
+        )
+            .then((encoded) => {
+                const filtered = encoded.filter(Boolean);
+                if (!filtered.length) return;
+                setForm((prev) => ({ ...prev, images: [...prev.images, ...filtered].slice(0, 10) }));
+                setResult(null);
+            })
+            .catch((err: unknown) => {
+                setResult({
+                    type: 'error',
+                    message: err instanceof Error ? err.message : "Rasm yuklashda xatolik yuz berdi.",
+                });
+            });
+    };
+
+    const removeStoreImage = (index: number) => {
+        setForm((prev) => ({
+            ...prev,
+            images: prev.images.filter((_, imageIndex) => imageIndex !== index),
+        }));
     };
 
     const reverseGeocode = async (lat: number, lng: number) => {
@@ -142,6 +196,10 @@ export default function OpenStorePage() {
             setResult({ type: 'error', message: w.openStore.fillRequired });
             return;
         }
+        if (form.images.length < 1) {
+            setResult({ type: 'error', message: "Kamida 1 ta do'kon rasmi yuklang." });
+            return;
+        }
 
         setLoading(true);
         try {
@@ -158,6 +216,8 @@ export default function OpenStorePage() {
                     owner_name: form.ownerName.trim(),
                     phone: form.phone.trim(),
                     address: form.address.trim(),
+                    image_url: form.images[0] ?? null,
+                    image_urls: form.images,
                 }),
             });
 
@@ -358,6 +418,38 @@ export default function OpenStorePage() {
                                 placeholder="Nimalarni sotmoqchisiz, assortimenti haqida yozing..."
                                 disabled={loading}
                             />
+                        </label>
+
+                        <label className="grid gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Do'kon rasmlari</span>
+                                <span className="text-[11px] font-semibold text-[#6b7280] dark:text-[#9ca3af]">{form.images.length}/10</span>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleStoreImages}
+                                disabled={loading || form.images.length >= 10}
+                                className="block w-full rounded-xl border border-black/12 bg-white px-3 py-2 text-[13px] text-[#374151] file:mr-3 file:rounded-full file:border-0 file:bg-[#13ec37] file:px-3 file:py-1.5 file:text-[11px] file:font-black file:uppercase file:tracking-[0.08em] file:text-[#06200f] hover:file:brightness-95 dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db]"
+                            />
+                            <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Kamida 1 ta, ko'pi bilan 10 ta rasm yuklang.</p>
+                            {form.images.length > 0 && (
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                    {form.images.map((image, index) => (
+                                        <div key={`${index}-${image.slice(0, 20)}`} className="relative overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+                                            <img src={image} alt={`Store image ${index + 1}`} className="h-28 w-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeStoreImage(index)}
+                                                className="absolute right-1.5 top-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-bold text-white"
+                                            >
+                                                O'chirish
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </label>
                     </div>
 

@@ -21,7 +21,7 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 }
 
 export default function SiteProfilePage() {
-    const { user, loading, storeStatus, refreshUser } = useWebAuth();
+    const { user, loading, storeStatus, refreshUser, refreshStore } = useWebAuth();
     const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; is_read: boolean; created_at: string }>>([]);
     const [keyCopied, setKeyCopied] = useState(false);
     const [accessKey, setAccessKey] = useState<string | null>(null);
@@ -62,11 +62,15 @@ export default function SiteProfilePage() {
                     .catch(() => {});
                 loadNotifications();
             }
+            void refreshStore();
         }
-    }, [user]);
+    }, [user, refreshStore]);
 
     useSSERefetch(['notifications', 'daily_deals'], () => {
         loadNotifications();
+    });
+    useSSERefetch(['stores', 'seller_requests'], () => {
+        void refreshStore();
     });
 
     const initials = useMemo(() => {

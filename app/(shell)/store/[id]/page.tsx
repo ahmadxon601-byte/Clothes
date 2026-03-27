@@ -11,6 +11,7 @@ interface StoreData {
   description: string | null;
   phone: string | null;
   address: string | null;
+  image_url: string | null;
   owner_name: string;
   product_count: number;
 }
@@ -30,6 +31,9 @@ function parseCoords(address: string | null) {
   const idx = address.toLowerCase().indexOf('coordinates:');
   return { text: idx > 0 ? address.slice(0, idx).trim() : '', lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
 }
+
+const DEFAULT_STORE_IMAGE =
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop";
 
 export default function StorePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -78,7 +82,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
       {/* Hero */}
       <div className="relative h-56 w-full overflow-hidden bg-[#111111]">
         <img
-          src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop"
+          src={store.image_url || DEFAULT_STORE_IMAGE}
           alt={store.name}
           className="h-full w-full object-cover opacity-60"
         />

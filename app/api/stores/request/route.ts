@@ -4,6 +4,7 @@ import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 const schema = z.object({
@@ -12,6 +13,8 @@ const schema = z.object({
   owner_name: z.string().min(2).max(255),
   phone: z.string().max(50).optional(),
   address: z.string().optional(),
+  image_url: z.string().trim().min(1).optional(),
+  image_urls: z.array(z.string().trim().min(1)).min(1).max(10).optional(),
 });
 
 // ── POST /api/stores/request  (auth required) ─────────────────────────────────
@@ -19,6 +22,7 @@ export async function POST(req: NextRequest) {
   try {
     const jwtUser = requireAuth(req);
     const support = await getSellerRequestSupport();
+    const storeSupport = await getStoreColumnSupport();
 
     // Admins cannot submit store requests
     if (jwtUser.role === "admin") {
@@ -38,37 +42,93 @@ export async function POST(req: NextRequest) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const { store_name, store_description, owner_name, phone, address } =
+    const {
+      store_name,
+      store_description,
+      owner_name,
+      phone,
+      address,
+      image_url,
+      image_urls,
+    } =
       parsed.data;
+    const normalizedImages = image_urls?.length
+      ? image_urls
+      : image_url
+      ? [image_url]
+      : [];
+
+    if (normalizedImages.length < 1) {
+      return fail("Kamida 1 ta do'kon rasmi yuborilishi shart", 422);
+    }
+    if (normalizedImages.length > 10) {
+      return fail("Ko'pi bilan 10 ta do'kon rasmi yuborish mumkin", 422);
+    }
+
+    const primaryImage = normalizedImages[0];
 
     if (support.hasRequestType) {
-      await query(
-        `INSERT INTO seller_requests
-           (user_id, store_name, store_description, owner_name, phone, address, request_type)
-         VALUES ($1, $2, $3, $4, $5, $6, 'store_create')`,
-        [
-          jwtUser.userId,
-          store_name,
-          store_description ?? null,
-          owner_name,
-          phone ?? null,
-          address ?? null,
-        ]
-      );
+      if (storeSupport.hasSellerRequestImageUrl) {
+        await query(
+          `INSERT INTO seller_requests
+             (user_id, store_name, store_description, owner_name, phone, address, image_url, request_type)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_create')`,
+          [
+            jwtUser.userId,
+            store_name,
+            store_description ?? null,
+            owner_name,
+            phone ?? null,
+            address ?? null,
+            primaryImage,
+          ]
+        );
+      } else {
+        await query(
+          `INSERT INTO seller_requests
+             (user_id, store_name, store_description, owner_name, phone, address, request_type)
+           VALUES ($1, $2, $3, $4, $5, $6, 'store_create')`,
+          [
+            jwtUser.userId,
+            store_name,
+            store_description ?? null,
+            owner_name,
+            phone ?? null,
+            address ?? null,
+          ]
+        );
+      }
     } else {
-      await query(
-        `INSERT INTO seller_requests
-           (user_id, store_name, store_description, owner_name, phone, address)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          jwtUser.userId,
-          store_name,
-          store_description ?? null,
-          owner_name,
-          phone ?? null,
-          address ?? null,
-        ]
-      );
+      if (storeSupport.hasSellerRequestImageUrl) {
+        await query(
+          `INSERT INTO seller_requests
+             (user_id, store_name, store_description, owner_name, phone, address, image_url)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            jwtUser.userId,
+            store_name,
+            store_description ?? null,
+            owner_name,
+            phone ?? null,
+            address ?? null,
+            primaryImage,
+          ]
+        );
+      } else {
+        await query(
+          `INSERT INTO seller_requests
+             (user_id, store_name, store_description, owner_name, phone, address)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            jwtUser.userId,
+            store_name,
+            store_description ?? null,
+            owner_name,
+            phone ?? null,
+            address ?? null,
+          ]
+        );
+      }
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });

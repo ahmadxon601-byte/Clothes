@@ -11,10 +11,14 @@ interface Store {
   description: string | null;
   phone: string | null;
   address: string | null;
+  image_url: string | null;
   product_count: number;
   owner_name: string;
   created_at: string;
 }
+
+const DEFAULT_STORE_IMAGE =
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop";
 
 export default function ShopsPage() {
   const { w } = useWebI18n();
@@ -128,7 +132,7 @@ export default function ShopsPage() {
               >
                 <div className="relative h-52 overflow-hidden rounded-2xl bg-black/5">
                   <img
-                    src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop"
+                    src={store.image_url || DEFAULT_STORE_IMAGE}
                     alt={store.name}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

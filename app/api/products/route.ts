@@ -133,6 +133,7 @@ const createSchema = z.object({
   store_id: z.string().uuid().optional(),
   images: z
     .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
+    .max(20, "Ko'pi bilan 20 ta rasm yuklash mumkin")
     .optional(),
   variants: z.array(variantSchema).optional(),
   location: z
@@ -165,6 +166,10 @@ export async function POST(req: NextRequest) {
     if (roleResult.rows.length === 0) return fail("Unauthorized", 401);
     const actualRole = roleResult.rows[0].role as string;
     if (!["seller", "admin"].includes(actualRole)) return fail("Forbidden", 403);
+    const reviewSupport = await getProductReviewSupport();
+    if (actualRole === "seller" && !reviewSupport.hasReviewStatus) {
+      return fail("Database schema not ready. Run migrations/008_product_review.sql.", 503);
+    }
 
     const body = await req.json();
     const parsed = createSchema.safeParse(body);
@@ -210,7 +215,6 @@ export async function POST(req: NextRequest) {
       await client.query("BEGIN");
 
       // Insert product
-      const reviewSupport = await getProductReviewSupport();
       const reviewStatus = actualRole === "admin" ? "approved" : "pending";
       const isActive = reviewSupport.hasReviewStatus ? actualRole === "admin" : true;
       const productResult = reviewSupport.hasReviewStatus

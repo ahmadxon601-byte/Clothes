@@ -2,10 +2,16 @@
 
 import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ChevronLeft, MapPin, Package, Store } from 'lucide-react';
 import { RichTextContent } from '../../../../src/shared/ui/RichTextContent';
 import { getVariantMeta, getDepartmentBySlug } from '../../../../src/shared/lib/productCategoryMeta';
+
+const MapDisplay = dynamic(
+  () => import('../../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
+  { ssr: false, loading: () => <div className="h-[170px] w-full animate-pulse bg-[#f3f4f6] dark:bg-[#111111]" /> }
+);
 
 interface ProductImage {
   id: string;
@@ -36,6 +42,7 @@ interface ProductDetail {
   store_id: string;
   store_name: string;
   store_address?: string | null;
+  store_description?: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
 }
@@ -46,6 +53,17 @@ interface SimilarProduct {
   base_price: number;
   thumbnail: string | null;
   store_name: string | null;
+}
+
+function parseAddressCoords(raw: string | null | undefined): { text: string; lat: number | null; lng: number | null } {
+  if (!raw) return { text: '', lat: null, lng: null };
+  const m = raw.match(/Coordinates:\s*([-\d.]+),\s*([-\d.]+)/i);
+  const text = raw.replace(/\s*Coordinates:.*$/i, '').trim();
+  if (!m) return { text, lat: null, lng: null };
+  const lat = Number(m[1]);
+  const lng = Number(m[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return { text, lat: null, lng: null };
+  return { text, lat, lng };
 }
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -80,7 +98,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     );
   }, [variants, selectedSize, selectedColor]);
   const displayPrice = selectedVariant ? selectedVariant.price : product?.base_price ?? 0;
-  const storeAddress = (product?.store_address || '').replace(/\s*Coordinates:.*$/i, '').trim();
+  const {
+    text: storeAddressText,
+    lat: storeLatFromAddress,
+    lng: storeLngFromAddress,
+  } = parseAddressCoords(product?.store_address);
+  const { lat: storeLatFromDescription, lng: storeLngFromDescription } = parseAddressCoords(product?.store_description);
+  const storeLat = storeLatFromAddress ?? storeLatFromDescription;
+  const storeLng = storeLngFromAddress ?? storeLngFromDescription;
   const variantLabel = getVariantMeta(getDepartmentBySlug(product?.category_slug ?? null)).label;
 
   useEffect(() => {
@@ -94,9 +119,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             .then((r) => r.json())
             .then((sj) => {
               const addr = sj?.data?.store?.address ?? sj?.store?.address ?? null;
-              if (addr) {
-                setProduct((prev) => (prev ? { ...prev, store_address: addr } : prev));
-              }
+              const desc = sj?.data?.store?.description ?? sj?.store?.description ?? null;
+              setProduct((prev) => (prev ? { ...prev, store_address: addr, store_description: desc } : prev));
             })
             .catch(() => {});
         }
@@ -193,9 +217,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
 
           <div className="flex flex-col rounded-[28px] border border-black/8 bg-white/85 p-5 shadow-[0_22px_48px_-34px_rgba(0,0,0,0.45)] backdrop-blur-sm dark:border-white/10 dark:bg-[#171717]/85 md:p-6">
-            {product.category_name && (
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">{product.category_name}</p>
-            )}
             <h1 className="mt-1.5 text-[28px] font-black leading-tight text-[#111111] dark:text-white md:text-[34px]">{product.name}</h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-[#00c853]/20 bg-[#00c853]/5 px-4 py-3">
@@ -217,7 +238,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               />
             )}
 
-            {variants.length > 0 && (
+            {(sizeOptions.length > 0 || colorOptions.length > 0) && (
               <div className="mt-6 space-y-4 rounded-2xl border border-black/8 bg-[#fafafa] p-4 dark:border-white/10 dark:bg-[#111111]">
                 {sizeOptions.length > 0 && (
                   <div>
@@ -296,15 +317,21 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold text-[#9ca3af]">Do&apos;kon</p>
                 <p className="truncate text-[14px] font-bold text-[#111111] dark:text-white">{product.store_name}</p>
-                {storeAddress && (
+                {storeAddressText && (
                   <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                     <MapPin size={12} className="shrink-0" />
-                    {storeAddress}
+                    {storeAddressText}
                   </p>
                 )}
               </div>
               <ChevronLeft size={16} className="rotate-180 text-[#9ca3af]" />
             </Link>
+
+            {storeLat !== null && storeLng !== null && (
+              <div className="mt-3 overflow-hidden rounded-[18px] border border-black/8 dark:border-white/10">
+                <MapDisplay lat={storeLat} lng={storeLng} height={170} />
+              </div>
+            )}
 
             <div className="mt-3 flex items-center gap-3 text-[12px] text-[#9ca3af]">
               <span>{product.views} ko&apos;rishlar</span>
@@ -347,4 +374,3 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     </div>
   );
 }
-

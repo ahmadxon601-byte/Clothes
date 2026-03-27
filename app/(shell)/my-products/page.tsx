@@ -60,6 +60,8 @@ interface DailyDealInvite {
   selected_items: Array<{ product_id: string }>;
 }
 
+const MAX_PRODUCT_IMAGES = 20;
+
 const getToken = () =>
   typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
 
@@ -354,11 +356,22 @@ export default function MyProductsPage() {
     }
 
     setFormError('');
+    if (formErrors.images) {
+      setFormErrors((prev) => ({ ...prev, images: false }));
+    }
     setSuccessMessage('');
+
+    const selectedFiles = Array.from(files);
+    if (formImages.length + selectedFiles.length > MAX_PRODUCT_IMAGES) {
+      setFormErrors((prev) => ({ ...prev, images: true }));
+      setFormError(`Ko'pi bilan ${MAX_PRODUCT_IMAGES} ta rasm yuklash mumkin.`);
+      return;
+    }
+
     setUploadingImg(true);
     try {
       const urls: string[] = [];
-      for (const file of Array.from(files)) {
+      for (const file of selectedFiles) {
         if (file.size > 4 * 1024 * 1024) {
           throw new Error(`${file.name}: 4MB dan kichik rasm tanlang`);
         }
@@ -387,6 +400,7 @@ export default function MyProductsPage() {
 
       setFormImages((prev) => [...prev, ...urls]);
     } catch (e) {
+      setFormErrors((prev) => ({ ...prev, images: true }));
       setFormError(e instanceof Error ? e.message : 'Rasm yuklashda xatolik');
     } finally {
       setUploadingImg(false);
@@ -942,7 +956,7 @@ export default function MyProductsPage() {
                 {/* Image upload */}
                 <div>
                   <span className={subtleLabelClass}>Rasmlar (ixtiyoriy)</span>
-                  <div className="flex flex-wrap gap-2.5 rounded-[24px] border border-white/8 bg-black/[0.02] p-3 dark:bg-white/[0.02]">
+                  <div className={`flex flex-wrap gap-2.5 rounded-[24px] border p-3 ${formErrors.images ? 'border-red-500/80 bg-red-50/30 dark:bg-red-500/10' : 'border-white/8 bg-black/[0.02] dark:bg-white/[0.02]'}`}>
                     {formImages.map((url, i) => (
                       <div key={i} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-white/10 bg-black/5 dark:bg-white/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -970,11 +984,19 @@ export default function MyProductsPage() {
                         accept="image/*"
                         multiple
                         className="sr-only"
-                        disabled={uploadingImg}
+                        disabled={uploadingImg || formImages.length >= MAX_PRODUCT_IMAGES}
                         onChange={(e) => handleImageUpload(e.target.files)}
                       />
                     </label>
                   </div>
+                  <p className={`mt-1 text-[12px] ${formErrors.images ? 'text-red-500' : 'text-[#6b7280] dark:text-[#9ca3af]'}`}>
+                    {formImages.length}/{MAX_PRODUCT_IMAGES} ta rasm yuklandi
+                  </p>
+                  {formErrors.images && (
+                    <p className="mt-1 text-[12px] text-red-500">
+                      Rasm yuklashda xatolik bor. Ko&apos;pi bilan {MAX_PRODUCT_IMAGES} ta rasm tanlang.
+                    </p>
+                  )}
                 </div>
               </div>
               {formError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}

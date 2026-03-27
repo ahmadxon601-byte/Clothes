@@ -109,6 +109,7 @@ const updateSchema = z.object({
   is_active: z.boolean().optional(),
   images: z
     .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
+    .max(20, "Ko'pi bilan 20 ta rasm yuklash mumkin")
     .optional(),
   variants: z.array(updateVariantSchema).optional(),
 });
@@ -125,6 +126,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const jwtUser = requireRole(req, "seller", "admin");
     const { id } = await params;
     const reviewSupport = await getProductReviewSupport();
+    if (jwtUser.role === "seller" && !reviewSupport.hasReviewStatus) {
+      return fail("Database schema not ready. Run migrations/008_product_review.sql.", 503);
+    }
 
     let existingProduct:
       | { id: string; sku: string; review_status?: string | null }
