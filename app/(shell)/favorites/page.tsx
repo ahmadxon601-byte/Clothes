@@ -9,6 +9,10 @@ import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
+import { useTranslation } from '../../../src/shared/lib/i18n';
+import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
+import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
+import { formatPrice } from '../../../src/shared/lib/formatPrice';
 
 type FavProduct = {
     id: string;
@@ -29,11 +33,13 @@ function getToken() {
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useWebAuth();
     const { w } = useWebI18n();
+    const { language } = useTranslation();
     const [products, setProducts] = useState<FavProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
     const [toggling, setToggling] = useState<Set<string>>(new Set());
     const [authModal, setAuthModal] = useState(false);
+    const translatedTitles = useTranslatedLabelMap(products.map((product) => ({ id: product.product_id, label: product.title })), language);
 
     const fetchFavorites = async () => {
         const token = getToken();
@@ -92,7 +98,7 @@ export default function FavoritesPage() {
         return (
             <>
                 <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
-                <section className="mx-auto w-full max-w-[1280px] px-4 py-16 md:px-8 md:py-24 text-center">
+                <section className="mx-auto w-full max-w-[1440px] px-5 py-16 md:px-8 md:py-24 text-center">
                     <div className="mx-auto max-w-md">
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f4f6] dark:bg-[#1f1f1f]">
                             <Heart size={36} className="text-[#9ca3af]" />
@@ -112,7 +118,7 @@ export default function FavoritesPage() {
     }
 
     return (
-        <section className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-12">
+        <section className="mx-auto w-full max-w-[1440px] px-5 py-8 md:px-8 md:py-12">
             <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-[linear-gradient(145deg,#fbfffc_0%,#f2f8ff_52%,#f7faff_100%)] p-6 dark:border-white/10 dark:bg-[linear-gradient(145deg,#111_0%,#0d1a12_52%,#0f1520_100%)] md:p-8">
                 <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#00c853]/15 blur-3xl" />
                 <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#5aa6ff]/20 blur-3xl" />
@@ -138,7 +144,7 @@ export default function FavoritesPage() {
 
             <div className="mt-6">
                 {loading ? (
-                    <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-5 min-[460px]:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
                         {[1, 2, 3, 4].map((i) => (
                             <div key={i} className="rounded-3xl border border-black/8 bg-white p-3 dark:border-white/8 dark:bg-[#1a1a1a]">
                                 <Skeleton className="aspect-[3/4] w-full rounded-2xl" />
@@ -148,7 +154,7 @@ export default function FavoritesPage() {
                         ))}
                     </div>
                 ) : filtered.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-5 min-[460px]:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
                         {filtered.map((product) => {
                             const bp = Number(product.base_price);
                             const sp = product.sale_price != null ? Number(product.sale_price) : null;
@@ -164,7 +170,7 @@ export default function FavoritesPage() {
                                 >
                                     <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={product.image_url || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product'} alt={product.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        <img src={product.image_url || 'https://placehold.co/640x800/f8f8f8/ccc?text=Product'} alt={sanitizeProductLabel(translatedTitles[product.product_id] ?? product.title, language)} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                         <button
                                             onClick={(e) => { e.preventDefault(); toggleFav(product.product_id); }}
                                             disabled={isBusy}
@@ -175,12 +181,12 @@ export default function FavoritesPage() {
                                     </div>
                                     <div className="px-1 pb-1 pt-4">
                                         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{product.brand}</p>
-                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.title}</h3>
+                                        <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{sanitizeProductLabel(translatedTitles[product.product_id] ?? product.title, language)}</h3>
                                         <div className="mt-2.5">
-                                            <span className="text-[17px] font-black text-[#00c853]">{cur.toLocaleString('ru-RU')} so&apos;m</span>
+                                            <span className="text-[17px] font-black text-[#00c853]">{formatPrice(cur, 'UZS', language)}</span>
                                             {hasDis && (
                                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <span className="text-[12px] text-[#9ca3af] line-through">{bp.toLocaleString('ru-RU')} so&apos;m</span>
+                                                    <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(bp, 'UZS', language)}</span>
                                                     <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
                                                 </div>
                                             )}

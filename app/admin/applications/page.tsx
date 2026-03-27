@@ -141,11 +141,11 @@ export default function ApplicationsPage() {
       <AdminPageSection title={t('applications.shopApplications')} description={t('applications.shopApplicationsDesc')} />
 
       <FilterBar>
-        <div className='relative min-w-[240px] flex-1'>
+        <div className='relative min-w-0 flex-1'>
           <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('applications.searchPlaceholder')} className='admin-input pl-10' />
         </div>
-        <select className='admin-input max-w-[220px]' value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select className='admin-input w-full sm:max-w-[220px]' value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value=''>{t('applications.allStatuses')}</option>
           <option value='pending'>{t('applications.pending')}</option>
           <option value='approved'>{t('applications.approved')}</option>

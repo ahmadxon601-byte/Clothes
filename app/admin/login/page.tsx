@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
               <button
                 type='button'
                 onClick={() => setShowPassword((prev) => !prev)}
-                className='absolute right-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-[var(--admin-muted)] transition hover:text-[var(--admin-fg)]'
+                className='absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[var(--admin-muted)] transition hover:bg-black/5 hover:text-[var(--admin-text)]'
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className='size-4' /> : <Eye className='size-4' />}

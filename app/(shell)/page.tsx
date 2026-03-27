@@ -16,6 +16,8 @@ import { SITE_ROUTES } from '../../src/shared/config/constants';
 import { fetchProducts } from '../../src/lib/apiClient';
 import type { ApiProduct } from '../../src/lib/apiClient';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
+import { repairText, repairTextTree } from '../../src/shared/lib/repairText';
+import { translateText, type UiLanguage } from '../../src/shared/lib/translateClient';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../src/context/WebAuthContext';
@@ -25,6 +27,9 @@ import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
 interface HeroBannerProduct {
     id: string;
     name: string;
+    name_uz?: string | null;
+    name_ru?: string | null;
+    name_en?: string | null;
     base_price: number;
     sale_price: number | null;
     thumbnail: string | null;
@@ -33,6 +38,9 @@ interface HeroBannerProduct {
 interface HeroBanner {
     id: string;
     title: string;
+    title_uz?: string | null;
+    title_ru?: string | null;
+    title_en?: string | null;
     products: HeroBannerProduct[];
 }
 
@@ -55,7 +63,7 @@ const FALLBACK_IMAGES = [
     'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?q=80&w=1200&auto=format&fit=crop',
 ];
 
-const HERO_COPY = {
+const HERO_COPY = repairTextTree({
     uz: {
         badge: 'Yangi mavsum 2026',
         title: ['Hammasi bir joyda', 'eng yaxshi', 'narxlarda.'],
@@ -78,9 +86,9 @@ const HERO_COPY = {
         secondary: 'Категории',
         floating: 'Избранные предложения',
     },
-} as const;
+} as const);
 
-const SECTION_COPY = {
+const SECTION_COPY = repairTextTree({
     uz: {
         categoryTitle: 'Kategoriyalar',
         categoryDesc: 'Eng ko‘p ko‘rilayotgan bo‘limlar va tavsiya etilgan yo‘nalishlar.',
@@ -120,7 +128,34 @@ const SECTION_COPY = {
         partnerDesc: 'Откройте магазин на Qulaymarket, покажите товары большему числу покупателей и быстрее запустите продажи.',
         partnerCta: 'Открыть магазин',
     },
-} as const;
+} as const);
+
+const PARTNER_COPY = repairTextTree({
+    uz: {
+        startZero: '0% komissiya bilan boshlash imkoniyati',
+        storefront: "Shaxsiy do'kon sahifasi va mahsulot vitrinası",
+        fastReview: 'Tez ariza va moderatsiya jarayoni',
+        bannerOffer: 'uchun maxsus banner taklifi.',
+        premiumCollection: 'Tanlangan mahsulot',
+        saleLabel: 'aksiya',
+    },
+    en: {
+        startZero: 'Start with 0% commission',
+        storefront: 'Personal store page and product storefront',
+        fastReview: 'Fast application and moderation flow',
+        bannerOffer: 'featured in this banner.',
+        premiumCollection: 'Featured product',
+        saleLabel: 'off',
+    },
+    ru: {
+        startZero: 'Стартуйте с комиссией 0%',
+        storefront: 'Личная страница магазина и витрина товаров',
+        fastReview: 'Быстрая заявка и модерация',
+        bannerOffer: 'в специальном баннерном предложении.',
+        premiumCollection: 'Избранный товар',
+        saleLabel: 'скидка',
+    },
+} as const);
 
 function getToken() {
     if (typeof window === 'undefined') return null;
@@ -129,6 +164,43 @@ function getToken() {
 
 function imageFor(product: { thumbnail: string | null } | undefined, index: number) {
     return product?.thumbnail || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
+}
+
+function detectSourceLanguage(text: string): UiLanguage {
+    if (/[А-Яа-яЁё]/.test(text)) return 'ru';
+    if (/[A-Za-z]/.test(text)) return 'uz';
+    return 'uz';
+}
+
+function looksLikeBrokenName(text: string) {
+    const normalized = text.trim().toLowerCase();
+    if (!normalized) return true;
+    if (/^[a-z]{6,}$/.test(normalized) && !/[aeiou]/.test(normalized)) return true;
+    if (/^(.)\1{3,}$/.test(normalized)) return true;
+    return false;
+}
+
+function getLocalizedValue<T extends { name?: string | null; name_uz?: string | null; name_ru?: string | null; name_en?: string | null }>(
+    item: T,
+    language: UiLanguage,
+) {
+    const raw =
+        language === 'ru'
+            ? item.name_ru || item.name
+            : language === 'en'
+                ? item.name_en || item.name
+                : item.name_uz || item.name;
+    return repairText(raw || '');
+}
+
+function getLocalizedBannerTitle(banner: HeroBanner, language: UiLanguage) {
+    const raw =
+        language === 'ru'
+            ? banner.title_ru || banner.title
+            : language === 'en'
+                ? banner.title_en || banner.title
+                : banner.title_uz || banner.title;
+    return repairText(raw || '');
 }
 
 export default function WebsiteHomePage() {
@@ -141,9 +213,13 @@ export default function WebsiteHomePage() {
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
     const [authModal, setAuthModal] = useState(false);
     const [countdownText, setCountdownText] = useState('00 : 00 : 00');
+    const [translatedBannerTitle, setTranslatedBannerTitle] = useState('');
+    const [translatedNames, setTranslatedNames] = useState<Record<string, string>>({});
 
     const heroCopy = HERO_COPY[language] ?? HERO_COPY.uz;
     const sectionCopy = SECTION_COPY[language] ?? SECTION_COPY.uz;
+    const partnerCopy = PARTNER_COPY[language] ?? PARTNER_COPY.uz;
+    const genericProductLabel = language === 'ru' ? 'Товар' : language === 'en' ? 'Product' : 'Mahsulot';
 
     const loadProducts = useCallback(() => {
         fetchProducts({ limit: 24 }).then(({ products: data }) => setProducts(data)).catch(() => { });
@@ -222,6 +298,60 @@ export default function WebsiteHomePage() {
         return () => window.clearInterval(timer);
     }, [dailyDealEndsAt]);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        const translateDynamicCopy = async () => {
+            const nameEntries = new Map<string, string>();
+
+            const queueName = (id: string, label: string) => {
+                if (!label.trim() || nameEntries.has(id)) return;
+                nameEntries.set(id, label);
+            };
+
+            products.forEach((product) => queueName(product.id, getLocalizedValue(product, language)));
+            dailyDealProducts.forEach((product) => queueName(product.id, getLocalizedValue(product, language)));
+            heroBanner?.products.forEach((product) => queueName(product.id, getLocalizedValue(product, language)));
+
+            const nextNames = Object.fromEntries(nameEntries);
+            setTranslatedNames(nextNames);
+
+            const heroTitle = heroBanner ? getLocalizedBannerTitle(heroBanner, language) : '';
+            setTranslatedBannerTitle(heroTitle);
+
+            if (language === 'uz') return;
+
+            const translatedPairs = await Promise.all(
+                Array.from(nameEntries.entries()).map(async ([id, label]) => {
+                    try {
+                        return [id, await translateText(label, language, detectSourceLanguage(label))] as const;
+                    } catch {
+                        return [id, label] as const;
+                    }
+                }),
+            );
+
+            let translatedTitle = heroTitle;
+            if (heroTitle.trim()) {
+                try {
+                    translatedTitle = await translateText(heroTitle, language, detectSourceLanguage(heroTitle));
+                } catch {
+                    translatedTitle = heroTitle;
+                }
+            }
+
+            if (cancelled) return;
+            setTranslatedNames(Object.fromEntries(translatedPairs));
+            setTranslatedBannerTitle(translatedTitle);
+        };
+
+        void translateDynamicCopy();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dailyDealProducts, heroBanner, language, products]);
+
     useSSERefetch(['products', 'banners', 'daily_deals'], () => {
         loadProducts();
         void loadHeroBanner();
@@ -229,14 +359,23 @@ export default function WebsiteHomePage() {
     });
 
     const heroProduct = heroBanner?.products?.[0] ?? products[0];
+    const displayName = useCallback(
+        (product?: { id: string; name?: string | null; name_uz?: string | null; name_ru?: string | null; name_en?: string | null } | null) => {
+            if (!product) return '';
+            const label = translatedNames[product.id] ?? getLocalizedValue(product, language);
+            return looksLikeBrokenName(label) ? genericProductLabel : label;
+        },
+        [genericProductLabel, language, translatedNames],
+    );
     const heroTitleLines = useMemo(() => {
-        if (!heroBanner?.title?.trim()) {
+        const title = translatedBannerTitle.trim();
+        if (!title) {
             return heroCopy.title;
         }
 
-        const words = heroBanner.title.trim().split(/\s+/);
+        const words = title.split(/\s+/);
         if (words.length <= 2) {
-            return [heroBanner.title, '', ''].filter(Boolean);
+            return [title, '', ''].filter(Boolean);
         }
 
         const firstBreak = Math.ceil(words.length / 3);
@@ -248,13 +387,13 @@ export default function WebsiteHomePage() {
         ].filter(Boolean);
 
         return lines.length ? lines : heroCopy.title;
-    }, [heroBanner?.title, heroCopy.title]);
+    }, [heroCopy.title, translatedBannerTitle]);
     const heroDescription = heroBanner
         ? heroBanner.products.length > 1
-            ? `${heroBanner.products.slice(0, 3).map((product) => product.name).join(', ')} uchun maxsus banner taklifi.`
-            : `${heroProduct?.name ?? 'Tanlangan mahsulot'} uchun maxsus banner taklifi.`
+            ? `${heroBanner.products.slice(0, 3).map((product) => displayName(product)).join(', ')} ${partnerCopy.bannerOffer}`
+            : `${displayName(heroProduct) || partnerCopy.premiumCollection} ${partnerCopy.bannerOffer}`
         : heroCopy.desc;
-    const heroFloatingTitle = heroBanner ? heroBanner.title : heroCopy.floating;
+    const heroFloatingTitle = heroBanner ? translatedBannerTitle || heroCopy.floating : heroCopy.floating;
     const dealProducts = useMemo(() => {
         if (dailyDealProducts.length) return dailyDealProducts.slice(0, 3);
         const discounted = products.filter((product) => {
@@ -326,10 +465,10 @@ export default function WebsiteHomePage() {
         <div id="home" className="w-full bg-[#f5f6f8] text-[#111111] dark:bg-[#0f0f0f] dark:text-white">
             <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
 
-            <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-2 py-5 md:px-4 md:py-6 lg:gap-12 lg:px-6">
-                <section className="grid gap-8 overflow-hidden rounded-[34px] bg-[linear-gradient(135deg,rgba(19,236,55,0.08),rgba(255,255,255,0.96),rgba(19,236,55,0.05))] p-5 shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[linear-gradient(135deg,rgba(19,236,55,0.14),rgba(19,19,19,0.96),rgba(19,236,55,0.08))] md:grid-cols-[1.1fr_0.9fr] md:p-8 lg:rounded-[40px] lg:p-10">
-                    <div className="flex max-w-[620px] flex-col justify-center">
-                        <h1 className="max-w-[11ch] text-[clamp(2.6rem,5.6vw,4.8rem)] font-black leading-[1.03] tracking-[-0.05em] text-[#111111] dark:text-white">
+            <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-3 py-4 sm:px-4 md:px-5 md:py-6 lg:gap-10 lg:px-6 xl:gap-12 xl:px-8">
+                <section className="grid gap-6 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgba(19,236,55,0.08),rgba(255,255,255,0.96),rgba(19,236,55,0.05))] p-4 shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[linear-gradient(135deg,rgba(19,236,55,0.14),rgba(19,19,19,0.96),rgba(19,236,55,0.08))] sm:gap-7 sm:p-5 md:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] md:items-center md:gap-8 md:p-7 lg:rounded-[34px] lg:p-10 xl:grid-cols-[1.12fr_0.88fr]">
+                    <div className="flex min-w-0 max-w-[720px] flex-col justify-center">
+                        <h1 className="max-w-[10ch] break-words text-[clamp(1.8rem,8vw,4.8rem)] font-black leading-[0.96] tracking-[-0.05em] text-[#111111] dark:text-white sm:text-[clamp(2.1rem,7vw,4.8rem)]">
                             {heroTitleLines[0] ?? ''}
                             {heroTitleLines[1] ? (
                                 <>
@@ -344,39 +483,40 @@ export default function WebsiteHomePage() {
                                 </>
                             ) : null}
                         </h1>
-                        <p className="mt-6 max-w-[48ch] text-[15px] leading-8 text-[#5f6571] dark:text-white/70">
+                        <p className="mt-3 max-w-[40ch] text-[13px] leading-6 text-[#5f6571] dark:text-white/70 sm:mt-5 sm:text-[15px] sm:leading-8">
                             {heroDescription}
                         </p>
-                        <div className="mt-8 flex flex-wrap gap-4">
+                        <div className="mt-5 flex flex-wrap gap-3 sm:mt-8 sm:gap-4">
                             <Link
                                 href={WEB_LINKS.CATEGORIES}
-                                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-[12px] font-bold text-[#111111] shadow-[0_18px_45px_-28px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+                                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[12px] font-bold text-[#111111] shadow-[0_18px_45px_-28px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-0.5 dark:bg-white/10 dark:text-white sm:h-12 sm:px-6"
                             >
                                 {heroCopy.secondary}
                             </Link>
                         </div>
                     </div>
 
-                    <div className="relative flex min-h-[320px] items-center justify-center pt-3 md:min-h-[420px] md:justify-end">
-                        <div className="absolute inset-x-[8%] top-[16%] h-[62%] rounded-full bg-[#13ec37]/15 blur-[70px]" />
+                    <div className="relative flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">
+                        <div className="absolute inset-x-[8%] top-[16%] h-[62%] rounded-full bg-[#13ec37]/15 blur-[56px] sm:blur-[70px]" />
                         <Link
                             href={heroProduct ? `/product/${heroProduct.id}` : WEB_LINKS.PRODUCTS}
-                            className="group relative block w-full max-w-[460px] rotate-[6deg] overflow-hidden rounded-[28px] bg-[#151819] p-3 shadow-[0_32px_80px_-30px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_-32px_rgba(0,0,0,0.7)]"
+                            className="group relative block w-full max-w-[320px] overflow-hidden rounded-[22px] bg-[#151819] p-2 shadow-[0_32px_80px_-30px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_-32px_rgba(0,0,0,0.7)] sm:max-w-[420px] sm:rotate-[3deg] sm:p-3 md:max-w-[470px] md:rotate-[4deg] lg:max-w-[560px] lg:rotate-[6deg]"
                         >
                             <img
                                 src={imageFor(heroProduct, 2)}
-                                alt={heroProduct?.name ?? 'Hero product'}
-                                className="aspect-[1.1] w-full rounded-[22px] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                                alt={displayName(heroProduct) || 'Hero product'}
+                                className="aspect-[1.02] w-full rounded-[18px] object-cover transition-transform duration-500 group-hover:scale-[1.03] sm:aspect-[1.1] sm:rounded-[22px]"
                             />
-                            <div className="absolute bottom-0 left-2 rounded-[22px] bg-white/92 px-4 py-3 shadow-[0_18px_50px_-28px_rgba(17,24,39,0.4)] backdrop-blur md:bottom-4 md:left-0 dark:bg-[#161616]/90">
-                                <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#10be33]">{heroFloatingTitle}</p>
-                                <p className="mt-1 text-[14px] font-bold text-[#111111] dark:text-white">{heroProduct?.name ?? 'Premium Collection'}</p>
-                                <p className="mt-1 text-[13px] font-black text-[#10be33]">
+                            <div className="absolute bottom-2 left-2 right-2 rounded-[16px] bg-white/92 px-3 py-2 shadow-[0_18px_50px_-28px_rgba(17,24,39,0.4)] backdrop-blur sm:right-auto sm:max-w-[80%] sm:rounded-[22px] sm:px-4 sm:py-3 md:bottom-4 md:left-0 dark:bg-[#161616]/90">
+                                <p className="line-clamp-2 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#10be33] sm:text-[10px] sm:tracking-[0.15em]">{heroFloatingTitle}</p>
+                                <p className="mt-1 line-clamp-2 text-[13px] font-bold text-[#111111] dark:text-white sm:text-[14px]">{displayName(heroProduct) || partnerCopy.premiumCollection}</p>
+                                <p className="mt-1 text-[12px] font-black text-[#10be33] sm:text-[13px]">
                                     {formatPrice(
                                         heroProduct?.sale_price != null && Number(heroProduct.sale_price) < Number(heroProduct.base_price)
                                             ? Number(heroProduct.sale_price)
                                             : Number(heroProduct?.base_price ?? 0),
                                         'UZS',
+                                        language,
                                     )}
                                 </p>
                             </div>
@@ -385,8 +525,8 @@ export default function WebsiteHomePage() {
                 </section>
 
                 <section id="deals" className="space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-end gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+                        <div className="flex flex-wrap items-end gap-3">
                             <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-black tracking-tight uppercase">{sectionCopy.dealsTitle}</h2>
                             <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[11px] font-bold text-[#6b7280] shadow-[0_12px_36px_-28px_rgba(17,24,39,0.35)] dark:bg-white/10 dark:text-white/70">
                                 <Clock3 size={14} className="text-[#10be33]" />
@@ -401,7 +541,7 @@ export default function WebsiteHomePage() {
                         </Link>
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-3">
+                    <div className="grid gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
                         {dealProducts.map((product, index) => {
                             const base = Number(product.base_price);
                             const sale = product.sale_price != null ? Number(product.sale_price) : null;
@@ -414,10 +554,10 @@ export default function WebsiteHomePage() {
                                     <Link href={`/product/${product.id}`} className="block">
                                         <div className="relative overflow-hidden rounded-[22px] bg-[#eef1f4]">
                                             <div className="pointer-events-none absolute inset-y-0 left-[-65%] z-[1] w-[42%] -skew-x-12 bg-white/20 opacity-0 blur-md transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
-                                            <img src={imageFor(product, index)} alt={product.name} className="aspect-[0.95] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                            <img src={imageFor(product, index)} alt={displayName(product)} className="aspect-[0.95] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                             {discount > 0 && (
                                                 <span className="absolute left-3 top-3 rounded-full bg-[#10be33] px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#04230d] transition-transform duration-300 group-hover:scale-105">
-                                                    -{discount}% aksiya
+                                                    -{discount}% {partnerCopy.saleLabel}
                                                 </span>
                                             )}
                                             <button
@@ -432,11 +572,11 @@ export default function WebsiteHomePage() {
                                             </button>
                                         </div>
                                         <div className="px-1 pt-4">
-                                            <p className="text-[14px] font-bold text-[#111111] transition-colors duration-300 group-hover:text-[#10be33] dark:text-white dark:group-hover:text-[#84f89b]">{product.name}</p>
-                                            <div className="mt-3 flex items-baseline gap-2">
-                                                <span className="text-[28px] font-black tracking-tight text-[#2a33ff] transition-transform duration-300 group-hover:translate-x-1 dark:text-[#90a1ff]">{formatPrice(current, 'UZS')}</span>
+                                            <p className="line-clamp-2 text-[14px] font-bold text-[#111111] transition-colors duration-300 group-hover:text-[#10be33] dark:text-white dark:group-hover:text-[#84f89b]">{displayName(product)}</p>
+                                            <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                                                <span className="text-[22px] font-black tracking-tight text-[#2a33ff] transition-transform duration-300 group-hover:translate-x-1 dark:text-[#90a1ff] sm:text-[28px]">{formatPrice(current, 'UZS', language)}</span>
                                                 {current < base && (
-                                                    <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(base, 'UZS')}</span>
+                                                    <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(base, 'UZS', language)}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -453,7 +593,7 @@ export default function WebsiteHomePage() {
                         <p className="mt-1 text-[14px] text-[#6b7280] dark:text-white/60">{sectionCopy.popularDesc}</p>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         {popularProducts.map((product, index) => {
                             const base = Number(product.base_price);
                             const sale = product.sale_price != null ? Number(product.sale_price) : null;
@@ -467,7 +607,7 @@ export default function WebsiteHomePage() {
                                     className="group rounded-[24px] border border-black/5 bg-white p-3 shadow-[0_18px_50px_-34px_rgba(17,24,39,0.28)] transition-all duration-300 hover:-translate-y-1 dark:border-white/10 dark:bg-[#151515]"
                                 >
                                     <div className="relative overflow-hidden rounded-[18px] bg-[#f0f2f5]">
-                                        <img src={imageFor(product, index + 3)} alt={product.name} className="aspect-[0.92] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        <img src={imageFor(product, index + 3)} alt={displayName(product)} className="aspect-[0.92] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                         <button
                                             type="button"
                                             onClick={(event) => toggleWishlist(event, product.id)}
@@ -481,9 +621,9 @@ export default function WebsiteHomePage() {
                                     </div>
                                     <div className="px-1 pt-4">
                                         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#10be33]">{tc(product.category_name ?? 'Product')}</p>
-                                        <h3 className="mt-2 line-clamp-2 text-[14px] font-bold text-[#111111] dark:text-white">{product.name}</h3>
-                                        <p className="mt-1 text-[12px] text-[#6b7280] dark:text-white/55">{product.store_name}</p>
-                                        <p className="mt-3 text-[20px] font-black tracking-tight text-[#111111] dark:text-white">{formatPrice(current, 'UZS')}</p>
+                                        <h3 className="mt-2 line-clamp-2 text-[14px] font-bold text-[#111111] dark:text-white">{displayName(product)}</h3>
+                                        <p className="mt-1 line-clamp-1 text-[12px] text-[#6b7280] dark:text-white/55">{product.store_name}</p>
+                                        <p className="mt-3 text-[20px] font-black tracking-tight text-[#111111] dark:text-white">{formatPrice(current, 'UZS', language)}</p>
                                     </div>
                                 </Link>
                             );
@@ -491,22 +631,22 @@ export default function WebsiteHomePage() {
                     </div>
                 </section>
 
-                <section className="grid gap-4 md:grid-cols-4">
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {serviceItems.map((item) => (
                         <div
                             key={item.title}
-                            className="group rounded-[26px] bg-white px-5 py-7 text-center shadow-[0_18px_50px_-34px_rgba(17,24,39,0.22)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_26px_60px_-30px_rgba(17,24,39,0.3)] dark:bg-[#151515]"
+                            className="group rounded-[26px] bg-white px-5 py-7 text-center shadow-[0_18px_50px_-34px_rgba(17,24,39,0.22)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_26px_60px_-30px_rgba(17,24,39,0.3)] active:-translate-y-1 active:shadow-[0_22px_54px_-30px_rgba(17,24,39,0.28)] dark:bg-[#151515]"
                         >
-                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#13ec37]/12 text-[#10be33] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#13ec37]/18">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#13ec37]/12 text-[#10be33] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#13ec37]/18 group-active:scale-105 group-active:bg-[#13ec37]/18">
                                 <item.icon size={22} />
                             </div>
-                            <p className="mt-4 text-[15px] font-bold text-[#111111] transition-colors duration-300 group-hover:text-[#10be33] dark:text-white dark:group-hover:text-[#84f89b]">{item.title}</p>
+                            <p className="mt-4 text-[15px] font-bold text-[#111111] transition-colors duration-300 group-hover:text-[#10be33] group-active:text-[#10be33] dark:text-white dark:group-hover:text-[#84f89b] dark:group-active:text-[#84f89b]">{item.title}</p>
                             <p className="mt-2 text-[12px] leading-5 text-[#6b7280] dark:text-white/60">{item.desc}</p>
                         </div>
                     ))}
                 </section>
 
-                <section className="grid gap-5 overflow-hidden rounded-[30px] bg-white shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[#151515] md:grid-cols-[0.92fr_1.08fr]">
+                <section className="grid gap-5 overflow-hidden rounded-[28px] bg-white shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[#151515] md:grid-cols-[0.92fr_1.08fr] lg:rounded-[30px]">
                     <div className="flex flex-col justify-center px-5 py-7 md:px-8 md:py-8">
                         <div className="max-w-[430px]">
                             <p className="text-[clamp(1.7rem,3vw,2.6rem)] font-black leading-[0.92] tracking-[-0.04em] text-[#111111] dark:text-white">
@@ -524,9 +664,9 @@ export default function WebsiteHomePage() {
                             <div className="flex items-start gap-3"><ArrowRight size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>Tez ariza va moderatsiya jarayoni</span></div>
                         </div>
                         <div className="mt-5 space-y-3 text-[12px] text-[#111111] dark:text-white/80">
-                            <div className="flex items-start gap-3"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>0% komissiya bilan boshlash imkoniyati</span></div>
-                            <div className="flex items-start gap-3"><ShoppingBag size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>Shaxsiy do'kon sahifasi va mahsulot vitrinası</span></div>
-                            <div className="flex items-start gap-3"><ArrowRight size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>Tez ariza va moderatsiya jarayoni</span></div>
+                            <div className="flex items-start gap-3"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>{partnerCopy.startZero}</span></div>
+                            <div className="flex items-start gap-3"><ShoppingBag size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>{partnerCopy.storefront}</span></div>
+                            <div className="flex items-start gap-3"><ArrowRight size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>{partnerCopy.fastReview}</span></div>
                         </div>
                         <div className="mt-7">
                             <Link

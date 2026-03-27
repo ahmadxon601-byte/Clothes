@@ -6,6 +6,10 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Heart, Loader2, Package, Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useSettingsStore } from '../../../src/features/settings/model';
+import { useTranslation } from '../../../src/shared/lib/i18n';
+import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
+import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
+import { formatPrice } from '../../../src/shared/lib/formatPrice';
 const BannerCarousel = dynamic(() => import('../../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
 interface Product {
@@ -96,6 +100,7 @@ export default function ClothingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null; parent_id?: string | null }[]>([]);
   const lang = useSettingsStore((s) => s.settings.language);
+  const { t, language } = useTranslation();
   const [activeParentCategory, setActiveParentCategory] = useState('');
   const [activeSubcategory, setActiveSubcategory] = useState('');
   const [query, setQuery] = useState('');
@@ -126,6 +131,7 @@ export default function ClothingPage() {
     (sizeFilter ? 1 : 0) +
     (minDiscount ? 1 : 0) +
     (createdFrom ? 1 : 0);
+  const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
 
   useEffect(() => {
     const token = getToken();
@@ -211,10 +217,10 @@ export default function ClothingPage() {
   };
 
   return (
-    <section className="mx-auto max-w-[1280px] px-6 md:px-10 py-12 md:py-16">
+    <section className="mx-auto max-w-[1440px] px-6 md:px-10 py-12 md:py-16">
       <div className="mb-8">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Barcha mahsulotlar</p>
-        <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">Mahsulotlar</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{t.all}</p>
+        <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">{t.products_page_title}</h1>
       </div>
 
       {/* Search + filter */}
@@ -224,7 +230,7 @@ export default function ClothingPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Mahsulot qidirish..."
+            placeholder={t.placeholder_search}
             className="h-11 w-full rounded-full border border-black/10 bg-white pl-10 pr-10 text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white focus:ring-2 ring-[#00c853]/20"
           />
           {query && (
@@ -280,7 +286,7 @@ export default function ClothingPage() {
                     : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                 )}>
                 <CalendarDays size={15} />
-                Sana tanlash
+                {t.choose_date}
               </button>
             )}
             {calOpen && (
@@ -295,12 +301,12 @@ export default function ClothingPage() {
 
           {/* Price range */}
           <div>
-            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Narx oralig&apos;i (so&apos;m)</p>
+            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.price_range}</p>
             <div className="grid grid-cols-2 gap-3">
-              <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min narx"
+              <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder={t.min}
                 type="number"
                 className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-              <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Max narx"
+              <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder={t.max}
                 type="number"
                 className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
             </div>
@@ -326,7 +332,7 @@ export default function ClothingPage() {
           {/* Min discount + clear */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Aksiya (kamida %)</p>
+              <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.minimum_discount}</p>
               <div className="flex items-center gap-2">
                 <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
                   type="number" min="1" max="99" placeholder="20"
@@ -337,7 +343,7 @@ export default function ClothingPage() {
             {activeFilterCount > 0 && (
               <button onClick={clearFilters}
                 className="px-4 py-2 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all self-end">
-                Tozalash
+                {t.clear_filters}
               </button>
             )}
           </div>
@@ -351,7 +357,7 @@ export default function ClothingPage() {
             onClick={() => { setActiveParentCategory(''); setActiveSubcategory(''); }}
             className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === '' && activeSubcategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
           >
-            Barchasi
+            {t.all}
           </button>
           {parentCategories.map((cat) => (
             <button
@@ -393,10 +399,10 @@ export default function ClothingPage() {
       ) : products.length === 0 ? (
         <div className="py-24 text-center">
           <Package size={42} className="mx-auto mb-4 text-[#d1d5db]" />
-          <p className="text-[15px] text-[#9ca3af]">Mahsulotlar topilmadi</p>
+          <p className="text-[15px] text-[#9ca3af]">{t.no_results}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 min-[460px]:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
           {products.map((product) => (
             <Link
               key={product.id}
@@ -406,7 +412,7 @@ export default function ClothingPage() {
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
                 {product.thumbnail ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.thumbnail} alt={product.name} className="absolute inset-0 h-full w-full object-cover" />
+                  <img src={product.thumbnail} alt={sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)} className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#f3f4f6]">
                     <Package size={32} className="text-[#d1d5db]" />
@@ -432,7 +438,7 @@ export default function ClothingPage() {
                 {product.category_name && (
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{product.category_name}</p>
                 )}
-                <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{product.name}</h3>
+                <h3 className="mt-1 line-clamp-1 text-[14px] font-extrabold text-[#111111] dark:text-white">{sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)}</h3>
                 <p className="mt-0.5 text-[11px] text-[#9ca3af]">{product.store_name}</p>
                 <div className="mt-2.5">
                   {(() => {
@@ -441,15 +447,14 @@ export default function ClothingPage() {
                     const cur = sp != null && sp < bp ? sp : bp;
                     const hasDis = cur < bp;
                     const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
-                    const fmt = (n: number) => n.toLocaleString('ru-RU');
                     return (
                       <>
                         <span className="text-[17px] font-black text-[#00c853]">
-                          {fmt(cur)} so&apos;m
+                          {formatPrice(cur, 'UZS', language)}
                         </span>
                         {hasDis && (
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[12px] text-[#9ca3af] line-through">{fmt(bp)} so&apos;m</span>
+                            <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(bp, 'UZS', language)}</span>
                             <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
                           </div>
                         )}

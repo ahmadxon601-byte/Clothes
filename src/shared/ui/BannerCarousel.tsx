@@ -5,10 +5,15 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '../lib/formatPrice';
 import { useTranslation } from '../lib/i18n';
 import { useSSERefetch } from '../hooks/useSSERefetch';
+import { repairText } from '../lib/repairText';
+import { translateText, type UiLanguage } from '../lib/translateClient';
 
 interface BannerProduct {
   id: string;
   name: string;
+  name_uz?: string | null;
+  name_ru?: string | null;
+  name_en?: string | null;
   base_price: number;
   sale_price: number | null;
   thumbnail: string | null;
@@ -17,6 +22,9 @@ interface BannerProduct {
 interface BannerData {
   id: string;
   title: string;
+  title_uz?: string | null;
+  title_ru?: string | null;
+  title_en?: string | null;
   products: BannerProduct[];
 }
 
@@ -27,11 +35,36 @@ type Props = {
   productRoute?: (id: string) => string;
 };
 
+function detectSourceLanguage(text: string): UiLanguage {
+  if (/[А-Яа-яЁё]/.test(text)) return 'ru';
+  if (/[A-Za-z]/.test(text)) return 'uz';
+  return 'uz';
+}
+
+function looksLikeBrokenName(text: string) {
+  const normalized = text.trim().toLowerCase();
+  if (!normalized) return true;
+  if (/^[a-z]{6,}$/.test(normalized) && !/[aeiou]/.test(normalized)) return true;
+  if (/^(.)\1{3,}$/.test(normalized)) return true;
+  return false;
+}
+
+function getLocalizedName(product: BannerProduct, language: UiLanguage) {
+  const raw =
+    language === 'ru'
+      ? product.name_ru || product.name
+      : language === 'en'
+        ? product.name_en || product.name
+        : product.name_uz || product.name;
+  return repairText(raw || '');
+}
+
 export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
   const { language } = useTranslation();
   const [banner, setBanner] = useState<BannerData | null>(null);
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
+  const [translatedNames, setTranslatedNames] = useState<Record<string, string>>({});
 
   const loadBanner = useCallback(() => {
     fetch('/api/banners')
@@ -49,6 +82,40 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
   }, [loadBanner]);
 
   useSSERefetch(['banners'], loadBanner);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const translateNames = async () => {
+      const baseNames = Object.fromEntries(
+        (banner?.products ?? []).map((product) => [product.id, getLocalizedName(product, language)])
+      );
+      setTranslatedNames(baseNames);
+
+      if (language === 'uz' || !banner?.products?.length) return;
+
+      const translated = await Promise.all(
+        banner.products.map(async (product) => {
+          const label = getLocalizedName(product, language);
+          try {
+            return [product.id, await translateText(label, language, detectSourceLanguage(label))] as const;
+          } catch {
+            return [product.id, label] as const;
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setTranslatedNames(Object.fromEntries(translated));
+      }
+    };
+
+    void translateNames();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [banner, language]);
 
   const products = banner?.products ?? [];
   const count = products.length;
@@ -74,6 +141,9 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
 
   const product = products[current];
   if (!product) return null;
+  const genericProductLabel = language === 'ru' ? 'Товар' : language === 'en' ? 'Product' : 'Mahsulot';
+  const rawProductName = translatedNames[product.id] || getLocalizedName(product, language);
+  const productName = looksLikeBrokenName(rawProductName) ? genericProductLabel : rawProductName;
 
   const bp = Number(product.base_price);
   const sp = product.sale_price != null ? Number(product.sale_price) : null;
@@ -122,7 +192,7 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
             isDesktop ? 'text-[28px] max-w-lg' : 'text-[16px] max-w-[240px]'
           }`}
         >
-          {product.name}
+          {productName}
         </h3>
         <div className={`flex items-baseline gap-2 ${isDesktop ? 'mt-2' : 'mt-1'}`}>
           <span

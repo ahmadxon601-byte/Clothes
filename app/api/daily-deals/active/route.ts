@@ -8,7 +8,7 @@ export async function GET(_req: NextRequest) {
     await ensureDailyDealTables();
     const result = await query(
       `
-      SELECT DISTINCT
+      SELECT
         p.id, p.name, p.base_price, p.sku, p.views, p.created_at,
         c.id AS category_id, c.name AS category_name,
         st.id AS store_id, st.name AS store_name,
@@ -24,7 +24,8 @@ export async function GET(_req: NextRequest) {
         AND NOW() BETWEEN dc.starts_at AND dc.ends_at
         AND p.is_active = TRUE
         AND st.is_active = TRUE
-      ORDER BY dc.created_at DESC, p.created_at DESC
+      GROUP BY p.id, c.id, c.name, st.id, st.name
+      ORDER BY MAX(dc.created_at) DESC, p.created_at DESC
       LIMIT 12
       `
     );

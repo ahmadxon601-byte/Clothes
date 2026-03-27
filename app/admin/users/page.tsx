@@ -85,11 +85,11 @@ export default function UsersPage() {
       <AdminPageSection title={t('users.management')} description={t('users.managementDesc')} />
 
       <FilterBar>
-        <div className='relative min-w-[240px] flex-1'>
+        <div className='relative min-w-0 flex-1'>
           <Search className='pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]' />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('users.search')} className='admin-input pl-10' />
         </div>
-        <select className='admin-input max-w-[220px]' value={role} onChange={(e) => setRole(e.target.value)}>
+        <select className='admin-input w-full sm:max-w-[220px]' value={role} onChange={(e) => setRole(e.target.value)}>
           <option value=''>{t('common.allRoles')}</option>
           <option value='user'>{t('roles.user')}</option>
           <option value='seller'>Seller</option>

@@ -80,7 +80,7 @@ export default function ShopsPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1280px] px-6 md:px-10 py-10 md:py-14">
+      <div className="mx-auto max-w-[1440px] px-6 md:px-10 py-10 md:py-14">
 
         {/* Search */}
         <div className="mb-8">
@@ -101,7 +101,7 @@ export default function ShopsPage() {
         </p>
 
         {loading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="rounded-3xl border border-black/5 bg-[#f8f9fb] p-3 animate-pulse dark:border-white/5 dark:bg-[#1a1a1a]">
                 <div className="h-52 rounded-2xl bg-black/8 dark:bg-white/8" />
@@ -123,7 +123,7 @@ export default function ShopsPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {stores.map((store) => (
               <Link
                 key={store.id}

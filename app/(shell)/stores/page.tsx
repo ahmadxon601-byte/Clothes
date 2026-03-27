@@ -55,20 +55,20 @@ export default function ProductsPage() {
     // Promo carousel (copied from products view)
     const PROMOS = [
         {
-            title: "Birinchi xarid uchun maxsus chegirma!",
-            badge: "Maxsus Taklif",
+            title: t.promos[0],
+            badge: t.promo_badges[0],
             bg: "bg-[#D7FF35]",
             image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=400&auto=format&fit=crop"
         },
         {
-            title: "Yozgi kolleksiya: 50% gacha keshbek",
-            badge: "Yozgi Sotuv",
+            title: t.promos[1],
+            badge: t.promo_badges[1],
             bg: "bg-[#13EC37]",
             image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=400&auto=format&fit=crop"
         },
         {
-            title: "Yangi kelgan: Eksklyuziv krossovkalar",
-            badge: "Yangi",
+            title: t.promos[2],
+            badge: t.promo_badges[2],
             bg: "bg-[#35D7FF]",
             image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400&auto=format&fit=crop"
         }
@@ -86,7 +86,7 @@ export default function ProductsPage() {
     const nextPromo = () => setActivePromo((prev) => (prev + 1) % PROMOS.length);
     const prevPromo = () => setActivePromo((prev) => (prev - 1 + PROMOS.length) % PROMOS.length);
     const currentPromo = PROMOS[activePromo];
-    const promoCtaLabel = language === 'ru' ? 'View Products' : language === 'en' ? 'View Products' : "Mahsulotlarni ko'rish";
+    const promoCtaLabel = t.see_all;
 
     const storeMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -165,12 +165,14 @@ export default function ProductsPage() {
                         <button
                             onClick={(e) => { e.preventDefault(); prevPromo(); }}
                             className="w-10 h-10 flex items-center justify-center bg-black/10 backdrop-blur-md text-[#121417] rounded-full pointer-events-auto active:scale-90 transition-all border border-black/5 hover:bg-black/20 z-40"
+                            aria-label={t.back}
                         >
                             <ChevronLeft size={20} />
                         </button>
                         <button
                             onClick={(e) => { e.preventDefault(); nextPromo(); }}
                             className="w-10 h-10 flex items-center justify-center bg-black/10 backdrop-blur-md text-[#121417] rounded-full pointer-events-auto active:scale-90 transition-all border border-black/5 hover:bg-black/20 z-40"
+                            aria-label={t.see_all}
                         >
                             <ChevronRight size={20} />
                         </button>

@@ -18,7 +18,7 @@ export function AdminPageSection({ title, description, actions }: { title: strin
 }
 
 export function FilterBar({ children }: { children: ReactNode }) {
-  return <div className='admin-card mb-4 hidden items-center gap-2 p-3 lg:flex'>{children}</div>;
+  return <div className='admin-card mb-4 hidden flex-wrap items-stretch gap-2 p-3 lg:flex'>{children}</div>;
 }
 
 export function MobileFilterSheet({ open, onClose, children, applied }: { open: boolean; onClose: () => void; children: ReactNode; applied?: string[] }) {
@@ -43,7 +43,7 @@ export function MobileFilterSheet({ open, onClose, children, applied }: { open: 
           >
             <div className='mb-3 flex items-center justify-between'>
               <p className='text-sm font-semibold'>Filters</p>
-              <button onClick={onClose} className='rounded-lg border border-[var(--admin-border)] p-2'>
+              <button onClick={onClose} className='rounded-lg border border-[var(--admin-border)] p-2' aria-label='Close'>
                 <X className='size-4' />
               </button>
             </div>

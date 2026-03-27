@@ -88,7 +88,7 @@ export function AppHeader() {
     }
 
     return (
-        <header className="fixed top-0 inset-x-0 mx-auto w-full max-w-[500px] z-[70] pt-[env(safe-area-inset-top)] bg-[var(--color-header-bg)] glass-blur border-b border-[var(--color-header-border)] md:sticky md:top-0 md:inset-x-auto md:max-w-none md:mx-0 md:z-30">
+        <header className="fixed top-0 inset-x-0 mx-auto w-full max-w-[540px] z-[70] pt-[env(safe-area-inset-top)] bg-[var(--color-header-bg)] glass-blur border-b border-[var(--color-header-border)] md:sticky md:top-0 md:inset-x-auto md:max-w-none md:mx-0 md:z-30">
             <div className="h-[56px] px-5 grid grid-cols-[36px_1fr_36px] items-center">
                 {left}
                 <h1 className={titleClass}>{title}</h1>

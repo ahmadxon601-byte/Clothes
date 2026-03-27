@@ -9,7 +9,7 @@ import { cn } from '../lib/utils';
 
 const LANGUAGES = [
     { code: 'uz', label: "O'zbek" },
-    { code: 'ru', label: repairText('Ð ÑƒÑÑÐºÐ¸Ð¹') },
+    { code: 'ru', label: repairText('Русский') },
     { code: 'en', label: 'English' },
 ];
 

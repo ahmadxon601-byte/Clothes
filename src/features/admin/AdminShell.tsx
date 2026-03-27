@@ -200,8 +200,8 @@ export function AdminShell({ title, children, actions }: { title: string; childr
     if (pathname.includes('/products')) return t('dashboard.subtitle');
     if (pathname.includes('/applications')) return t('applications.subtitle');
     if (pathname.includes('/shops')) return t('stores.title');
-    if (pathname.includes('/support')) return 'Support chat';
-    return 'Qulaymarket admin workspace';
+    if (pathname.includes('/support')) return t('nav.support');
+    return t('login.subtitle');
   }, [pathname, t]);
 
   if (loading) {

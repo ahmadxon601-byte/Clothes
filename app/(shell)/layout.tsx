@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
 import { useSettingsStore } from '../../src/features/settings/model';
 import { isTelegramRoute } from '../../src/shared/config/constants';
+import { useTranslation } from '../../src/shared/lib/i18n';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
 import { BottomNav } from '../../src/shared/ui/BottomNav';
@@ -20,6 +21,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const isTelegram = isTelegramRoute(pathname);
     const hasHeader = hasUnifiedHeader(pathname);
     const { w } = useWebI18n();
+    const { t } = useTranslation();
     const settings = useSettingsStore((s) => s.settings);
     const loadSettings = useSettingsStore((s) => s.loadSettings);
     const updateSettings = useSettingsStore((s) => s.updateSettings);
@@ -68,10 +70,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
         const storeApproved = storeStatus?.status === 'approved';
         const links = [
-            { href: WEB_LINKS.HOME, label: 'Bosh Sahifa' },
-            { href: WEB_LINKS.SHOPS, label: "Do'konlar" },
-            { href: WEB_LINKS.CLOTHING, label: 'Kategoriyalar' },
-            { href: WEB_LINKS.PRODUCTS, label: 'Mahsulotlar' },
+            { href: WEB_LINKS.HOME, label: w.navbar.home },
+            { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
+            { href: WEB_LINKS.CLOTHING, label: w.footer.categories },
+            { href: WEB_LINKS.PRODUCTS, label: t.products_page_title },
         ];
         const languages = [
             { code: 'uz', label: "O'zbek" },
@@ -123,13 +125,13 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     }}
                 />
 
-                <header className="fixed inset-x-0 top-0 z-[160] isolate bg-transparent px-2 py-3">
-                    <div className="mx-auto grid w-full max-w-[1232px] grid-cols-[auto_1fr_auto] items-center gap-4 rounded-full border border-white/10 bg-[rgba(18,18,18,0.58)] px-4 py-2.5 shadow-[0_24px_45px_-30px_rgba(15,23,42,0.5)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.62)] md:px-6">
-                        <Link href={WEB_LINKS.HOME} className="shrink-0 text-[18px] font-black tracking-tight text-[#13ec37] dark:text-[#5df57a] md:text-[21px]">
+                <header className="fixed inset-x-0 top-0 z-[160] isolate bg-transparent px-2 py-2 sm:px-3 md:py-3">
+                    <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.82)] px-3 py-2.5 shadow-[0_24px_45px_-30px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.72)] sm:px-4 md:grid-cols-[auto_1fr_auto] md:gap-4 md:rounded-full md:px-6">
+                        <Link href={WEB_LINKS.HOME} className="min-w-0 truncate pr-2 text-[17px] font-black tracking-tight text-[#13ec37] dark:text-[#5df57a] sm:text-[19px] md:text-[24px] xl:text-[26px]">
                             Qulaymarket.Uz
                         </Link>
 
-                        <nav className="hidden items-center justify-self-center gap-6 xl:flex">
+                        <nav className="hidden min-w-0 items-center justify-self-center gap-5 lg:flex xl:gap-9">
                             {links.map((link) => {
                                 const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
                                 return (
@@ -137,7 +139,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         key={`${link.href}-${link.label}`}
                                         href={link.href}
                                         className={cn(
-                                            'relative whitespace-nowrap pb-1 text-[14px] font-semibold text-[#4b5563] transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-[#13ec37] after:transition-transform after:duration-200 hover:text-[#111827] hover:after:scale-x-100 dark:text-[#d1d5db] dark:hover:text-white',
+                                            'relative whitespace-nowrap pb-1.5 text-[15px] font-semibold text-[#4b5563] transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-[#13ec37] after:transition-transform after:duration-200 hover:text-[#111827] hover:after:scale-x-100 dark:text-[#d1d5db] dark:hover:text-white xl:text-[20px]',
                                             active && 'text-[#13ec37] after:scale-x-100 dark:text-[#5df57a]',
                                         )}
                                     >
@@ -147,33 +149,156 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                             })}
                         </nav>
 
-                        <div className="hidden items-center justify-end gap-3 lg:flex">
+                        <div className="flex items-center justify-end gap-1.5 sm:gap-2 lg:hidden">
                             <button
                                 type="button"
                                 onClick={() => window.location.href = WEB_LINKS.SEARCH}
-                                aria-label="Mahsulotlarni qidirish"
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                aria-label={t.search}
+                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10"
                             >
-                                <Search className="h-4 w-4 shrink-0" />
+                                <Search className="h-4 w-4 shrink-0 sm:h-[17px] sm:w-[17px]" />
                             </button>
 
                             <button
                                 type="button"
                                 onClick={toggleTheme}
-                                aria-label="Toggle theme"
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                aria-label={t.theme}
+                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10"
                             >
-                                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                                {isDark ? <Sun className="h-4 w-4 sm:h-[17px] sm:w-[17px]" /> : <Moon className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => selectLanguage(settings.language === 'uz' ? 'ru' : settings.language === 'ru' ? 'en' : 'uz')}
+                                title={w.navbar.lang}
+                                className="inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full border border-[#13ec37]/25 bg-[#effff2] px-2.5 text-[11px] font-semibold text-[#0d8f2a] shadow-[0_10px_20px_-16px_rgba(19,236,55,0.72)] dark:border-[#13ec37]/25 dark:bg-[#112315] dark:text-[#72f58a] sm:h-10 sm:min-w-10 sm:px-3"
+                            >
+                                {(settings.language ?? 'uz').toUpperCase()}
+                            </button>
+
+                            {user ? (
+                                <div className="relative shrink-0" ref={userMenuRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUserMenuOpen((prev) => !prev)}
+                                        className="inline-flex h-9 max-w-[132px] shrink-0 items-center gap-2 rounded-full bg-[#13ec37] px-3 text-[12px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10"
+                                        aria-label={t.profile}
+                                    >
+                                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[11px] font-black">
+                                            {user.name.charAt(0).toUpperCase()}
+                                        </span>
+                                        <span className="truncate">{user.name}</span>
+                                    </button>
+                                        {userMenuOpen && (
+                                            <div className="absolute right-0 z-[170] mt-3 w-56 overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:border-white/10 dark:bg-[#1a1a1a]">
+                                                <div className="border-b border-black/8 px-5 py-4 dark:border-white/10">
+                                                    <p className="text-[13px] font-bold text-[#111111] dark:text-white">{user.name}</p>
+                                                    <p className="mt-0.5 text-[11px] text-[#6b7280]">{user.email}</p>
+                                                </div>
+                                                <div className="p-2">
+                                                    <Link
+                                                        href="/profile"
+                                                        onClick={() => setUserMenuOpen(false)}
+                                                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                    >
+                                                        <User size={15} />
+                                                        {t.profile}
+                                                    </Link>
+                                                    {storeApproved && (
+                                                        <>
+                                                            <Link
+                                                                href="/my-store"
+                                                                onClick={() => setUserMenuOpen(false)}
+                                                                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                            >
+                                                                <Store size={15} />
+                                                                {t.my_store}
+                                                            </Link>
+                                                            <Link
+                                                                href="/my-products"
+                                                                onClick={() => setUserMenuOpen(false)}
+                                                                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                            >
+                                                                <Package size={15} />
+                                                                {t.my_products}
+                                                            </Link>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            logout();
+                                                            setUserMenuOpen(false);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                    >
+                                                        {t.logout}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthModal({ open: true, tab: 'login' })}
+                                    className="inline-flex h-9 shrink-0 items-center rounded-full bg-[#13ec37] px-3.5 text-[12px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:px-4"
+                                >
+                                    Kirish
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="col-span-2 border-t border-black/8 pt-2 lg:hidden dark:border-white/10">
+                            <nav className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
+                                {links.map((link) => {
+                                    const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+                                    return (
+                                        <Link
+                                            key={`mobile-${link.href}-${link.label}`}
+                                            href={link.href}
+                                            className={cn(
+                                                'shrink-0 rounded-full px-4 py-2 text-[12px] font-semibold transition-colors duration-200 sm:text-[13px]',
+                                                active
+                                                    ? 'bg-[#effff2] text-[#0d8f2a] dark:bg-[#112315] dark:text-[#72f58a]'
+                                                    : 'bg-black/[0.03] text-[#4b5563] hover:bg-black/[0.05] dark:bg-white/[0.05] dark:text-[#d1d5db] dark:hover:bg-white/[0.08]',
+                                            )}
+                                        >
+                                            {link.label}
+                                        </Link>
+                                    );
+                                })}
+                            </nav>
+                        </div>
+
+                        <div className="hidden items-center justify-end gap-2 lg:flex xl:gap-3">
+                            <button
+                                type="button"
+                                onClick={() => window.location.href = WEB_LINKS.SEARCH}
+                                aria-label={t.search}
+                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
+                            >
+                                <Search className="h-5 w-5 shrink-0" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                aria-label={t.theme}
+                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
+                            >
+                                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                             </button>
 
                             <div className="relative shrink-0" ref={langRef}>
                                 <button
                                     type="button"
                                     onClick={() => setLangOpen((prev) => !prev)}
-                                    title="Tilni almashtirish"
-                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                    title={w.navbar.lang}
+                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
                                 >
-                                    <Globe className="h-4 w-4" />
+                                    <Globe className="h-5 w-5" />
                                 </button>
                                 {langOpen && (
                                     <div className="absolute right-0 z-[170] mt-2 w-36 overflow-hidden rounded-[18px] border border-[#13ec37]/20 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:bg-[#111411]">
@@ -201,10 +326,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     <button
                                         type="button"
                                         onClick={() => setUserMenuOpen((prev) => !prev)}
-                                        className="inline-flex h-10 items-center gap-2 rounded-full bg-[#13ec37] px-3.5 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
-                                        aria-label="Profile"
+                                        className="inline-flex h-11 items-center gap-3 rounded-full bg-[#13ec37] px-4 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:px-4.5 xl:text-[16px]"
+                                        aria-label={t.profile}
                                     >
-                                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[12px] font-black">
+                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-[14px] font-black">
                                             {user.name.charAt(0).toUpperCase()}
                                         </span>
                                         <span className="max-w-[140px] truncate">{user.name}</span>
@@ -222,7 +347,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                     className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
                                                 >
                                                     <User size={15} />
-                                                    Profil
+                                                    {t.profile}
                                                 </Link>
                                                 {storeApproved && (
                                                     <>
@@ -232,7 +357,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                             className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
                                                         >
                                                             <Store size={15} />
-                                                            Mening Do&apos;konim
+                                                            {t.my_store}
                                                         </Link>
                                                         <Link
                                                             href="/my-products"
@@ -240,7 +365,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                             className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
                                                         >
                                                             <Package size={15} />
-                                                            Mening Mahsulotlarim
+                                                            {t.my_products}
                                                         </Link>
                                                     </>
                                                 )}
@@ -252,7 +377,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                     }}
                                                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                                                 >
-                                                    Chiqish
+                                                    {t.logout}
                                                 </button>
                                             </div>
                                         </div>
@@ -262,78 +387,22 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 <button
                                     type="button"
                                     onClick={() => setAuthModal({ open: true, tab: 'login' })}
-                                    className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
+                                    className="inline-flex h-11 shrink-0 items-center gap-3 rounded-full bg-[#13ec37] px-5 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:px-7 xl:text-[16px]"
                                 >
-                                    <LogIn size={15} />
-                                    Kirish
+                                    <LogIn size={17} />
+                                    {t.login_required}
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="mx-auto flex w-full max-w-[1232px] flex-col gap-3 px-4 pt-3 lg:hidden">
-                        <button
-                            type="button"
-                            onClick={() => window.location.href = WEB_LINKS.SEARCH}
-                            aria-label="Mahsulotlarni qidirish"
-                            className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
-                        >
-                            <Search className="h-4 w-4 shrink-0" />
-                        </button>
-
-                        <div className="no-scrollbar flex items-center gap-3 overflow-x-auto rounded-full border border-white/10 bg-[rgba(18,18,18,0.58)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.45)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.62)]">
-                            {links.map((link) => {
-                                const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
-                                return (
-                                    <Link
-                                        key={`mobile-${link.href}-${link.label}`}
-                                        href={link.href}
-                                        className={cn(
-                                            'shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors duration-200',
-                                            active ? 'bg-[#effff2] text-[#0d8f2a] dark:bg-[#0f2012] dark:text-[#72f58a]' : 'text-[#4b5563] dark:text-[#d1d5db]',
-                                        )}
-                                    >
-                                        {link.label}
-                                    </Link>
-                                );
-                            })}
-
-                            <button
-                                type="button"
-                                onClick={() => selectLanguage(settings.language === 'uz' ? 'ru' : settings.language === 'ru' ? 'en' : 'uz')}
-                                title="Tilni almashtirish"
-                                className="inline-flex h-9 shrink-0 items-center rounded-full border border-[#13ec37]/20 bg-[#effff2] px-3 text-[12px] font-semibold text-[#0d8f2a] dark:border-[#13ec37]/20 dark:bg-[#0f2012] dark:text-[#72f58a]"
-                            >
-                                {(settings.language ?? 'uz').toUpperCase()}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={toggleTheme}
-                                aria-label="Toggle theme"
-                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] dark:bg-[#13ec37] dark:text-[#06200f]"
-                            >
-                                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                            </button>
-
-                            {!user && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAuthModal({ open: true, tab: 'login' })}
-                                    className="inline-flex h-9 shrink-0 items-center rounded-full bg-[#13ec37] px-4 text-[13px] font-semibold text-[#06200f] dark:bg-[#13ec37] dark:text-[#06200f]"
-                                >
-                                    Kirish
-                                </button>
-                            )}
-                        </div>
-                    </div>
                 </header>
 
-                <main className="relative z-0 w-full overflow-x-hidden pt-[112px] lg:pt-[88px]">{children}</main>
+                <main className="relative z-0 w-full overflow-x-hidden pt-[138px] sm:pt-[146px] md:pt-[152px] lg:pt-[88px]">{children}</main>
 
                 <footer className="mt-12 border-t border-black/10 bg-white dark:border-white/10 dark:bg-[#111111]">
-                    <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-14">
-                        <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
+                    <div className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-5 md:px-6 md:py-14">
+                        <div className="grid gap-10 border-b border-black/10 pb-10 dark:border-white/10 sm:grid-cols-2 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
                             <div>
                                 <h3 className="text-[30px] font-black tracking-tight">Qulaymarket</h3>
                                 <p className="mt-3 max-w-sm text-[14px] leading-7 text-[#6b7280] dark:text-[#9ca3af]">{w.footer.desc}</p>
@@ -370,7 +439,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex min-h-[100dvh] w-full justify-center bg-[var(--color-bg)]">
-            <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-[500px] overflow-hidden bg-[var(--color-bg)] md:border-x md:border-[var(--color-border)] md:shadow-2xl">
+            <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-[540px] overflow-hidden bg-[var(--color-bg)] md:border-x md:border-[var(--color-border)] md:shadow-2xl">
                 <ToastProvider />
                 <AppHeader />
                 <main

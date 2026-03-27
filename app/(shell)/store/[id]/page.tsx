@@ -4,6 +4,10 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, MapPin, Package, Phone, Store as StoreIcon } from 'lucide-react';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { useTranslatedLabelMap } from '../../../../src/shared/hooks/useTranslatedLabelMap';
+import { sanitizeProductLabel } from '../../../../src/shared/lib/webProductText';
+import { formatPrice } from '../../../../src/shared/lib/formatPrice';
 
 interface StoreData {
   id: string;
@@ -36,11 +40,13 @@ const DEFAULT_STORE_IMAGE =
   "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop";
 
 export default function StorePage({ params }: { params: Promise<{ id: string }> }) {
+  const { t, language } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
   const [store, setStore] = useState<StoreData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
 
   useEffect(() => {
     Promise.all([
@@ -69,8 +75,8 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8">
         <StoreIcon size={40} className="text-[#9ca3af]" />
-        <p className="text-[16px] font-bold text-[#111111] dark:text-white">Do&apos;kon topilmadi</p>
-        <button onClick={() => router.back()} className="rounded-full border border-black/10 px-5 py-2 text-sm dark:border-white/10 dark:text-white">Orqaga</button>
+        <p className="text-[16px] font-bold text-[#111111] dark:text-white">{t.stores_not_found}</p>
+        <button onClick={() => router.back()} className="rounded-full border border-black/10 px-5 py-2 text-sm dark:border-white/10 dark:text-white">{t.back}</button>
       </div>
     );
   }
@@ -104,7 +110,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-8">
+      <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
         {/* Store meta */}
         <div className="mb-6 rounded-[24px] border border-black/8 bg-white p-5 dark:border-white/10 dark:bg-[#1a1a1a]">
           <div className="flex flex-wrap items-center gap-4">
@@ -116,7 +122,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
               <p className="text-[13px] text-[#6b7280]">{store.owner_name}</p>
             </div>
             <span className="rounded-full bg-[#00c853]/10 px-3 py-1 text-[12px] font-bold text-[#008d3a]">
-              {store.product_count} ta mahsulot
+              {t.items_count.replace('{count}', String(store.product_count))}
             </span>
           </div>
           {store.phone && (
@@ -134,26 +140,26 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#00c853]/30 bg-[#f0faf4] px-4 py-2 text-[13px] font-bold text-[#008d3a] dark:bg-[#0e2e1a]"
             >
-              <MapPin size={14} /> Xaritada ko&apos;rish
+              <MapPin size={14} /> {t.view}
             </a>
           )}
         </div>
 
         {/* Products */}
-        <h2 className="mb-4 text-[18px] font-black text-[#111111] dark:text-white">Mahsulotlar</h2>
+        <h2 className="mb-4 text-[18px] font-black text-[#111111] dark:text-white">{t.products_page_title}</h2>
         {products.length === 0 ? (
           <div className="rounded-[24px] border border-black/8 bg-white py-16 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
             <Package size={36} className="mx-auto mb-3 text-[#d1d5db]" />
             <p className="text-[14px] text-[#9ca3af]">Do&apos;konda hozircha mahsulot yo&apos;q</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
             {products.map((p) => (
               <Link key={p.id} href={`/product/${p.id}`} className="block rounded-[20px] border border-black/5 bg-white p-2.5 transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] dark:border-white/5 dark:bg-[#1a1a1a]">
                 <div className="relative aspect-[3/4] overflow-hidden rounded-[14px] bg-[#f3f4f6] dark:bg-[#111111]">
                   {p.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover" />
+                    <img src={p.thumbnail} alt={sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center">
                       <Package size={24} className="text-[#d1d5db]" />
@@ -162,8 +168,8 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
                 </div>
                 <div className="mt-2 px-0.5">
                   {p.category_name && <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">{p.category_name}</p>}
-                  <p className="mt-0.5 line-clamp-2 text-[12px] font-bold text-[#111111] dark:text-white">{p.name}</p>
-                  <p className="mt-1 text-[13px] font-black text-[#00c853]">{Number(p.base_price).toLocaleString()} so&apos;m</p>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] font-bold text-[#111111] dark:text-white">{sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)}</p>
+                  <p className="mt-1 text-[13px] font-black text-[#00c853]">{formatPrice(Number(p.base_price), 'UZS', language)}</p>
                 </div>
               </Link>
             ))}

@@ -6,6 +6,10 @@ import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
 import { fetchProducts, fetchCategories, type ApiProduct, type ApiCategory } from '../../../src/lib/apiClient';
 import { cn } from '../../../src/shared/lib/utils';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
+import { useTranslation } from '../../../src/shared/lib/i18n';
+import { formatPrice } from '../../../src/shared/lib/formatPrice';
+import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
+import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
 
 type SortType = 'newest' | 'popular' | 'price_asc' | 'price_desc';
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -17,6 +21,7 @@ const SORT_OPTIONS: { value: SortType; label: string }[] = [
 ];
 
 export default function ProductsPage() {
+    const { t, language } = useTranslation();
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
     const [search, setSearch] = useState('');
@@ -41,6 +46,8 @@ export default function ProductsPage() {
         (maxPrice ? 1 : 0) +
         (sizeFilter ? 1 : 0) +
         (onSale ? 1 : 0);
+    const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
+    const localizedCategory = (cat: ApiCategory) => language === 'ru' ? (cat.name_ru || cat.name) : language === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name);
 
     const loadProducts = useCallback((params: {
         search: string; category: string; sort: SortType;
@@ -86,8 +93,8 @@ export default function ProductsPage() {
 
     return (
         <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
-            <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-8">
-                <h1 className="text-[24px] font-black text-[#111111] dark:text-white mb-5">Mahsulotlar</h1>
+            <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
+                <h1 className="text-[24px] font-black text-[#111111] dark:text-white mb-5">{t.products_page_title}</h1>
 
                 {/* Search + filter button */}
                 <div className="flex gap-2 mb-3">
@@ -96,7 +103,7 @@ export default function ProductsPage() {
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Mahsulot qidirish..."
+                            placeholder={t.placeholder_search}
                             className="h-11 w-full bg-white dark:bg-[#1a1a1a] rounded-full pl-10 pr-10 text-[13px] text-[#111111] dark:text-white placeholder:text-[#9ca3af] border border-black/8 dark:border-white/8 outline-none focus:ring-2 ring-[#00c853]/20"
                         />
                         {search && (
@@ -147,10 +154,10 @@ export default function ProductsPage() {
                         <div>
                             <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Narx oralig&apos;i</p>
                             <div className="flex gap-3">
-                                <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min narx"
+                                <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder={t.min}
                                     type="number"
                                     className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-                                <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Max narx"
+                                <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder={t.max}
                                     type="number"
                                     className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
                             </div>
@@ -200,7 +207,7 @@ export default function ProductsPage() {
                     <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
                         className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
                             !activeParentCat && !activeSubCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
-                        )}>Barchasi</button>
+                        )}>{t.all}</button>
                     {parentCategories.map(cat => (
                         <button key={cat.id} onClick={() => {
                             const nextParent = activeParentCat === cat.id ? '' : cat.id;
@@ -210,7 +217,7 @@ export default function ProductsPage() {
                             className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
                                 activeParentCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                             )}>
-                            {cat.name}
+                            {localizedCategory(cat)}
                         </button>
                     ))}
                 </div>
@@ -221,7 +228,7 @@ export default function ProductsPage() {
                                 className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
                                     activeSubCat === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37]' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                                 )}>
-                                {cat.name}
+                                {localizedCategory(cat)}
                             </button>
                         ))}
                     </div>
@@ -235,10 +242,10 @@ export default function ProductsPage() {
                 ) : products.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#9ca3af]">
                         <Package size={40} className="opacity-40" />
-                        <p className="text-[15px] font-medium">Hech narsa topilmadi</p>
+                        <p className="text-[15px] font-medium">{t.no_results}</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                         {products.map(p => (
                             <Link
                                 key={p.id}
@@ -248,7 +255,7 @@ export default function ProductsPage() {
                                 <div className="aspect-[3/4] w-full overflow-hidden bg-[#f3f4f6] dark:bg-[#111111]">
                                     {p.thumbnail ? (
                                         // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                        <img src={p.thumbnail} alt={sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                                     ) : (
                                         <div className="flex h-full items-center justify-center">
                                             <Package size={28} className="text-[#d1d5db]" />
@@ -257,7 +264,7 @@ export default function ProductsPage() {
                                 </div>
                                 <div className="p-3">
                                     <p className="text-[10px] text-[#9ca3af] font-medium truncate">{p.store_name}</p>
-                                    <h3 className="text-[13px] font-bold text-[#111111] dark:text-white line-clamp-2 mt-0.5">{p.name}</h3>
+                                    <h3 className="text-[13px] font-bold text-[#111111] dark:text-white line-clamp-2 mt-0.5">{sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)}</h3>
                                     {(() => {
                                         const bp = Number(p.base_price);
                                         const sp = p.sale_price != null ? Number(p.sale_price) : null;
@@ -266,10 +273,10 @@ export default function ProductsPage() {
                                         const pct = hasDis ? Math.round((1 - cur / bp) * 100) : 0;
                                         return (
                                             <div className="mt-1">
-                                                <p className="text-[14px] font-black text-[#00c853]">{cur.toLocaleString('ru-RU')} so&apos;m</p>
+                                                <p className="text-[14px] font-black text-[#00c853]">{formatPrice(cur, 'UZS', language)}</p>
                                                 {hasDis && (
                                                     <div className="flex items-center gap-1 mt-0.5">
-                                                        <span className="text-[11px] text-[#9ca3af] line-through">{bp.toLocaleString('ru-RU')} so&apos;m</span>
+                                                        <span className="text-[11px] text-[#9ca3af] line-through">{formatPrice(bp, 'UZS', language)}</span>
                                                         <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
                                                     </div>
                                                 )}

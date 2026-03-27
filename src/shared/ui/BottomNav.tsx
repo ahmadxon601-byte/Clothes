@@ -18,7 +18,7 @@ export function BottomNav() {
 
     return (
         <div
-            className="pointer-events-none fixed z-[1000] w-full max-w-[500px] px-3"
+            className="pointer-events-none fixed z-[1000] w-full max-w-[540px] px-3"
             style={{
                 left: '50%',
                 transform: 'translateX(-50%)',

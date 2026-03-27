@@ -7,6 +7,10 @@ import Link from 'next/link';
 import { ChevronLeft, MapPin, Package, Store } from 'lucide-react';
 import { RichTextContent } from '../../../../src/shared/ui/RichTextContent';
 import { getVariantMeta, getDepartmentBySlug } from '../../../../src/shared/lib/productCategoryMeta';
+import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { translateText, translateHtmlToPlainText } from '../../../../src/shared/lib/translateClient';
+import { detectSourceLanguage, sanitizeProductLabel } from '../../../../src/shared/lib/webProductText';
+import { formatPrice } from '../../../../src/shared/lib/formatPrice';
 
 const MapDisplay = dynamic(
   () => import('../../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
@@ -67,6 +71,7 @@ function parseAddressCoords(raw: string | null | undefined): { text: string; lat
 }
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t, language } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
   const [product, setProduct] = useState<ProductDetail | null>(null);
@@ -75,6 +80,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarProduct[]>([]);
+  const [translatedName, setTranslatedName] = useState('');
+  const [translatedDescription, setTranslatedDescription] = useState('');
+  const [translatedSimilar, setTranslatedSimilar] = useState<Record<string, string>>({});
   const variants = useMemo(() => product?.variants ?? [], [product?.variants]);
   const images = useMemo(
     () => (product?.images?.length ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
@@ -142,6 +150,65 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       .catch(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!product) return;
+
+    const baseName = sanitizeProductLabel(product.name, language);
+    setTranslatedName(baseName);
+    setTranslatedDescription(product.description ?? '');
+
+    if (language === 'uz') return;
+
+    const run = async () => {
+      try {
+        const [name, description] = await Promise.all([
+          translateText(product.name, language, detectSourceLanguage(product.name)),
+          product.description ? translateHtmlToPlainText(product.description, language, detectSourceLanguage(product.description)) : Promise.resolve(''),
+        ]);
+        if (!cancelled) {
+          setTranslatedName(sanitizeProductLabel(name, language));
+          setTranslatedDescription(description || product.description || '');
+        }
+      } catch {
+        if (!cancelled) {
+          setTranslatedName(baseName);
+          setTranslatedDescription(product.description ?? '');
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [language, product]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const base = Object.fromEntries(similar.map((item) => [item.id, sanitizeProductLabel(item.name, language)]));
+    setTranslatedSimilar(base);
+    if (language === 'uz' || similar.length === 0) return;
+
+    const run = async () => {
+      const translated = await Promise.all(
+        similar.map(async (item) => {
+          try {
+            return [item.id, sanitizeProductLabel(await translateText(item.name, language, detectSourceLanguage(item.name)), language)] as const;
+          } catch {
+            return [item.id, sanitizeProductLabel(item.name, language)] as const;
+          }
+        })
+      );
+      if (!cancelled) setTranslatedSimilar(Object.fromEntries(translated));
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [language, similar]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
@@ -163,12 +230,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8">
         <Package size={40} className="text-[#9ca3af]" />
-        <p className="text-[16px] font-bold text-[#111111] dark:text-white">Mahsulot topilmadi</p>
+        <p className="text-[16px] font-bold text-[#111111] dark:text-white">{t.product_not_found}</p>
         <button
           onClick={() => router.back()}
           className="rounded-full border border-black/10 px-5 py-2 text-sm dark:border-white/10 dark:text-white"
         >
-          Orqaga
+          {t.back}
         </button>
       </div>
     );
@@ -179,7 +246,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-8 md:py-10">
         <button
           onClick={() => router.back()}
-          aria-label="Orqaga"
+          aria-label={t.back}
           className="mb-7 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-[#111111] text-white shadow-[0_16px_32px_-18px_rgba(0,0,0,0.7)] transition-all hover:-translate-y-0.5 hover:bg-[#1b1b1b] dark:border-white/15 dark:bg-[#161616]"
         >
           <ChevronLeft size={18} />
@@ -190,7 +257,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div className="overflow-hidden rounded-[28px] border border-black/8 bg-white dark:border-white/8 dark:bg-[#1a1a1a]">
               {images.length > 0 ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={images[activeImg]?.url} alt={product.name} className="aspect-[3/4] w-full object-cover" />
+                <img src={images[activeImg]?.url} alt={translatedName || sanitizeProductLabel(product.name, language)} className="aspect-[3/4] w-full object-cover" />
               ) : (
                 <div className="flex aspect-[3/4] items-center justify-center bg-[#f3f4f6] dark:bg-[#111111]">
                   <Package size={64} className="text-[#d1d5db]" />
@@ -217,13 +284,16 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
 
           <div className="flex flex-col rounded-[28px] border border-black/8 bg-white/85 p-5 shadow-[0_22px_48px_-34px_rgba(0,0,0,0.45)] backdrop-blur-sm dark:border-white/10 dark:bg-[#171717]/85 md:p-6">
-            <h1 className="mt-1.5 text-[28px] font-black leading-tight text-[#111111] dark:text-white md:text-[34px]">{product.name}</h1>
+            {product.category_name && (
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">{product.category_name}</p>
+            )}
+            <h1 className="mt-1.5 text-[28px] font-black leading-tight text-[#111111] dark:text-white md:text-[34px]">{translatedName || sanitizeProductLabel(product.name, language)}</h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-[#00c853]/20 bg-[#00c853]/5 px-4 py-3">
-              <p className="text-[32px] font-black text-[#00c853]">{Number(displayPrice).toLocaleString()} so&apos;m</p>
+              <p className="text-[32px] font-black text-[#00c853]">{formatPrice(Number(displayPrice), 'UZS', language)}</p>
               {displayPrice < product.base_price && (
                 <>
-                  <p className="text-[18px] font-semibold text-[#9ca3af] line-through">{Number(product.base_price).toLocaleString()} so&apos;m</p>
+                  <p className="text-[18px] font-semibold text-[#9ca3af] line-through">{formatPrice(Number(product.base_price), 'UZS', language)}</p>
                   <span className="inline-flex items-center rounded-full bg-red-500 px-2.5 py-0.5 text-[12px] font-black text-white">
                     -{Math.round((1 - displayPrice / product.base_price) * 100)}%
                   </span>
@@ -231,9 +301,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               )}
             </div>
 
-            {product.description && (
+            {translatedDescription && (
               <RichTextContent
-                html={product.description}
+                html={translatedDescription}
                 className="mt-4 text-[14px] leading-relaxed text-[#6b7280] [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:ml-5 [&_ul]:list-disc"
               />
             )}
@@ -297,11 +367,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 {selectedVariant.stock > 0 ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00c853]/10 px-3 py-1 text-[12px] font-bold text-[#008d3a]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#00c853]" />
-                    {selectedVariant.stock} ta mavjud
+                    {t.available_count.replace('{count}', String(selectedVariant.stock))}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 text-[12px] font-bold text-red-500">
-                    Mavjud emas
+                    {t.sold_out}
                   </span>
                 )}
               </div>
@@ -315,7 +385,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <Store size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-[#9ca3af]">Do&apos;kon</p>
+                <p className="text-[11px] font-semibold text-[#9ca3af]">{t.store}</p>
                 <p className="truncate text-[14px] font-bold text-[#111111] dark:text-white">{product.store_name}</p>
                 {storeAddressText && (
                   <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
@@ -334,7 +404,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             )}
 
             <div className="mt-3 flex items-center gap-3 text-[12px] text-[#9ca3af]">
-              <span>{product.views} ko&apos;rishlar</span>
+              <span>{product.views} views</span>
               <span>&middot;</span>
               <span>SKU: {product.sku}</span>
             </div>
@@ -343,7 +413,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
         {similar.length > 0 && (
           <div className="mt-12">
-            <h2 className="mb-5 text-[20px] font-black text-[#111111] dark:text-white">O&apos;xshash mahsulotlar</h2>
+            <h2 className="mb-5 text-[20px] font-black text-[#111111] dark:text-white">{t.similar_products}</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {similar.map((p) => (
                 <Link
@@ -354,7 +424,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <div className="aspect-[3/4] w-full overflow-hidden bg-[#f3f4f6] dark:bg-[#111111]">
                     {p.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.thumbnail} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img src={p.thumbnail} alt={translatedSimilar[p.id] || sanitizeProductLabel(p.name, language)} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="flex h-full items-center justify-center">
                         <Package size={28} className="text-[#d1d5db]" />
@@ -362,8 +432,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     )}
                   </div>
                   <div className="p-2.5">
-                    <p className="truncate text-[12px] font-bold text-[#111111] dark:text-white">{p.name}</p>
-                    <p className="mt-0.5 text-[13px] font-black text-[#00c853]">{Number(p.base_price).toLocaleString()} so&apos;m</p>
+                    <p className="truncate text-[12px] font-bold text-[#111111] dark:text-white">{translatedSimilar[p.id] || sanitizeProductLabel(p.name, language)}</p>
+                    <p className="mt-0.5 text-[13px] font-black text-[#00c853]">{formatPrice(Number(p.base_price), 'UZS', language)}</p>
                   </div>
                 </Link>
               ))}
