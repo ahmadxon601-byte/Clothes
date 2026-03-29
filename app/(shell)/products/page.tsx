@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
 import { fetchProducts, fetchCategories, type ApiProduct, type ApiCategory } from '../../../src/lib/apiClient';
 import { cn } from '../../../src/shared/lib/utils';
@@ -22,6 +23,7 @@ const SORT_OPTIONS: { value: SortType; label: string }[] = [
 
 export default function ProductsPage() {
     const { t, language } = useTranslation();
+    const searchParams = useSearchParams();
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
     const [search, setSearch] = useState('');
@@ -79,6 +81,22 @@ export default function ProductsPage() {
     useEffect(() => {
         fetchCategories().then(setCategories).catch(() => {});
     }, []);
+
+    useEffect(() => {
+        const categoryFromQuery = searchParams.get('category');
+        if (!categoryFromQuery || categories.length === 0) return;
+
+        const target = categories.find((cat) => cat.id === categoryFromQuery);
+        if (!target) return;
+
+        if (target.parent_id) {
+            setActiveParentCat(target.parent_id);
+            setActiveSubCat(target.id);
+        } else {
+            setActiveParentCat(target.id);
+            setActiveSubCat('');
+        }
+    }, [categories, searchParams]);
 
     useEffect(() => {
         triggerFetch(false);
@@ -214,10 +232,17 @@ export default function ProductsPage() {
                             setActiveParentCat(nextParent);
                             setActiveSubCat('');
                         }}
-                            className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
+                            className={cn('shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
                                 activeParentCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
                             )}>
-                            {localizedCategory(cat)}
+                            {cat.sticker ? (
+                                <span className={cn('flex h-7 w-7 items-center justify-center rounded-full text-[16px] leading-none',
+                                    activeParentCat === cat.id ? 'bg-white/16 dark:bg-black/10' : 'bg-[#f3f4f6] dark:bg-white/10'
+                                )}>
+                                    {cat.sticker}
+                                </span>
+                            ) : null}
+                            <span>{localizedCategory(cat)}</span>
                         </button>
                     ))}
                 </div>

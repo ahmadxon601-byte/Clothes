@@ -4,19 +4,21 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ArrowRight,
+    BadgePercent,
     Clock3,
-    CreditCard,
+    Compass,
     Headphones,
     Heart,
     ShieldCheck,
     ShoppingBag,
-    Truck,
+    TrendingUp,
 } from 'lucide-react';
 import { SITE_ROUTES } from '../../src/shared/config/constants';
 import { fetchProducts } from '../../src/lib/apiClient';
 import type { ApiProduct } from '../../src/lib/apiClient';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { repairText, repairTextTree } from '../../src/shared/lib/repairText';
+import { stripRichText } from '../../src/shared/lib/richText';
 import { translateText, type UiLanguage } from '../../src/shared/lib/translateClient';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
@@ -80,9 +82,8 @@ const HERO_COPY = repairTextTree({
     },
     ru: {
         badge: 'Новый сезон 2026',
-        title: ['Товары', 'в одном', 'пространстве.'],
-        desc: 'Электроника, аксессуары, товары на каждый день и популярные предложения в одном современном каталоге.',
-        primary: 'К покупкам',
+        title: ['Всё', 'в одном', 'месте.'],
+        desc: 'Откройте электронику, одежду и товары на каждый день в одном месте с отобранными и надежными предложениями.',
         secondary: 'Категории',
         floating: 'Избранные предложения',
     },
@@ -91,16 +92,16 @@ const HERO_COPY = repairTextTree({
 const SECTION_COPY = repairTextTree({
     uz: {
         categoryTitle: 'Kategoriyalar',
-        categoryDesc: 'Eng ko‘p ko‘rilayotgan bo‘limlar va tavsiya etilgan yo‘nalishlar.',
+        categoryDesc: 'Eng ko?p ko?rilayotgan bo?limlar va tavsiya etilgan yo?nalishlar.',
         dealsTitle: 'Kun taklifi',
-        dealsAction: 'Barchasini ko‘rish',
+        dealsAction: 'Barchasini ko?rish',
         popularTitle: 'Ommabop mahsulotlar',
-        popularDesc: 'Xaridorlar eng ko‘p ko‘rgan va tanlagan mahsulotlar.',
+        popularDesc: 'Xaridorlar eng ko?p ko?rgan va tanlagan mahsulotlar.',
         partnerTitleA: 'Biz bilan birga',
         partnerTitleB: 'biznesingizni',
         partnerTitleC: 'rivojlantiring',
-        partnerDesc: 'Qulaymarket platformasida o‘z do‘koningizni oching, mahsulotlaringizni ko‘proq xaridorga ko‘rsating va savdoni tezroq yo‘lga qo‘ying.',
-        partnerCta: 'Do‘kon ochish',
+        partnerDesc: 'Qulaymarket platformasida o?z do?koningizni oching, mahsulotlaringizni ko?proq xaridorga ko?rsating va savdoni tezroq yo?lga qo?ying.',
+        partnerCta: 'Do?kon ochish',
     },
     en: {
         categoryTitle: 'Categories',
@@ -117,7 +118,7 @@ const SECTION_COPY = repairTextTree({
     },
     ru: {
         categoryTitle: 'Категории',
-        categoryDesc: 'Самые просматриваемые разделы и рекомендованные направления.',
+        categoryDesc: 'Самые просматриваемые разделы и рекомендуемые направления.',
         dealsTitle: 'Предложение дня',
         dealsAction: 'Смотреть все',
         popularTitle: 'Популярные товары',
@@ -133,7 +134,7 @@ const SECTION_COPY = repairTextTree({
 const PARTNER_COPY = repairTextTree({
     uz: {
         startZero: '0% komissiya bilan boshlash imkoniyati',
-        storefront: "Shaxsiy do'kon sahifasi va mahsulot vitrinası",
+        storefront: "Shaxsiy do'kon sahifasi va mahsulot vitrinasi",
         fastReview: 'Tez ariza va moderatsiya jarayoni',
         bannerOffer: 'uchun maxsus banner taklifi.',
         premiumCollection: 'Tanlangan mahsulot',
@@ -148,10 +149,10 @@ const PARTNER_COPY = repairTextTree({
         saleLabel: 'off',
     },
     ru: {
-        startZero: 'Стартуйте с комиссией 0%',
+        startZero: 'Старт с комиссией 0%',
         storefront: 'Личная страница магазина и витрина товаров',
         fastReview: 'Быстрая заявка и модерация',
-        bannerOffer: 'в специальном баннерном предложении.',
+        bannerOffer: 'в специальной баннерной подборке.',
         premiumCollection: 'Избранный товар',
         saleLabel: 'скидка',
     },
@@ -180,6 +181,14 @@ function looksLikeBrokenName(text: string) {
     return false;
 }
 
+function decodeTextEntities(text: string) {
+    return stripRichText(text || '');
+}
+
+function normalizeTranslatedText(text: string) {
+    return decodeTextEntities(repairText(text || ''));
+}
+
 function getLocalizedValue<T extends { name?: string | null; name_uz?: string | null; name_ru?: string | null; name_en?: string | null }>(
     item: T,
     language: UiLanguage,
@@ -200,7 +209,7 @@ function getLocalizedBannerTitle(banner: HeroBanner, language: UiLanguage) {
             : language === 'en'
                 ? banner.title_en || banner.title
                 : banner.title_uz || banner.title;
-    return repairText(raw || '');
+    return decodeTextEntities(repairText(raw || ''));
 }
 
 export default function WebsiteHomePage() {
@@ -324,7 +333,8 @@ export default function WebsiteHomePage() {
             const translatedPairs = await Promise.all(
                 Array.from(nameEntries.entries()).map(async ([id, label]) => {
                     try {
-                        return [id, await translateText(label, language, detectSourceLanguage(label))] as const;
+                        const translated = await translateText(label, language, detectSourceLanguage(label));
+                        return [id, normalizeTranslatedText(translated)] as const;
                     } catch {
                         return [id, label] as const;
                     }
@@ -334,7 +344,9 @@ export default function WebsiteHomePage() {
             let translatedTitle = heroTitle;
             if (heroTitle.trim()) {
                 try {
-                    translatedTitle = await translateText(heroTitle, language, detectSourceLanguage(heroTitle));
+                    translatedTitle = normalizeTranslatedText(
+                        await translateText(heroTitle, language, detectSourceLanguage(heroTitle))
+                    );
                 } catch {
                     translatedTitle = heroTitle;
                 }
@@ -407,10 +419,10 @@ export default function WebsiteHomePage() {
 
     const serviceItems = useMemo(
         () => [
-            { icon: Truck, title: w.home.services[0]?.title ?? 'Tez Yetkazish', desc: w.home.services[0]?.desc ?? 'Buyurtmalarni tez yuborish' },
-            { icon: ShieldCheck, title: w.home.services[1]?.title ?? 'Ishonchli To‘lov', desc: w.home.services[1]?.desc ?? 'Himoyalangan checkout' },
-            { icon: CreditCard, title: w.home.services[2]?.title ?? 'Qulay Qaytarish', desc: w.home.services[2]?.desc ?? 'Soddalashtirilgan qaytarish tartibi' },
-            { icon: Headphones, title: w.home.services[3]?.title ?? 'Qo‘llab-quvvatlash', desc: w.home.services[3]?.desc ?? 'Savollarga tezkor javob' },
+            { icon: Headphones, title: w.home.services[0]?.title ?? '24/7 Qo‘llab-quvvatlash', desc: w.home.services[0]?.desc ?? 'Har qanday savolga tezkor javob' },
+            { icon: BadgePercent, title: w.home.services[1]?.title ?? 'Eng Yaxshi Narxlar', desc: w.home.services[1]?.desc ?? 'Doimiy aksiyalar va chegirmalar' },
+            { icon: TrendingUp, title: w.home.services[2]?.title ?? 'Trend Mahsulotlar', desc: w.home.services[2]?.desc ?? 'Hozir mashhur bo‘lgan narsalar bir joyda' },
+            { icon: Compass, title: w.home.services[3]?.title ?? 'Oson Navigatsiya', desc: w.home.services[3]?.desc ?? 'Kerakli mahsulotni tez toping' },
         ],
         [w.home.services],
     );
@@ -466,8 +478,14 @@ export default function WebsiteHomePage() {
             <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
 
             <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-3 py-4 sm:px-4 md:px-5 md:py-6 lg:gap-10 lg:px-6 xl:gap-12 xl:px-8">
-                <section className="grid gap-6 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgba(19,236,55,0.08),rgba(255,255,255,0.96),rgba(19,236,55,0.05))] p-4 shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[linear-gradient(135deg,rgba(19,236,55,0.14),rgba(19,19,19,0.96),rgba(19,236,55,0.08))] sm:gap-7 sm:p-5 md:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] md:items-center md:gap-8 md:p-7 lg:rounded-[34px] lg:p-10 xl:grid-cols-[1.12fr_0.88fr]">
-                    <div className="flex min-w-0 max-w-[720px] flex-col justify-center">
+                <section className="relative grid gap-6 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgba(19,236,55,0.08),rgba(255,255,255,0.96),rgba(19,236,55,0.05))] p-4 shadow-[0_24px_80px_-40px_rgba(17,24,39,0.28)] dark:bg-[linear-gradient(135deg,rgba(19,236,55,0.14),rgba(19,19,19,0.96),rgba(19,236,55,0.08))] sm:gap-7 sm:p-5 md:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] md:items-center md:gap-8 md:p-7 lg:rounded-[34px] lg:p-10 xl:grid-cols-[1.12fr_0.88fr]">
+                    <div className="relative z-[1] flex min-w-0 max-w-[720px] flex-col justify-center">
+                        <span
+                            className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-[#13ec37]/20 bg-white/70 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#0d6c23] shadow-[0_16px_40px_-28px_rgba(19,236,55,0.55)] backdrop-blur dark:bg-white/8 dark:text-[#84f89b] sm:mb-5"
+                        >
+                            <span className="h-2 w-2 rounded-full bg-[#13ec37]" />
+                            {heroCopy.badge}
+                        </span>
                         <h1 className="max-w-[10ch] break-words text-[clamp(1.8rem,8vw,4.8rem)] font-black leading-[0.96] tracking-[-0.05em] text-[#111111] dark:text-white sm:text-[clamp(2.1rem,7vw,4.8rem)]">
                             {heroTitleLines[0] ?? ''}
                             {heroTitleLines[1] ? (
@@ -486,10 +504,20 @@ export default function WebsiteHomePage() {
                         <p className="mt-3 max-w-[40ch] text-[13px] leading-6 text-[#5f6571] dark:text-white/70 sm:mt-5 sm:text-[15px] sm:leading-8">
                             {heroDescription}
                         </p>
+                        <div
+                            className="mt-5 hidden w-fit rounded-[22px] border border-black/5 bg-white/80 px-4 py-3 shadow-[0_16px_40px_-28px_rgba(17,24,39,0.35)] backdrop-blur dark:border-white/10 dark:bg-white/6 md:block"
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#10be33]">{heroCopy.secondary}</p>
+                            <p className="mt-1 text-[13px] font-semibold text-[#111111] dark:text-white">{sectionCopy.categoryTitle}</p>
+                        </div>
                     </div>
 
-                    <div className="relative flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">
+                    <div className="relative z-[1] flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">
                         <div className="absolute inset-x-[8%] top-[16%] h-[62%] rounded-full bg-[#13ec37]/15 blur-[56px] sm:blur-[70px]" />
+                        <div className="pointer-events-none absolute right-[10%] top-[4%] hidden rounded-full border border-white/60 bg-white/85 px-4 py-3 text-left shadow-[0_18px_40px_-28px_rgba(17,24,39,0.32)] backdrop-blur dark:border-white/10 dark:bg-[#161616]/85 sm:block">
+                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#10be33]">{partnerCopy.premiumCollection}</p>
+                            <p className="mt-1 text-[13px] font-semibold text-[#111111] dark:text-white">{heroFloatingTitle}</p>
+                        </div>
                         <Link
                             href={heroProduct ? `/product/${heroProduct.id}` : WEB_LINKS.PRODUCTS}
                             className="group relative block w-full max-w-[320px] overflow-hidden rounded-[22px] bg-[#151819] p-2 shadow-[0_32px_80px_-30px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_-32px_rgba(0,0,0,0.7)] sm:max-w-[420px] sm:rotate-[3deg] sm:p-3 md:max-w-[470px] md:rotate-[4deg] lg:max-w-[560px] lg:rotate-[6deg]"
@@ -566,7 +594,7 @@ export default function WebsiteHomePage() {
                                         <div className="px-1 pt-4">
                                             <p className="line-clamp-2 text-[14px] font-bold text-[#111111] transition-colors duration-300 group-hover:text-[#10be33] dark:text-white dark:group-hover:text-[#84f89b]">{displayName(product)}</p>
                                             <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                                                <span className="text-[22px] font-black tracking-tight text-[#2a33ff] transition-transform duration-300 group-hover:translate-x-1 dark:text-[#90a1ff] sm:text-[28px]">{formatPrice(current, 'UZS', language)}</span>
+                                                <span className="text-[22px] font-black tracking-tight text-[#10be33] transition-transform duration-300 group-hover:translate-x-1 dark:text-[#84f89b] sm:text-[28px]">{formatPrice(current, 'UZS', language)}</span>
                                                 {current < base && (
                                                     <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(base, 'UZS', language)}</span>
                                                 )}
@@ -652,7 +680,7 @@ export default function WebsiteHomePage() {
                         </p>
                         <div className="hidden mt-5 space-y-3 text-[12px] text-[#111111] dark:text-white/80">
                             <div className="flex items-start gap-3"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>0% komissiya bilan boshlash imkoniyati</span></div>
-                            <div className="flex items-center gap-3"><ShoppingBag size={16} className="text-[#10be33]" /> Shaxsiy do‘kon sahifasi va mahsulot vitrinası</div>
+                            <div className="flex items-center gap-3"><ShoppingBag size={16} className="text-[#10be33]" /> Shaxsiy do'kon sahifasi va mahsulot vitrinasi</div>
                             <div className="flex items-start gap-3"><ArrowRight size={16} className="mt-0.5 shrink-0 text-[#10be33]" /> <span>Tez ariza va moderatsiya jarayoni</span></div>
                         </div>
                         <div className="mt-5 space-y-3 text-[12px] text-[#111111] dark:text-white/80">
@@ -682,3 +710,4 @@ export default function WebsiteHomePage() {
         </div>
     );
 }
+

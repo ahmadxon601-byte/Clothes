@@ -2,6 +2,7 @@ import { query } from "./db";
 
 type CategoryColumnSupport = {
   hasParentId: boolean;
+  hasSticker: boolean;
 };
 
 async function ensureCategoryParentColumn() {
@@ -11,6 +12,13 @@ async function ensureCategoryParentColumn() {
   );
   await query(
     `CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)`
+  );
+}
+
+async function ensureCategoryStickerColumn() {
+  await query(
+    `ALTER TABLE categories
+     ADD COLUMN IF NOT EXISTS sticker VARCHAR(16)`
   );
 }
 
@@ -32,22 +40,32 @@ export async function getCategoryColumnSupport(): Promise<CategoryColumnSupport>
      FROM information_schema.columns
      WHERE table_schema = 'public'
        AND table_name = 'categories'
-       AND column_name = 'parent_id'`
+       AND column_name IN ('parent_id', 'sticker')`
   );
 
-  if (result.rows.length === 0) {
+  const foundColumns = new Set(result.rows.map((row) => row.column_name));
+
+  if (!foundColumns.has('parent_id')) {
     await ensureCategoryParentColumn();
-    result = await query(
-      `SELECT column_name
-       FROM information_schema.columns
-       WHERE table_schema = 'public'
-         AND table_name = 'categories'
-         AND column_name = 'parent_id'`
-    );
   }
 
+  if (!foundColumns.has('sticker')) {
+    await ensureCategoryStickerColumn();
+  }
+
+  result = await query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'categories'
+       AND column_name IN ('parent_id', 'sticker')`
+  );
+
+  const currentColumns = new Set(result.rows.map((row) => row.column_name));
+
   const value = {
-    hasParentId: result.rows.length > 0,
+    hasParentId: currentColumns.has('parent_id'),
+    hasSticker: currentColumns.has('sticker'),
   };
 
   globalThis._categoryColumnSupport = {

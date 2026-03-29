@@ -43,6 +43,13 @@ export default function SiteProfilePage() {
     const [pwdError, setPwdError] = useState('');
     const [pwdSuccess, setPwdSuccess] = useState('');
 
+    useEffect(() => {
+        window.dispatchEvent(new CustomEvent('web-shell-header-visibility', { detail: { hidden: editOpen } }));
+        return () => {
+            window.dispatchEvent(new CustomEvent('web-shell-header-visibility', { detail: { hidden: false } }));
+        };
+    }, [editOpen]);
+
     const loadNotifications = () => {
         const token = getToken();
         if (!token) return;

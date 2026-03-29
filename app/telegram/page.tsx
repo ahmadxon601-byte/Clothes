@@ -80,7 +80,10 @@ export default function TgHomePage() {
     const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const categoryLabel = (cat: ApiCategory) => repairText(language === 'ru' && cat.name_ru ? cat.name_ru : language === 'en' && cat.name_en ? cat.name_en : cat.name_uz || cat.name);
+    const categoryLabel = (cat: ApiCategory, withSticker = false) => {
+        const name = repairText(language === 'ru' && cat.name_ru ? cat.name_ru : language === 'en' && cat.name_en ? cat.name_en : cat.name_uz || cat.name);
+        return withSticker && cat.sticker ? `${cat.sticker} ${name}` : name;
+    };
     const parentCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
     const subcategories = useMemo(() => categories.filter((c) => c.parent_id === activeParentCat), [categories, activeParentCat]);
     const activeCategory = activeSubCat || (subcategories.length === 0 ? activeParentCat : '');
@@ -225,7 +228,7 @@ export default function TgHomePage() {
 
             <div className="mb-3 flex flex-wrap gap-2">
                 <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', !activeParentCat && !activeSubCat ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{t.all}</span></button>
-                {parentCategories.map((cat) => <button key={cat.id} onClick={() => { const next = activeParentCat === cat.id ? '' : cat.id; setActiveParentCat(next); setActiveSubCat(''); }} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', activeParentCat === cat.id ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span></button>)}
+                {parentCategories.map((cat) => <button key={cat.id} onClick={() => { const next = activeParentCat === cat.id ? '' : cat.id; setActiveParentCat(next); setActiveSubCat(''); }} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', activeParentCat === cat.id ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{categoryLabel(cat, true)}</span></button>)}
             </div>
             {activeParentCat && subcategories.length > 0 ? <div className="mb-3 flex flex-wrap gap-2">{subcategories.map((cat) => <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', activeSubCat === cat.id ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span></button>)}</div> : null}
 

@@ -1,16 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Heart, Loader2, Package, Search, X, SlidersHorizontal, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { Heart, Loader2, Package, Search, X, SlidersHorizontal } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useSettingsStore } from '../../../src/features/settings/model';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
 import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
 import { formatPrice } from '../../../src/shared/lib/formatPrice';
-const BannerCarousel = dynamic(() => import('../../../src/shared/ui/BannerCarousel').then(m => m.BannerCarousel), { ssr: false });
 
 interface Product {
   id: string;
@@ -23,82 +21,13 @@ interface Product {
   store_id: string;
 }
 
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
-const UZ_DAYS   = ['Du','Se','Ch','Pa','Ju','Sh','Ya'];
-
-function formatDateLabel(iso: string) {
-  const [y, m, d] = iso.split('-');
-  return `${parseInt(d)} ${UZ_MONTHS[parseInt(m) - 1]} ${y}`;
-}
-
-function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (iso: string) => void }) {
-  const today = new Date();
-  const [year, setYear]   = useState(selected ? parseInt(selected.split('-')[0]) : today.getFullYear());
-  const [month, setMonth] = useState(selected ? parseInt(selected.split('-')[1]) - 1 : today.getMonth());
-
-  const firstDay    = new Date(year, month, 1).getDay();
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
-
-  const cells: (number | null)[] = [
-    ...Array(startOffset).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const toIso = (d: number) => `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  const todayIso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-  return (
-    <div className="rounded-[16px] border border-black/8 dark:border-white/8 bg-[#f8f9fb] dark:bg-[#111111] p-4 select-none w-72">
-      <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <ChevronLeft size={16} className="text-[#9ca3af]" />
-        </button>
-        <span className="text-[14px] font-bold text-[#111111] dark:text-white">{UZ_MONTHS[month]} {year}</span>
-        <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <ChevronRight size={16} className="text-[#9ca3af]" />
-        </button>
-      </div>
-      <div className="grid grid-cols-7 mb-1">
-        {UZ_DAYS.map(d => (
-          <div key={d} className="text-center text-[11px] font-bold text-[#9ca3af] py-1">{d}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-y-1">
-        {cells.map((day, i) => {
-          if (!day) return <div key={i} />;
-          const iso = toIso(day);
-          const isSelected = iso === selected;
-          const isToday    = iso === todayIso;
-          return (
-            <button key={i} onClick={() => onSelect(iso)}
-              className={cn(
-                'h-9 w-full rounded-lg text-[13px] font-semibold transition-all',
-                isSelected ? 'bg-[#13ec37] text-white' :
-                isToday    ? 'border border-[#00c853] text-[#00c853]' :
-                             'text-[#111111] dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
-              )}>
-              {day}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
 }
 
 export default function ClothingPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null; parent_id?: string | null }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null; sticker?: string | null; parent_id?: string | null }[]>([]);
   const lang = useSettingsStore((s) => s.settings.language);
   const { t, language } = useTranslation();
   const [activeParentCategory, setActiveParentCategory] = useState('');
@@ -116,10 +45,7 @@ export default function ClothingPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [sizeFilter, setSizeFilter] = useState('');
   const [minDiscount, setMinDiscount] = useState('');
-  const [createdFrom, setCreatedFrom] = useState('');
-  const [calOpen, setCalOpen] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parentCategories = useMemo(() => categories.filter((cat) => !cat.parent_id), [categories]);
@@ -128,10 +54,10 @@ export default function ClothingPage() {
   const activeFilterCount =
     (minPrice ? 1 : 0) +
     (maxPrice ? 1 : 0) +
-    (sizeFilter ? 1 : 0) +
-    (minDiscount ? 1 : 0) +
-    (createdFrom ? 1 : 0);
+    (minDiscount ? 1 : 0);
   const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
+  const categoryLabel = (cat: { id: string; name: string; name_uz: string | null; name_ru: string | null; name_en: string | null; parent_id?: string | null; sticker?: string | null }) =>
+    lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name);
 
   useEffect(() => {
     const token = getToken();
@@ -181,7 +107,7 @@ export default function ClothingPage() {
 
   const doFetch = useCallback((params: {
     query: string; category: string;
-    minPrice: string; maxPrice: string; sizeFilter: string; minDiscount: string; createdFrom: string;
+    minPrice: string; maxPrice: string; minDiscount: string;
   }) => {
     setLoading(true);
     const p = new URLSearchParams({ limit: '80' });
@@ -189,9 +115,7 @@ export default function ClothingPage() {
     if (params.query.trim()) p.set('search', params.query.trim());
     if (params.minPrice) p.set('min_price', params.minPrice);
     if (params.maxPrice) p.set('max_price', params.maxPrice);
-    if (params.sizeFilter) p.set('size', params.sizeFilter);
     if (params.minDiscount) p.set('min_discount', params.minDiscount);
-    if (params.createdFrom) p.set('created_from', params.createdFrom);
     fetch(`/api/products?${p}`)
       .then((r) => r.json())
       .then((json) => { setProducts(json.data?.products ?? json.products ?? []); setLoading(false); })
@@ -200,11 +124,11 @@ export default function ClothingPage() {
 
   const triggerFetch = useCallback((immediate = false) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const go = () => doFetch({ query, category: activeSubcategory || (subcategories.length === 0 ? activeParentCategory : ''), minPrice, maxPrice, sizeFilter, minDiscount, createdFrom });
+    const go = () => doFetch({ query, category: activeSubcategory || (subcategories.length === 0 ? activeParentCategory : ''), minPrice, maxPrice, minDiscount });
     if (immediate) go();
     else debounceRef.current = setTimeout(go, 400);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, activeParentCategory, activeSubcategory, subcategories.length, minPrice, maxPrice, sizeFilter, minDiscount, createdFrom, doFetch]);
+  }, [query, activeParentCategory, activeSubcategory, subcategories.length, minPrice, maxPrice, minDiscount, doFetch]);
 
   useEffect(() => {
     triggerFetch(false);
@@ -212,14 +136,14 @@ export default function ClothingPage() {
   }, [triggerFetch]);
 
   const clearFilters = () => {
-    setMinPrice(''); setMaxPrice(''); setSizeFilter('');
-    setMinDiscount(''); setCreatedFrom(''); setCalOpen(false);
+    setMinPrice(''); setMaxPrice('');
+    setMinDiscount('');
   };
 
   return (
     <section className="mx-auto max-w-[1440px] px-6 md:px-10 py-12 md:py-16">
       <div className="mb-8">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{t.all}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Barcha mahsulotlar</p>
         <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">{t.products_page_title}</h1>
       </div>
 
@@ -259,93 +183,100 @@ export default function ClothingPage() {
 
       {/* Filter dropdown */}
       {filterOpen && (
-        <div className="mb-6 bg-white dark:bg-[#1a1a1a] rounded-[20px] border border-black/8 dark:border-white/8 p-5 space-y-5">
-          {/* Date from */}
-          <div>
-            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Yaratilgan sana (dan)</p>
-            {createdFrom ? (
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00c853]/10 border border-[#00c853]/20 text-[13px] font-semibold text-[#008d3a] dark:text-[#00c853]">
-                  <CalendarDays size={14} />
-                  {formatDateLabel(createdFrom)} dan
-                </span>
-                <button onClick={() => { setCreatedFrom(''); setCalOpen(false); }}
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5">
-                  <X size={12} className="text-[#9ca3af]" />
-                </button>
-                <button onClick={() => setCalOpen(o => !o)}
-                  className="text-[12px] font-semibold text-[#9ca3af] hover:text-[#111111] dark:hover:text-white underline">
-                  O&apos;zgartirish
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setCalOpen(o => !o)}
-                className={cn('flex items-center gap-2 px-4 py-1.5 rounded-full border text-[13px] font-semibold transition-all',
-                  calOpen
-                    ? 'bg-[#13ec37] text-white border-[#13ec37]'
-                    : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
-                )}>
-                <CalendarDays size={15} />
-                {t.choose_date}
-              </button>
-            )}
-            {calOpen && (
-              <div className="mt-3">
-                <MiniCalendar
-                  selected={createdFrom}
-                  onSelect={iso => { setCreatedFrom(iso); setCalOpen(false); }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Price range */}
-          <div>
-            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.price_range}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder={t.min}
-                type="number"
-                className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-              <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder={t.max}
-                type="number"
-                className="h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-            </div>
-          </div>
-
-          {/* Size */}
-          <div>
-            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">O&apos;lcham</p>
-            <div className="flex flex-wrap gap-2">
-              {SIZES.map(s => (
-                <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
-                  className={cn('h-10 px-3 rounded-xl text-[13px] font-bold border transition-all',
-                    sizeFilter === s
-                      ? 'bg-[#13ec37] text-white border-[#13ec37]'
-                      : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
-                  )}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Min discount + clear */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-6 overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_20px_44px_-34px_rgba(17,24,39,0.35)] dark:border-white/8 dark:bg-[#1a1a1a]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 px-4 py-4 dark:border-white/8 sm:px-5">
             <div>
-              <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.minimum_discount}</p>
-              <div className="flex items-center gap-2">
-                <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
-                  type="number" min="1" max="99" placeholder="20"
-                  className="h-10 w-24 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-                <span className="text-[13px] text-[#9ca3af]">% va undan ko&apos;p chegirma</span>
-              </div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9ca3af]">Filterlar</p>
+              <p className="mt-1 text-[14px] font-semibold text-[#111111] dark:text-white">
+                {activeFilterCount > 0 ? `${activeFilterCount} ta filter tanlangan` : 'Mahsulotlarni aniqroq toping'}
+              </p>
             </div>
             {activeFilterCount > 0 && (
-              <button onClick={clearFilters}
-                className="px-4 py-2 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all self-end">
+              <button
+                onClick={clearFilters}
+                className="inline-flex h-10 items-center rounded-full border border-red-400/30 bg-red-500/5 px-4 text-[13px] font-semibold text-red-500 transition-all hover:bg-red-500/10"
+              >
                 {t.clear_filters}
               </button>
             )}
+          </div>
+
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-2 border-b border-black/6 px-4 py-3 dark:border-white/8 sm:px-5">
+              {minPrice && (
+                <button type="button" onClick={() => setMinPrice('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                  {t.min}: {minPrice}
+                  <X size={12} />
+                </button>
+              )}
+              {maxPrice && (
+                <button type="button" onClick={() => setMaxPrice('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                  {t.max}: {maxPrice}
+                  <X size={12} />
+                </button>
+              )}
+              {minDiscount && (
+                <button type="button" onClick={() => setMinDiscount('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                  {minDiscount}%+
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1.1fr_1fr]">
+            <div className="rounded-[24px] border border-black/8 bg-[#fbfcfe] p-4 dark:border-white/8 dark:bg-[#101010]">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#9ca3af]">{t.price_range}</p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <label className="rounded-[18px] border border-black/8 bg-white px-3 py-2.5 dark:border-white/8 dark:bg-[#1a1a1a]">
+                  <span className="text-[11px] font-semibold text-[#9ca3af]">{t.min}</span>
+                  <input
+                    value={minPrice}
+                    onChange={e => setMinPrice(e.target.value)}
+                    placeholder="0"
+                    type="number"
+                    className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
+                  />
+                </label>
+                <label className="rounded-[18px] border border-black/8 bg-white px-3 py-2.5 dark:border-white/8 dark:bg-[#1a1a1a]">
+                  <span className="text-[11px] font-semibold text-[#9ca3af]">{t.max}</span>
+                  <input
+                    value={maxPrice}
+                    onChange={e => setMaxPrice(e.target.value)}
+                    placeholder="∞"
+                    type="number"
+                    className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-black/8 bg-[#fbfcfe] p-4 dark:border-white/8 dark:bg-[#101010]">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#9ca3af]">{t.minimum_discount}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[10, 20, 30, 50].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setMinDiscount(minDiscount === String(value) ? '' : String(value))}
+                    className={cn(
+                      'rounded-full border px-3 py-2 text-[12px] font-bold transition-all',
+                      minDiscount === String(value)
+                        ? 'border-[#13ec37] bg-[#13ec37] text-white'
+                        : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white'
+                    )}
+                  >
+                    {value}%+
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
+                  type="number" min="1" max="99" placeholder="20"
+                  className="h-11 w-24 rounded-[16px] border border-black/8 bg-white px-3 text-[13px] font-semibold text-[#111111] outline-none focus:ring-2 ring-[#00c853]/20 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white" />
+                <span className="text-[13px] text-[#9ca3af]">% va undan ko&apos;p</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -367,9 +298,14 @@ export default function ClothingPage() {
                 setActiveParentCategory(nextParent);
                 setActiveSubcategory('');
               }}
-              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
             >
-              {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
+              {cat.sticker ? (
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[16px] leading-none ${activeParentCategory === cat.id ? 'bg-white/16 dark:bg-black/10' : 'bg-[#f3f4f6] dark:bg-white/10'}`}>
+                  {cat.sticker}
+                </span>
+              ) : null}
+              <span>{categoryLabel(cat)}</span>
             </button>
           ))}
         </div>
@@ -382,15 +318,11 @@ export default function ClothingPage() {
               onClick={() => setActiveSubcategory(activeSubcategory === cat.id ? '' : cat.id)}
               className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeSubcategory === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37] shadow' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
             >
-              {lang === 'ru' ? (cat.name_ru || cat.name) : lang === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name)}
+              {categoryLabel(cat)}
             </button>
           ))}
         </div>
       )}
-
-      <div className="mb-6">
-        <BannerCarousel variant="desktop" />
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-24">

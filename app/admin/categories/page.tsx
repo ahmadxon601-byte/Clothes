@@ -16,6 +16,7 @@ interface Category {
   name_ru: string | null;
   name_en: string | null;
   slug: string;
+  sticker?: string | null;
   parent_id?: string | null;
   created_at: string;
 }
@@ -25,6 +26,14 @@ type Lang = 'uz' | 'ru' | 'en';
 const LANG_LABELS: Record<Lang, string> = { uz: "O'zbekcha", ru: 'Русский', en: 'English' };
 const LANG_CODES: Record<Lang, string> = { uz: 'uz', ru: 'ru', en: 'en' };
 const ALL_LANGS: Lang[] = ['uz', 'ru', 'en'];
+const CATEGORY_STICKERS = [
+  '👕', '👗', '👖', '👟', '🧥', '👜', '🧢',
+  '🛒', '📦', '🏷️', '✨', '🎁', '🏠',
+  '🛋️', '🪑', '🛏️', '🪞', '🧺', '🧸',
+  '📱', '💻', '⌚', '🎧', '📷', '🎮',
+  '📺', '🧯', '💡', '🔌', '🔋', '🖨️',
+  '🧊', '🪟', '🧹', '🫖', '🍽️', '🚿',
+];
 
 async function translateText(text: string, from: Lang, to: Lang): Promise<string> {
   try {
@@ -47,6 +56,7 @@ function useCategories() {
 
 export default function CategoriesPage() {
   const { t, locale } = useAdminI18n();
+  const activeLang: Lang = locale === 'ru' ? 'ru' : locale === 'en' ? 'en' : 'uz';
   const qc = useQueryClient();
   const { showToast } = useToast();
   const { data, isLoading } = useCategories();
@@ -59,6 +69,7 @@ export default function CategoriesPage() {
   const [name, setName] = useState('');
   const [lang, setLang] = useState<Lang>('uz');
   const [slug, setSlug] = useState('');
+  const [sticker, setSticker] = useState('');
   const [translating, setTranslating] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -94,6 +105,7 @@ export default function CategoriesPage() {
         name_ru: tr.ru,
         name_en: tr.en,
         slug: slug.trim(),
+        sticker: sticker.trim(),
       });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); closeForm(); showToast({ message: "Yaratildi", type: 'success' }); },
@@ -110,6 +122,7 @@ export default function CategoriesPage() {
         name_ru: tr.ru,
         name_en: tr.en,
         slug: slug.trim() || undefined,
+        sticker: sticker.trim(),
       });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); closeForm(); showToast({ message: "Yangilandi", type: 'success' }); },
@@ -121,19 +134,13 @@ export default function CategoriesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'categories'] }); setDeleteCat(null); showToast({ message: "O'chirildi", type: 'error' }); },
   });
 
-  const openCreate = () => { setName(''); setLang('uz'); setSlug(''); setFormError(''); setEditCat(null); setFormOpen(true); };
+  const openCreate = () => { setName(''); setLang(activeLang); setSlug(''); setSticker(''); setFormError(''); setEditCat(null); setFormOpen(true); };
   const openEdit = (cat: Category) => {
     const existing = getLocalizedName(cat, locale);
-    const existingLang: Lang =
-      locale === 'uz' && cat.name_uz ? 'uz'
-      : locale === 'ru' && cat.name_ru ? 'ru'
-      : locale === 'en' && cat.name_en ? 'en'
-      : cat.name_uz ? 'uz'
-      : cat.name_ru ? 'ru'
-      : 'en';
     setName(existing);
-    setLang(existingLang);
+    setLang(activeLang);
     setSlug(cat.slug);
+    setSticker(cat.sticker ?? '');
     setFormError('');
     setEditCat(cat);
     setFormOpen(true);
@@ -142,7 +149,7 @@ export default function CategoriesPage() {
   const submitForm = () => { if (!isPending && canSubmit) (editCat ? updateMut : createMut).mutate(); };
 
   const isPending = createMut.isPending || updateMut.isPending || translating;
-  const canSubmit = name.trim() && slug.trim();
+  const canSubmit = name.trim() && slug.trim() && sticker.trim();
 
   useEffect(() => {
     if (!formOpen) return;
@@ -178,14 +185,19 @@ export default function CategoriesPage() {
           <ul className="space-y-2">
             {parentCategories.map((cat) => (
               <li key={cat.id} className="flex items-center justify-between rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3">
-                <div>
-                  <p className="font-semibold">{getLocalizedName(cat, locale)}</p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--admin-border)] bg-black/10 text-xl">
+                    {cat.sticker || '🏷️'}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{getLocalizedName(cat, locale)}</p>
                   {(cat.name_ru || cat.name_en) && (
                     <p className="text-xs text-[var(--admin-muted)]">
                       {[cat.name_uz && `UZ: ${cat.name_uz}`, cat.name_ru && `RU: ${cat.name_ru}`, cat.name_en && `EN: ${cat.name_en}`].filter(Boolean).join(' · ')}
                     </p>
                   )}
-                  <p className="text-xs text-[var(--admin-muted)]">{cat.slug}</p>
+                    <p className="text-xs text-[var(--admin-muted)]">{cat.slug}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <p className="mr-2 text-xs text-[var(--admin-muted)]">{new Date(cat.created_at).toLocaleDateString(locale)}</p>
@@ -217,31 +229,10 @@ export default function CategoriesPage() {
             </button>
             <h2 className="mb-4 text-base font-bold">{editCat ? 'Tahrirlash' : 'Yangi kategoriya'}</h2>
             <div className="space-y-3">
-              {/* Language selector */}
-              <div>
-                <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Til</span>
-                <div className="flex gap-1.5">
-                  {ALL_LANGS.map(l => (
-                    <button
-                      key={l}
-                      type="button"
-                      onClick={() => setLang(l)}
-                      className={`flex-1 rounded-lg border py-1.5 text-xs font-bold shadow-none outline-none transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 ${
-                        lang === l
-                          ? 'border-[#00bc7d] bg-[#00bc7d] text-white'
-                          : 'border-[var(--admin-border)] bg-transparent text-[var(--admin-muted)] hover:border-white/10 hover:text-[var(--admin-fg)]'
-                      }`}
-                    >
-                      {LANG_LABELS[l]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Single name input */}
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">
-                  Nomi ({LANG_LABELS[lang]})
+                  Nomi
                 </span>
                 <input
                   value={name}
@@ -250,6 +241,27 @@ export default function CategoriesPage() {
                   placeholder="Masalan: Kiyimlar"
                 />
               </label>
+
+              <div>
+                <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Sticker</span>
+                <div className="grid grid-cols-6 gap-2">
+                  {CATEGORY_STICKERS.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setSticker(item)}
+                      className={`flex h-11 items-center justify-center rounded-2xl border text-xl transition-colors ${
+                        sticker === item
+                          ? 'border-[#00bc7d] bg-[#00bc7d]/15'
+                          : 'border-[var(--admin-border)] bg-transparent hover:border-white/10'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                {!sticker && <p className="mt-2 text-xs text-rose-500">Kategoriya uchun sticker tanlang</p>}
+              </div>
 
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-[var(--admin-muted)]">Slug</span>

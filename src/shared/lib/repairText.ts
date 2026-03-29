@@ -1,12 +1,22 @@
-const SUSPICIOUS_MOJIBAKE_PATTERN = /[ÐÑÂâð]/;
+const SUSPICIOUS_MOJIBAKE_PATTERN = /(?:Ã.|Â.|Ð.|Ñ.|â€|â€™|â€œ|â€)/;
 
 export function repairText(input: string): string {
   if (!input || !SUSPICIOUS_MOJIBAKE_PATTERN.test(input)) return input;
 
   try {
-    const bytes = Uint8Array.from(Array.from(input, (char) => char.charCodeAt(0) & 0xff));
-    const decoded = new TextDecoder('utf-8').decode(bytes);
-    return decoded.includes('�') ? input : decoded;
+    let current = input;
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (!SUSPICIOUS_MOJIBAKE_PATTERN.test(current)) break;
+
+      const bytes = Uint8Array.from(Array.from(current, (char) => char.charCodeAt(0) & 0xff));
+      const decoded = new TextDecoder('utf-8').decode(bytes);
+
+      if (decoded.includes('�') || decoded.includes('Ã¯Â¿Â½') || decoded === current) break;
+      current = decoded;
+    }
+
+    return current;
   } catch {
     return input;
   }

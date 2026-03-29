@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { Heart, Search, Loader2 } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import { Skeleton } from '../../../src/shared/ui/Skeleton';
 import { SITE_ROUTES } from '../../../src/shared/config/constants';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
@@ -36,7 +36,6 @@ export default function FavoritesPage() {
     const { language } = useTranslation();
     const [products, setProducts] = useState<FavProduct[]>([]);
     const [loading, setLoading] = useState(true);
-    const [query, setQuery] = useState('');
     const [toggling, setToggling] = useState<Set<string>>(new Set());
     const [authModal, setAuthModal] = useState(false);
     const translatedTitles = useTranslatedLabelMap(products.map((product) => ({ id: product.product_id, label: product.title })), language);
@@ -80,11 +79,7 @@ export default function FavoritesPage() {
         }
     };
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (!q) return products;
-        return products.filter((p) => p.title.toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q));
-    }, [products, query]);
+    const filtered = useMemo(() => products, [products]);
 
     if (authLoading) {
         return (
@@ -130,15 +125,6 @@ export default function FavoritesPage() {
                     <p className="mt-2 max-w-xl text-[14px] text-[#5b6472] dark:text-[#9ca3af]">
                         {w.favorites.subtitle}
                     </p>
-                    <div className="mt-6 flex h-12 items-center gap-3 rounded-full border border-black/10 bg-white px-4 shadow-[0_16px_34px_-26px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
-                        <Search size={16} className="text-[#97a0b0] dark:text-[#6b7280]" />
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder={w.favorites.searchPlaceholder}
-                            className="h-full w-full bg-transparent text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:text-white dark:placeholder:text-[#6b7280]"
-                        />
-                    </div>
                 </div>
             </div>
 

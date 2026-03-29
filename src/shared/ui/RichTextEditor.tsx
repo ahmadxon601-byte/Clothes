@@ -44,24 +44,24 @@ export function RichTextEditor({
   };
 
   return (
-    <div className={`rounded-[22px] border border-white/8 bg-white/[0.04] p-3 transition-all dark:bg-[#101010] ${focused ? 'border-[#22c55e]/55 shadow-[0_0_0_4px_rgba(34,197,94,0.12)]' : ''}`}>
-      <div className="mb-3 flex flex-wrap gap-2 border-b border-white/8 pb-3">
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('bold')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+    <div className={`rounded-[22px] border border-black/10 bg-[#f8fafc] p-3 transition-all dark:border-white/8 dark:bg-[#101010] ${focused ? 'border-[#22c55e]/55 shadow-[0_0_0_4px_rgba(34,197,94,0.12)]' : ''}`}>
+      <div className="mb-3 flex flex-wrap gap-2 border-b border-black/8 pb-3 dark:border-white/8">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('bold')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <Bold size={15} />
         </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('italic')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('italic')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <Italic size={15} />
         </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('underline')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('underline')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <Underline size={15} />
         </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('insertUnorderedList')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('insertUnorderedList')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <List size={15} />
         </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('insertOrderedList')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('insertOrderedList')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <ListOrdered size={15} />
         </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('removeFormat')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-[#64748b] transition-colors hover:text-[#111111] dark:text-[#94a3b8] dark:hover:text-white">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run('removeFormat')} className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#64748b] transition-colors hover:text-[#111111] dark:border-white/8 dark:bg-white/[0.04] dark:text-[#94a3b8] dark:hover:text-white">
           <RemoveFormatting size={15} />
         </button>
       </div>

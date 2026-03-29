@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { ArrowRight, LocateFixed, Loader2, UserRound } from 'lucide-react';
+import { ArrowRight, ChevronLeft, LocateFixed, Loader2, UserRound } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
@@ -27,8 +27,22 @@ type MapState = {
     selected: boolean;
 };
 
+type FormErrors = {
+    storeName: boolean;
+    ownerName: boolean;
+    phone: boolean;
+    address: boolean;
+    images: boolean;
+};
+
 const DEFAULT_LAT = 41.0011;
 const DEFAULT_LNG = 71.6681;
+
+function sanitizePhoneInput(value: string) {
+    const hasLeadingPlus = value.trim().startsWith('+');
+    const digits = value.replace(/\D/g, '').slice(0, 15);
+    return hasLeadingPlus ? `+${digits}` : digits;
+}
 
 const MapPickerLeaflet = dynamic(
     () => import('../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
@@ -59,6 +73,10 @@ function parseCoords(input: string) {
 export default function OpenStorePage() {
     const router = useRouter();
     const { w } = useWebI18n();
+    const openStoreText = w.openStore as typeof w.openStore & {
+        fillRequiredFields?: string;
+        imageRequired?: string;
+    };
     const { user, loading: authLoading, refreshStore } = useWebAuth();
     const imageInputRef = useRef<HTMLInputElement>(null);
     const [authModal, setAuthModal] = useState(false);
@@ -73,6 +91,13 @@ export default function OpenStorePage() {
     const [loading, setLoading] = useState(false);
     const [addressLoading, setAddressLoading] = useState(false);
     const [result, setResult] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+    const [formErrors, setFormErrors] = useState<FormErrors>({
+        storeName: false,
+        ownerName: false,
+        phone: false,
+        address: false,
+        images: false,
+    });
     const latestReverseRef = useRef(0);
     const [map, setMap] = useState<MapState>({
         centerLat: DEFAULT_LAT,
@@ -84,6 +109,10 @@ export default function OpenStorePage() {
     });
 
     const onChange = (key: 'storeName' | 'ownerName' | 'phone' | 'address' | 'description', value: string) => {
+        if (key !== 'description') {
+            const hasValue = key === 'phone' ? Boolean(value.trim()) : Boolean(value.trim());
+            setFormErrors((prev) => ({ ...prev, [key]: hasValue ? false : prev[key] }));
+        }
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
@@ -121,6 +150,7 @@ export default function OpenStorePage() {
             .then((encoded) => {
                 const filtered = encoded.filter(Boolean);
                 if (!filtered.length) return;
+                setFormErrors((prev) => ({ ...prev, images: false }));
                 setForm((prev) => ({ ...prev, images: [...prev.images, ...filtered].slice(0, 10) }));
                 setResult(null);
             })
@@ -171,6 +201,7 @@ export default function OpenStorePage() {
             (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
+                setFormErrors((prev) => ({ ...prev, address: false }));
                 setMap((prev) => ({
                     ...prev,
                     centerLat: lat,
@@ -194,12 +225,26 @@ export default function OpenStorePage() {
 
         if (!user) { setAuthModal(true); return; }
 
-        if (!form.storeName.trim() || !form.ownerName.trim() || !form.phone.trim() || !form.address.trim() || !map.selected) {
-            setResult({ type: 'error', message: w.openStore.fillRequired });
-            return;
-        }
-        if (form.images.length < 1) {
-            setResult({ type: 'error', message: "Kamida 1 ta do'kon rasmi yuklang." });
+        const nextErrors: FormErrors = {
+            storeName: !form.storeName.trim(),
+            ownerName: !form.ownerName.trim(),
+            phone: !form.phone.trim(),
+            address: !form.address.trim() || !map.selected,
+            images: form.images.length < 1,
+        };
+        setFormErrors(nextErrors);
+
+        const missingFields = [
+            nextErrors.storeName ? w.openStore.storeName : null,
+            nextErrors.ownerName ? w.openStore.ownerName : null,
+            nextErrors.phone ? w.openStore.phone : null,
+            nextErrors.address ? w.openStore.addressMap : null,
+            nextErrors.images ? w.openStore.storeImages : null,
+        ].filter(Boolean);
+
+        if (missingFields.length > 0) {
+            const prefix = openStoreText.fillRequiredFields ?? w.openStore.fillRequired;
+            setResult({ type: 'error', message: `${prefix} ${missingFields.join(', ')}` });
             return;
         }
 
@@ -260,6 +305,14 @@ export default function OpenStorePage() {
                 <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
                 <section className="pb-14 md:pb-20">
                     <div className="relative h-[48vh] min-h-[340px] w-full overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            aria-label="Back"
+                            className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white/90 text-[#111111] shadow-[0_16px_32px_-18px_rgba(0,0,0,0.28)] backdrop-blur-sm transition-all hover:bg-white dark:border-white/20 dark:bg-[#111111]/78 dark:text-white dark:shadow-[0_16px_32px_-18px_rgba(0,0,0,0.75)] dark:hover:bg-[#1b1b1b]/88 md:hidden"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
                         <img
                             src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2200&auto=format&fit=crop"
                             alt="Open your store"
@@ -303,6 +356,14 @@ export default function OpenStorePage() {
         <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
         <section className="pb-14 md:pb-20">
             <div className="relative h-[48vh] min-h-[340px] w-full overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    aria-label="Back"
+                    className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white/90 text-[#111111] shadow-[0_16px_32px_-18px_rgba(0,0,0,0.28)] backdrop-blur-sm transition-all hover:bg-white dark:border-white/20 dark:bg-[#111111]/78 dark:text-white dark:shadow-[0_16px_32px_-18px_rgba(0,0,0,0.75)] dark:hover:bg-[#1b1b1b]/88 md:hidden"
+                >
+                    <ChevronLeft size={18} />
+                </button>
                 <img
                     src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2200&auto=format&fit=crop"
                     alt="Open your store"
@@ -330,10 +391,13 @@ export default function OpenStorePage() {
                     <div className="mt-5 grid gap-4">
                         <label className="grid gap-1.5">
                             <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.storeName}</span>
-                            <input
-                                value={form.storeName}
-                                onChange={(e) => onChange('storeName', e.target.value)}
-                                className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                                <input
+                                    value={form.storeName}
+                                    onChange={(e) => onChange('storeName', e.target.value)}
+                                className={cn(
+                                    "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
+                                    formErrors.storeName ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',
+                                )}
                                 placeholder={w.openStore.storeNamePlaceholder}
                                 disabled={loading}
                             />
@@ -345,7 +409,11 @@ export default function OpenStorePage() {
                                 <input
                                     value={form.ownerName}
                                     onChange={(e) => onChange('ownerName', e.target.value)}
-                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                                    required
+                                    className={cn(
+                                        "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
+                                        formErrors.ownerName ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',
+                                    )}
                                     placeholder={w.openStore.ownerNamePlaceholder}
                                     disabled={loading}
                                 />
@@ -354,8 +422,15 @@ export default function OpenStorePage() {
                                 <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.phone}</span>
                                 <input
                                     value={form.phone}
-                                    onChange={(e) => onChange('phone', e.target.value)}
-                                    className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
+                                    onChange={(e) => onChange('phone', sanitizePhoneInput(e.target.value))}
+                                    type="tel"
+                                    inputMode="tel"
+                                    autoComplete="tel"
+                                    pattern="[+0-9]*"
+                                    className={cn(
+                                        "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
+                                        formErrors.phone ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',
+                                    )}
                                     placeholder={w.openStore.phonePlaceholder}
                                     disabled={loading}
                                 />
@@ -377,13 +452,18 @@ export default function OpenStorePage() {
                                 </div>
                             </div>
 
+                            <div className={cn(
+                                'rounded-2xl transition-all',
+                                formErrors.address && 'rounded-2xl ring-2 ring-red-500/70 ring-offset-2 ring-offset-white dark:ring-offset-[#1a1a1a]',
+                            )}>
                             <MapPickerLeaflet
                                 embedded
                                 initialLat={map.markerLat}
                                 initialLng={map.markerLng}
-                onChange={(formatted) => {
+                                onChange={(formatted) => {
                                     const coords = parseCoords(formatted);
                                     if (!coords) return;
+                                    setFormErrors((prev) => ({ ...prev, address: false }));
                                     setMap((prev) => ({
                                         ...prev,
                                         markerLat: coords.lat,
@@ -397,6 +477,7 @@ export default function OpenStorePage() {
                                 onConfirm={(formatted) => {
                                     const coords = parseCoords(formatted);
                                     if (!coords) return;
+                                    setFormErrors((prev) => ({ ...prev, address: false }));
                                     setMap((prev) => ({
                                         ...prev,
                                         markerLat: coords.lat,
@@ -409,10 +490,14 @@ export default function OpenStorePage() {
                                 }}
                                 onClose={() => {}}
                             />
+                            </div>
                             <input type="hidden" name="latitude" value={map.markerLat.toFixed(6)} />
                             <input type="hidden" name="longitude" value={map.markerLng.toFixed(6)} />
 
-                            <div className="rounded-xl border border-black/12 bg-[#f9fafb] px-3 py-2.5 text-[13px] text-[#4b5563] dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db]">
+                            <div className={cn(
+                                "rounded-xl border px-3 py-2.5 text-[13px] text-[#4b5563] dark:bg-[#111111] dark:text-[#d1d5db]",
+                                formErrors.address ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 bg-[#f9fafb] dark:border-white/10',
+                            )}>
                                 {addressLoading ? w.openStore.resolving : (form.address || w.openStore.notPicked)}
                             </div>
                             <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
@@ -449,7 +534,10 @@ export default function OpenStorePage() {
                                 type="button"
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={loading || form.images.length >= 10}
-                                className="flex w-full items-center gap-4 rounded-xl border border-black/12 bg-white px-3 py-2 text-left text-[13px] text-[#374151] dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60"
+                                className={cn(
+                                    "flex w-full items-center gap-4 rounded-xl border px-3 py-2 text-left text-[13px] text-[#374151] dark:bg-[#111111] dark:text-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60",
+                                    formErrors.images ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 bg-white dark:border-white/10',
+                                )}
                             >
                                 <span className="inline-flex rounded-full bg-[#13ec37] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-[#06200f]">
                                     {w.openStore.chooseFiles}

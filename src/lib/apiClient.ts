@@ -76,6 +76,7 @@ export interface ApiCategory {
     name_ru: string | null;
     name_en: string | null;
     slug: string;
+    sticker?: string | null;
     parent_id?: string | null;
 }
 

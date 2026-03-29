@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Globe, LogIn, Moon, Package, Search, Store, Sun, User } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
 import { useSettingsStore } from '../../src/features/settings/model';
@@ -18,8 +18,10 @@ import { ToastProvider } from '../../src/shared/ui/Toast';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
     const isTelegram = isTelegramRoute(pathname);
     const hasHeader = hasUnifiedHeader(pathname);
+    const isCompactMobileHeader = false;
     const { w } = useWebI18n();
     const { t } = useTranslation();
     const settings = useSettingsStore((s) => s.settings);
@@ -30,9 +32,20 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({ open: false, tab: 'login' });
     const [supportOpen, setSupportOpen] = useState(false);
+    const [hideWebHeader, setHideWebHeader] = useState(false);
+    const [footerCategories, setFooterCategories] = useState<Array<{ id: string; name: string; name_uz?: string | null; name_ru?: string | null; name_en?: string | null; parent_id?: string | null }>>([]);
     const langRef = useRef<HTMLDivElement>(null);
-    const userMenuRef = useRef<HTMLDivElement>(null);
+    const mobileUserMenuRef = useRef<HTMLDivElement>(null);
+    const desktopUserMenuRef = useRef<HTMLDivElement>(null);
     const isDark = settings.themeMode === 'dark';
+    const closeMenus = () => {
+        setLangOpen(false);
+        setUserMenuOpen(false);
+    };
+    const navigateTo = (href: string) => {
+        closeMenus();
+        router.push(href);
+    };
 
     useEffect(() => {
         document.documentElement.classList.toggle('dark', isDark);
@@ -43,16 +56,19 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     }, [loadSettings]);
 
     useEffect(() => {
-        const onDocClick = (event: MouseEvent) => {
+        const onDocClick = (event: PointerEvent) => {
+            const target = event.target as Node;
             if (langRef.current && !langRef.current.contains(event.target as Node)) {
                 setLangOpen(false);
             }
-            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+            const isInsideMobileUserMenu = mobileUserMenuRef.current?.contains(target) ?? false;
+            const isInsideDesktopUserMenu = desktopUserMenuRef.current?.contains(target) ?? false;
+            if (!isInsideMobileUserMenu && !isInsideDesktopUserMenu) {
                 setUserMenuOpen(false);
             }
         };
-        document.addEventListener('mousedown', onDocClick);
-        return () => document.removeEventListener('mousedown', onDocClick);
+        document.addEventListener('pointerdown', onDocClick);
+        return () => document.removeEventListener('pointerdown', onDocClick);
     }, []);
 
     useEffect(() => {
@@ -60,6 +76,27 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         window.addEventListener('open-support-chat', openSupport);
         return () => window.removeEventListener('open-support-chat', openSupport);
     }, []);
+
+    useEffect(() => {
+        const handleVisibility = (event: Event) => {
+            const customEvent = event as CustomEvent<{ hidden?: boolean }>;
+            setHideWebHeader(Boolean(customEvent.detail?.hidden));
+        };
+
+        window.addEventListener('web-shell-header-visibility', handleVisibility);
+        return () => window.removeEventListener('web-shell-header-visibility', handleVisibility);
+    }, []);
+
+    useEffect(() => {
+        if (isTelegram) return;
+        fetch('/api/categories')
+            .then((r) => r.json())
+            .then((json) => {
+                const rows = json?.data?.categories ?? json?.categories ?? [];
+                setFooterCategories(Array.isArray(rows) ? rows.filter((item) => !item.parent_id) : []);
+            })
+            .catch(() => setFooterCategories([]));
+    }, [isTelegram]);
 
     if (!isTelegram) {
         const WEB_LINKS = {
@@ -80,6 +117,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             { href: WEB_LINKS.SHOPS, label: w.navbar.shops },
             { href: WEB_LINKS.CLOTHING, label: w.footer.categories },
             { href: WEB_LINKS.PRODUCTS, label: t.products_page_title },
+            { href: '/favorites', label: t.favorites },
         ];
         const languages = [
             { code: 'uz', label: "O'zbek" },
@@ -99,9 +137,18 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         };
 
         const footerGroups: FooterGroup[] = [
-            { title: w.footer.about, items: [{ href: WEB_LINKS.HOME, label: w.footer.aboutBrand }, { href: WEB_LINKS.SHOPS, label: w.footer.ourStory }, { href: WEB_LINKS.STORE_APPLY, label: w.footer.careers }] },
             { title: w.footer.customerService, items: [{ label: w.footer.helpCenter, onClick: () => setSupportOpen(true) }] },
-            { title: w.footer.categories, items: [{ href: WEB_LINKS.CLOTHING, label: w.footer.men }, { href: WEB_LINKS.CLOTHING, label: w.footer.women }, { href: WEB_LINKS.FOOTWEAR, label: w.footer.shoes }] },
+            {
+                title: w.footer.categories,
+                items: footerCategories.map((category) => ({
+                    href: `/products?category=${category.id}`,
+                    label: settings.language === 'ru'
+                        ? (category.name_ru || category.name)
+                        : settings.language === 'en'
+                            ? (category.name_en || category.name)
+                            : (category.name_uz || category.name),
+                })),
+            },
         ];
 
         const toggleTheme = () => {
@@ -131,9 +178,20 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     }}
                 />
 
-                <header className="fixed inset-x-0 top-0 z-[160] isolate bg-transparent px-2 py-2 sm:px-3 md:py-3">
-                    <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.82)] px-3 py-2.5 shadow-[0_24px_45px_-30px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.72)] sm:px-4 md:grid-cols-[auto_1fr_auto] md:gap-4 md:rounded-full md:px-6">
-                        <Link href={WEB_LINKS.HOME} className="min-w-0 truncate pr-2 text-[17px] font-black tracking-tight text-[#13ec37] dark:text-[#5df57a] sm:text-[19px] md:text-[24px] xl:text-[26px]">
+                <header
+                    className={cn(
+                        "fixed inset-x-0 top-0 z-[160] isolate bg-transparent px-2 py-2 sm:px-3 md:py-3",
+                        hideWebHeader && 'hidden',
+                    )}
+                >
+                    <div className={cn(
+                        "relative z-[170] mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.82)] shadow-[0_24px_45px_-30px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:border-white/12 dark:bg-[rgba(18,18,18,0.72)] md:grid-cols-[auto_1fr_auto] md:gap-4 md:rounded-full md:px-6",
+                        isCompactMobileHeader ? 'gap-2 px-2.5 py-2 sm:px-4' : 'gap-3 px-3 py-2.5 sm:px-4 lg:py-2',
+                    )}>
+                        <Link href={WEB_LINKS.HOME} className={cn(
+                            "min-w-0 truncate pr-2 font-black tracking-tight text-[#13ec37] dark:text-[#5df57a] sm:text-[19px] md:text-[24px] xl:text-[26px]",
+                            isCompactMobileHeader ? 'max-w-[120px] text-[15px]' : 'text-[17px]',
+                        )}>
                             Qulaymarket.Uz
                         </Link>
 
@@ -145,7 +203,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         key={`${link.href}-${link.label}`}
                                         href={link.href}
                                         className={cn(
-                                            'relative whitespace-nowrap pb-1.5 text-[15px] font-semibold text-[#4b5563] transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-[#13ec37] after:transition-transform after:duration-200 hover:text-[#111827] hover:after:scale-x-100 dark:text-[#d1d5db] dark:hover:text-white xl:text-[20px]',
+                                            'relative whitespace-nowrap pb-1.5 text-[19px] font-semibold text-[#4b5563] transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:rounded-full after:bg-[#13ec37] after:transition-transform after:duration-200 hover:text-[#111827] hover:after:scale-x-100 dark:text-[#d1d5db] dark:hover:text-white',
                                             active && 'text-[#13ec37] after:scale-x-100 dark:text-[#5df57a]',
                                         )}
                                     >
@@ -160,84 +218,107 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 type="button"
                                 onClick={() => window.location.href = WEB_LINKS.SEARCH}
                                 aria-label={t.search}
-                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10"
+                                className={cn(
+                                    "inline-flex shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10",
+                                    isCompactMobileHeader ? 'h-8 w-8' : 'h-9 w-9',
+                                )}
                             >
-                                <Search className="h-4 w-4 shrink-0 sm:h-[17px] sm:w-[17px]" />
+                                <Search className={cn("shrink-0 sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
                             </button>
 
                             <button
                                 type="button"
                                 onClick={toggleTheme}
                                 aria-label={t.theme}
-                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10"
+                                className={cn(
+                                    "inline-flex shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10",
+                                    isCompactMobileHeader ? 'h-8 w-8' : 'h-9 w-9',
+                                )}
                             >
-                                {isDark ? <Sun className="h-4 w-4 sm:h-[17px] sm:w-[17px]" /> : <Moon className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />}
+                                {isDark ? <Sun className={cn("sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} /> : <Moon className={cn("sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} />}
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => selectLanguage(settings.language === 'uz' ? 'ru' : settings.language === 'ru' ? 'en' : 'uz')}
                                 title={w.navbar.lang}
-                                className="inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full border border-[#13ec37]/25 bg-[#effff2] px-2.5 text-[11px] font-semibold text-[#0d8f2a] shadow-[0_10px_20px_-16px_rgba(19,236,55,0.72)] dark:border-[#13ec37]/25 dark:bg-[#112315] dark:text-[#72f58a] sm:h-10 sm:min-w-10 sm:px-3"
+                                className={cn(
+                                    "inline-flex shrink-0 items-center justify-center rounded-full border border-[#13ec37]/25 bg-[#effff2] font-semibold text-[#0d8f2a] shadow-[0_10px_20px_-16px_rgba(19,236,55,0.72)] dark:border-[#13ec37]/25 dark:bg-[#112315] dark:text-[#72f58a] sm:h-10 sm:min-w-10 sm:px-3",
+                                    isCompactMobileHeader ? 'h-8 min-w-8 px-2 text-[10px]' : 'h-9 min-w-9 px-2.5 text-[11px]',
+                                )}
                             >
                                 {(settings.language ?? 'uz').toUpperCase()}
                             </button>
 
                             {user ? (
-                                <div className="relative shrink-0" ref={userMenuRef}>
+                                <div className="relative shrink-0" ref={mobileUserMenuRef}>
                                     <button
                                         type="button"
                                         onClick={() => setUserMenuOpen((prev) => !prev)}
-                                        className="inline-flex h-9 max-w-[132px] shrink-0 items-center gap-2 rounded-full bg-[#13ec37] px-3 text-[12px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10"
+                                        className={cn(
+                                            "inline-flex shrink-0 items-center gap-2 rounded-full bg-[#13ec37] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10",
+                                            isCompactMobileHeader ? 'h-8 w-8 justify-center rounded-full p-0' : 'h-9 max-w-[132px] px-3 text-[12px]',
+                                        )}
                                         aria-label={t.profile}
                                     >
-                                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[11px] font-black">
+                                        <span className={cn(
+                                            "inline-flex items-center justify-center rounded-full bg-white/20 font-black",
+                                            isCompactMobileHeader ? 'h-6 w-6 text-[10px]' : 'h-6 w-6 text-[11px]',
+                                        )}>
                                             {user.name.charAt(0).toUpperCase()}
                                         </span>
-                                        <span className="truncate">{user.name}</span>
+                                        <span className={cn("truncate", isCompactMobileHeader && 'hidden')}>{user.name}</span>
                                     </button>
                                         {userMenuOpen && (
-                                            <div className="absolute right-0 z-[170] mt-3 w-56 overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:border-white/10 dark:bg-[#1a1a1a]">
+                                            <div
+                                                className="absolute right-0 z-[260] mt-3 w-56 touch-manipulation overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] pointer-events-auto dark:border-white/10 dark:bg-[#1a1a1a]"
+                                                onPointerDown={(event) => event.stopPropagation()}
+                                                onClick={(event) => event.stopPropagation()}
+                                            >
                                                 <div className="border-b border-black/8 px-5 py-4 dark:border-white/10">
                                                     <p className="text-[13px] font-bold text-[#111111] dark:text-white">{user.name}</p>
                                                     <p className="mt-0.5 text-[11px] text-[#6b7280]">{user.email}</p>
                                                 </div>
                                                 <div className="p-2">
-                                                    <Link
-                                                        href="/profile"
-                                                        onClick={() => setUserMenuOpen(false)}
-                                                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                    <button
+                                                        type="button"
+                                                        onPointerDown={(event) => event.stopPropagation()}
+                                                        onClick={() => navigateTo('/profile')}
+                                                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                     >
                                                         <User size={15} />
                                                         {t.profile}
-                                                    </Link>
+                                                    </button>
                                                     {storeApproved && (
                                                         <>
-                                                            <Link
-                                                                href="/my-store"
-                                                                onClick={() => setUserMenuOpen(false)}
-                                                                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                            <button
+                                                                type="button"
+                                                                onPointerDown={(event) => event.stopPropagation()}
+                                                                onClick={() => navigateTo('/my-store')}
+                                                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                             >
                                                                 <Store size={15} />
                                                                 {t.my_store}
-                                                            </Link>
-                                                            <Link
-                                                                href="/my-products"
-                                                                onClick={() => setUserMenuOpen(false)}
-                                                                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onPointerDown={(event) => event.stopPropagation()}
+                                                                onClick={() => navigateTo('/my-products')}
+                                                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                             >
                                                                 <Package size={15} />
                                                                 {t.my_products}
-                                                            </Link>
+                                                            </button>
                                                         </>
                                                     )}
                                                     <button
                                                         type="button"
+                                                        onPointerDown={(event) => event.stopPropagation()}
                                                         onClick={() => {
                                                             logout();
                                                             setUserMenuOpen(false);
                                                         }}
-                                                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 active:bg-red-50 dark:hover:bg-red-500/10 dark:active:bg-red-500/10"
                                                     >
                                                         {t.logout}
                                                     </button>
@@ -256,7 +337,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                             )}
                         </div>
 
-                        <div className="col-span-2 border-t border-black/8 pt-2 lg:hidden dark:border-white/10">
+                        <div className={cn(
+                            "col-span-2 border-t border-black/8 pt-2 lg:hidden dark:border-white/10",
+                            isCompactMobileHeader && 'hidden',
+                        )}>
                             <nav className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
                                 {links.map((link) => {
                                     const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
@@ -283,7 +367,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 type="button"
                                 onClick={() => window.location.href = WEB_LINKS.SEARCH}
                                 aria-label={t.search}
-                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                             >
                                 <Search className="h-5 w-5 shrink-0" />
                             </button>
@@ -292,7 +376,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 type="button"
                                 onClick={toggleTheme}
                                 aria-label={t.theme}
-                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                             >
                                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                             </button>
@@ -302,12 +386,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     type="button"
                                     onClick={() => setLangOpen((prev) => !prev)}
                                     title={w.navbar.lang}
-                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:w-12"
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                                 >
                                     <Globe className="h-5 w-5" />
                                 </button>
                                 {langOpen && (
-                                    <div className="absolute right-0 z-[170] mt-2 w-36 overflow-hidden rounded-[18px] border border-[#13ec37]/20 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:bg-[#111411]">
+                                    <div className="absolute right-0 z-[220] mt-2 w-36 overflow-hidden rounded-[18px] border border-[#13ec37]/20 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:bg-[#111411]">
                                         {languages.map((language) => (
                                             <button
                                                 key={language.code}
@@ -328,11 +412,11 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                             </div>
 
                             {user ? (
-                                <div className="relative shrink-0" ref={userMenuRef}>
+                                <div className="relative shrink-0" ref={desktopUserMenuRef}>
                                     <button
                                         type="button"
                                         onClick={() => setUserMenuOpen((prev) => !prev)}
-                                        className="inline-flex h-11 items-center gap-3 rounded-full bg-[#13ec37] px-4 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:px-4.5 xl:text-[16px]"
+                                        className="inline-flex h-10 items-center gap-3 rounded-full bg-[#13ec37] px-4 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                                         aria-label={t.profile}
                                     >
                                         <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-[14px] font-black">
@@ -341,38 +425,38 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                         <span className="max-w-[140px] truncate">{user.name}</span>
                                     </button>
                                     {userMenuOpen && (
-                                        <div className="absolute right-0 z-[170] mt-3 w-56 overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:border-white/10 dark:bg-[#1a1a1a]">
+                                        <div className="absolute right-0 z-[220] mt-3 w-56 overflow-hidden rounded-[22px] border border-black/8 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] dark:border-white/10 dark:bg-[#1a1a1a]">
                                             <div className="border-b border-black/8 px-5 py-4 dark:border-white/10">
                                                 <p className="text-[13px] font-bold text-[#111111] dark:text-white">{user.name}</p>
                                                 <p className="mt-0.5 text-[11px] text-[#6b7280]">{user.email}</p>
                                             </div>
                                             <div className="p-2">
-                                                <Link
-                                                    href="/profile"
-                                                    onClick={() => setUserMenuOpen(false)}
-                                                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigateTo('/profile')}
+                                                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                 >
                                                     <User size={15} />
                                                     {t.profile}
-                                                </Link>
+                                                </button>
                                                 {storeApproved && (
                                                     <>
-                                                        <Link
-                                                            href="/my-store"
-                                                            onClick={() => setUserMenuOpen(false)}
-                                                            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigateTo('/my-store')}
+                                                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                         >
                                                             <Store size={15} />
                                                             {t.my_store}
-                                                        </Link>
-                                                        <Link
-                                                            href="/my-products"
-                                                            onClick={() => setUserMenuOpen(false)}
-                                                            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10"
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigateTo('/my-products')}
+                                                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#111111] transition-colors hover:bg-[#f3f4f6] active:bg-[#f3f4f6] dark:text-white dark:hover:bg-white/10 dark:active:bg-white/10"
                                                         >
                                                             <Package size={15} />
                                                             {t.my_products}
-                                                        </Link>
+                                                        </button>
                                                     </>
                                                 )}
                                                 <button
@@ -381,7 +465,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                                         logout();
                                                         setUserMenuOpen(false);
                                                     }}
-                                                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 active:bg-red-50 dark:hover:bg-red-500/10 dark:active:bg-red-500/10"
                                                 >
                                                     {t.logout}
                                                 </button>
@@ -393,7 +477,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 <button
                                     type="button"
                                     onClick={() => setAuthModal({ open: true, tab: 'login' })}
-                                    className="inline-flex h-11 shrink-0 items-center gap-3 rounded-full bg-[#13ec37] px-5 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] xl:h-12 xl:px-7 xl:text-[16px]"
+                                    className="inline-flex h-10 shrink-0 items-center gap-3 rounded-full bg-[#13ec37] px-5 text-[14px] font-semibold text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c]"
                                 >
                                     <LogIn size={17} />
                                     {t.login_required}
@@ -404,7 +488,14 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
                 </header>
 
-                <main className="relative z-0 w-full overflow-x-hidden pt-[138px] sm:pt-[146px] md:pt-[152px] lg:pt-[88px]">{children}</main>
+                <main
+                    className={cn(
+                        "relative z-0 w-full overflow-x-hidden",
+                        hideWebHeader ? 'pt-0' : isCompactMobileHeader ? 'pt-[72px] sm:pt-[90px] md:pt-[152px] lg:pt-[88px]' : 'pt-[138px] sm:pt-[146px] md:pt-[152px] lg:pt-[88px]',
+                    )}
+                >
+                    {children}
+                </main>
 
                 <footer className="mt-12 border-t border-black/10 bg-white dark:border-white/10 dark:bg-[#111111]">
                     <div className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-5 md:px-6 md:py-14">

@@ -6,6 +6,7 @@ import { formatPrice } from '../lib/formatPrice';
 import { useTranslation } from '../lib/i18n';
 import { useSSERefetch } from '../hooks/useSSERefetch';
 import { repairText } from '../lib/repairText';
+import { stripRichText } from '../lib/richText';
 import { translateText, type UiLanguage } from '../lib/translateClient';
 
 interface BannerProduct {
@@ -59,6 +60,10 @@ function getLocalizedName(product: BannerProduct, language: UiLanguage) {
   return repairText(raw || '');
 }
 
+function normalizeTranslatedText(text: string) {
+  return stripRichText(repairText(text || ''));
+}
+
 export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
   const { language } = useTranslation();
   const [banner, setBanner] = useState<BannerData | null>(null);
@@ -98,7 +103,8 @@ export function BannerCarousel({ variant = 'desktop', productRoute }: Props) {
         banner.products.map(async (product) => {
           const label = getLocalizedName(product, language);
           try {
-            return [product.id, await translateText(label, language, detectSourceLanguage(label))] as const;
+            const translatedLabel = await translateText(label, language, detectSourceLanguage(label));
+            return [product.id, normalizeTranslatedText(translatedLabel)] as const;
           } catch {
             return [product.id, label] as const;
           }

@@ -14,12 +14,14 @@ export async function GET(req: NextRequest) {
 
     const [storesResult, requestsResult] = await Promise.all([
       query(
-        `SELECT id, name, description, phone, address,
+        `SELECT st.id, st.name, st.description, st.phone, st.address,
+                u.name AS owner_name,
                 ${storeSupport.hasStoreImageUrl ? "image_url" : "NULL::text AS image_url"},
-                created_at
-         FROM stores
-         WHERE owner_id = $1 AND is_active = TRUE
-         ORDER BY created_at DESC`,
+                st.created_at
+         FROM stores st
+         JOIN users u ON u.id = st.owner_id
+         WHERE st.owner_id = $1 AND st.is_active = TRUE
+         ORDER BY st.created_at DESC`,
         [jwtUser.userId]
       ),
       query(

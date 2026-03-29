@@ -11,6 +11,7 @@ import { useSettingsStore } from '../../../src/features/settings/model';
 import { RichTextEditor } from '../../../src/shared/ui/RichTextEditor';
 import { stripRichText } from '../../../src/shared/lib/richText';
 import { DEPARTMENTS, getDepartmentBySlug, type DepartmentKey } from '../../../src/shared/lib/productCategoryMeta';
+import { useWebI18n } from '../../../src/shared/lib/webI18n';
 
 interface Product {
   id: string;
@@ -72,7 +73,77 @@ const authHeader = () => ({
 
 export default function MyProductsPage() {
   const { user, loading } = useWebAuth();
+  const { w } = useWebI18n();
   const language = useSettingsStore((s) => s.settings.language);
+  const p = (w as typeof w & {
+    myProducts?: {
+      authTitle: string;
+      authDesc: string;
+      title: string;
+      count: string;
+      add: string;
+      noStore: string;
+      openStore: string;
+      empty: string;
+      emptyDesc: string;
+      addShort: string;
+      editTitle: string;
+      createTitle: string;
+      store: string;
+      name: string;
+      namePlaceholder: string;
+      nameRequired: string;
+      basePrice: string;
+      invalidPrice: string;
+      discount: string;
+      currentPrice: string;
+      stock: string;
+      parentCategory: string;
+      parentCategoryMissing: string;
+      subcategory: string;
+      description: string;
+      descriptionPlaceholder: string;
+      images: string;
+      image: string;
+      uploadedImages: string;
+      imageError: string;
+      cancel: string;
+      save: string;
+    };
+  }).myProducts ?? {
+    authTitle: 'My Products',
+    authDesc: 'Sign in to manage your products.',
+    title: 'My Products',
+    count: 'products',
+    add: 'New product',
+    noStore: 'You do not have a store yet',
+    openStore: 'Open Store',
+    empty: 'No products',
+    emptyDesc: 'No products have been added yet.',
+    addShort: 'Add',
+    editTitle: 'Edit product',
+    createTitle: 'New product',
+    store: 'Store',
+    name: 'Name',
+    namePlaceholder: 'For example: Men\'s shirt',
+    nameRequired: 'Product name is required',
+    basePrice: 'Base price (sum) *',
+    invalidPrice: 'Enter a valid price',
+    discount: 'Discount %',
+    currentPrice: 'Current price',
+    stock: 'Quantity',
+    parentCategory: 'Main category',
+    parentCategoryMissing: 'Main category not found',
+    subcategory: 'Subcategory',
+    description: 'Description (optional)',
+    descriptionPlaceholder: 'A short note about the product...',
+    images: 'Images (optional)',
+    image: 'Image',
+    uploadedImages: 'images uploaded',
+    imageError: 'There is an image upload error. Select up to {count} images.',
+    cancel: 'Cancel',
+    save: 'Save',
+  };
   const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({
     open: false,
     tab: 'login',
@@ -122,6 +193,14 @@ export default function MyProductsPage() {
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [department, setDepartment] = useState<DepartmentKey>('electronics');
 
+  useEffect(() => {
+    const hidden = createOpen || Boolean(deleteProduct);
+    window.dispatchEvent(new CustomEvent('web-shell-header-visibility', { detail: { hidden } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('web-shell-header-visibility', { detail: { hidden: false } }));
+    };
+  }, [createOpen, deleteProduct]);
+
   const getCategoryLabel = (cat: Category) => {
     const value = language === 'ru'
       ? cat.name_ru || cat.name
@@ -138,9 +217,9 @@ export default function MyProductsPage() {
         ? '— No category selected —'
         : '— Kategoriya tanlanmagan —';
   const fieldClass =
-    'w-full rounded-[20px] border border-white/8 bg-white/[0.04] px-4 py-3 text-[14px] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-200 placeholder:text-[#9ca3af] focus:border-[#22c55e]/55 focus:bg-white/[0.08] focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#101010] dark:text-white dark:border-white/8 dark:focus:bg-[#141414]';
+    'w-full rounded-[20px] border border-black/10 bg-[#f8fafc] px-4 py-3 text-[14px] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 placeholder:text-[#94a3b8] focus:border-[#22c55e]/55 focus:bg-white focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:border-white/8 dark:bg-[#101010] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:placeholder:text-[#9ca3af] dark:focus:bg-[#141414]';
   const fieldErrorClass =
-    'w-full rounded-[20px] border border-red-500/80 bg-white/[0.04] px-4 py-3 text-[14px] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-200 placeholder:text-[#9ca3af] focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.12)] dark:bg-[#101010] dark:text-white';
+    'w-full rounded-[20px] border border-red-500/80 bg-[#fff7f7] px-4 py-3 text-[14px] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 placeholder:text-[#94a3b8] focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.12)] dark:bg-[#101010] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
   const selectClass = `${fieldClass} appearance-none pr-11 leading-[1.2]`;
   const subtleLabelClass =
     'mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-[#6b7280] dark:text-[#94a3b8]';
@@ -512,8 +591,8 @@ export default function MyProductsPage() {
         <AuthModal open={authModal.open} onClose={() => setAuthModal({ open: false, tab: 'login' })} defaultTab={authModal.tab} />
         <section className="mx-auto w-full max-w-[1280px] px-4 py-20 text-center">
           <Package size={48} className="mx-auto text-[#9ca3af]" />
-          <h1 className="mt-4 text-[24px] font-black text-[#111111] dark:text-white">Kirish kerak</h1>
-          <p className="mt-2 text-[14px] text-[#6b7280]">Mahsulotlaringizni boshqarish uchun kiring.</p>
+          <h1 className="mt-4 text-[24px] font-black text-[#111111] dark:text-white">{p.authTitle}</h1>
+          <p className="mt-2 text-[14px] text-[#6b7280]">{p.authDesc}</p>
           <button
             onClick={() => setAuthModal({ open: true, tab: 'login' })}
             className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-7 text-[13px] font-bold text-[#06200f]"
@@ -531,15 +610,15 @@ export default function MyProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[28px] font-black text-[#111111] dark:text-white">Mening Mahsulotlarim</h1>
-          <p className="mt-1 text-[14px] text-[#6b7280]">{products.length} ta mahsulot</p>
+          <h1 className="text-[28px] font-black text-[#111111] dark:text-white">{p.title}</h1>
+          <p className="mt-1 text-[14px] text-[#6b7280]">{products.length} {p.count}</p>
         </div>
         {stores.length > 0 && (
           <button
             onClick={openCreate}
             className="inline-flex items-center gap-2 rounded-full bg-[#13ec37] px-5 py-2.5 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(0,200,83,0.5)]"
           >
-            <Plus size={15} /> Yangi mahsulot
+            <Plus size={15} /> {p.add}
           </button>
         )}
       </div>
@@ -647,19 +726,19 @@ export default function MyProductsPage() {
       {stores.length === 0 ? (
         <div className="rounded-3xl border border-black/10 bg-white p-10 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
           <Package size={40} className="mx-auto text-[#9ca3af]" />
-          <p className="mt-3 text-[15px] font-semibold text-[#111111] dark:text-white">Do'koningiz yo'q</p>
+          <p className="mt-3 text-[15px] font-semibold text-[#111111] dark:text-white">{p.noStore}</p>
           <p className="mt-1 text-[13px] text-[#6b7280]">Mahsulot qo'shish uchun avval do'kon oching.</p>
           <Link href="/open-store" className="mt-5 inline-flex h-10 items-center rounded-full bg-[#13ec37] px-6 text-[12px] font-bold text-[#06200f]">
-            Do'kon Ochish
+            {p.openStore}
           </Link>
         </div>
       ) : products.length === 0 ? (
         <div className="rounded-3xl border border-black/10 bg-white p-10 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
           <Package size={40} className="mx-auto text-[#9ca3af]" />
-          <p className="mt-3 text-[15px] font-semibold text-[#111111] dark:text-white">Mahsulotlar yo'q</p>
-          <p className="mt-1 text-[13px] text-[#6b7280]">Hali hech qanday mahsulot qo'shilmagan.</p>
+          <p className="mt-3 text-[15px] font-semibold text-[#111111] dark:text-white">{p.empty}</p>
+          <p className="mt-1 text-[13px] text-[#6b7280]">{p.emptyDesc}</p>
           <button onClick={openCreate} className="mt-5 inline-flex h-10 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-bold text-[#06200f]">
-            <Plus size={13} /> Qo'shish
+            <Plus size={13} /> {p.addShort}
           </button>
         </div>
       ) : (
@@ -769,24 +848,25 @@ export default function MyProductsPage() {
       {/* Create / Edit modal */}
       {createOpen && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="soft-scrollbar relative w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] shadow-[0_32px_90px_-36px_rgba(0,0,0,0.65)] ring-1 ring-white/10 dark:bg-[linear-gradient(180deg,rgba(28,28,28,0.96),rgba(18,18,18,0.98))] dark:border-white/8 dark:ring-white/5">
-            <button
-              onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); setCategoryMenuOpen(false); }}
-              className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/[0.03] text-[#6b7280] transition-all hover:rotate-90 hover:text-[#111111] dark:bg-white/[0.03] dark:text-[#9ca3af] dark:hover:text-white"
-            >
-              <X size={16} />
-            </button>
+          <div className="relative w-full max-w-[430px] overflow-hidden rounded-[32px] border border-black/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,251,0.98))] shadow-[0_32px_90px_-36px_rgba(0,0,0,0.65)] ring-1 ring-black/5 dark:bg-[linear-gradient(180deg,rgba(28,28,28,0.96),rgba(18,18,18,0.98))] dark:border-white/8 dark:ring-white/5">
+            <div className="soft-scrollbar max-h-[90vh] overflow-y-auto pr-1">
             <div className="relative p-6 sm:p-7">
-              <div className="mb-5 border-b border-black/5 pb-4 dark:border-white/8">
+              <div className="mb-5 flex items-start justify-between gap-3 border-b border-black/5 pb-4 dark:border-white/8">
                 <h2 className="text-[24px] font-black tracking-[-0.03em] text-[#111111] dark:text-white">
-                  {editProduct ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}
+                  {editProduct ? p.editTitle : p.createTitle}
                 </h2>
+                <button
+                  onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); setCategoryMenuOpen(false); }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/[0.03] text-[#6b7280] transition-all hover:rotate-90 hover:text-[#111111] dark:bg-white/[0.03] dark:text-[#9ca3af] dark:hover:text-white"
+                >
+                  <X size={16} />
+                </button>
               </div>
               <div className="space-y-4">
                 {/* Store selector (only on create) */}
                 {!editProduct && stores.length > 1 && (
                   <label className="block">
-                    <span className={subtleLabelClass}>Do'kon</span>
+                    <span className={subtleLabelClass}>{p.store}</span>
                     <div className="relative">
                       <select
                         value={form.store_id}
@@ -802,17 +882,17 @@ export default function MyProductsPage() {
                   </label>
                 )}
                 <label className="block">
-                  <span className={subtleLabelClass}>Nomi</span>
+                  <span className={subtleLabelClass}>{p.name}</span>
                   <input
                     value={form.name}
                     onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); if (formErrors.name) setFormErrors(p => ({ ...p, name: false })); }}
                     className={formErrors.name ? fieldErrorClass : fieldClass}
-                    placeholder="Masalan: Erkaklar ko'ylagi"
+                    placeholder={p.namePlaceholder}
                   />
-                  {formErrors.name && <p className="mt-1 text-[12px] text-red-500">Mahsulot nomi majburiy</p>}
+                  {formErrors.name && <p className="mt-1 text-[12px] text-red-500">{p.nameRequired}</p>}
                 </label>
                 <label className="block">
-                  <span className={subtleLabelClass}>Asl narx (so&apos;m) *</span>
+                  <span className={subtleLabelClass}>{p.basePrice}</span>
                   <input
                     type="number"
                     min="0"
@@ -825,11 +905,11 @@ export default function MyProductsPage() {
                     className={formErrors.price ? fieldErrorClass : fieldClass}
                     placeholder="50000"
                   />
-                  {formErrors.price && <p className="mt-1 text-[12px] text-red-500">To&apos;g&apos;ri narx kiriting</p>}
+                  {formErrors.price && <p className="mt-1 text-[12px] text-red-500">{p.invalidPrice}</p>}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
-                    <span className={subtleLabelClass}>Aksiya %</span>
+                    <span className={subtleLabelClass}>{p.discount}</span>
                     <input
                       type="number"
                       min="0"
@@ -844,7 +924,7 @@ export default function MyProductsPage() {
                     />
                   </label>
                   <label className="block">
-                    <span className={subtleLabelClass}>Hozir narxi</span>
+                    <span className={subtleLabelClass}>{p.currentPrice}</span>
                     <input
                       type="number"
                       min="0"
@@ -859,7 +939,7 @@ export default function MyProductsPage() {
                   </label>
                 </div>
                 <label className="block">
-                  <span className={subtleLabelClass}>Soni (dona)</span>
+                  <span className={subtleLabelClass}>{p.stock}</span>
                   <input
                     type="number"
                     min="0"
@@ -870,22 +950,22 @@ export default function MyProductsPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className={subtleLabelClass}>Asosiy kategoriya</span>
+                  <span className={subtleLabelClass}>{p.parentCategory}</span>
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setParentCategoryMenuOpen((prev) => !prev)}
-                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${parentCategoryMenuOpen ? 'border-[#22c55e]/55 bg-white/[0.08] shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''}`}
+                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${parentCategoryMenuOpen ? 'border-[#22c55e]/55 bg-white shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''}`}
                       aria-haspopup="listbox"
                       aria-expanded={parentCategoryMenuOpen}
                     >
                       <span className={`${selectedParentCategory ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}`}>
-                        {parentCategories.length ? selectedParentCategoryLabel : "Asosiy kategoriya topilmadi"}
+                        {parentCategories.length ? selectedParentCategoryLabel : p.parentCategoryMissing}
                       </span>
                       <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${parentCategoryMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {parentCategoryMenuOpen && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-white/10 bg-[rgba(18,18,18,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-black/10 bg-[rgba(255,255,255,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
                         <div className="soft-scrollbar max-h-60 space-y-1 overflow-y-auto pr-1">
                           {parentCategories.map((category) => {
                             const active = parentCategoryId === category.id;
@@ -898,7 +978,7 @@ export default function MyProductsPage() {
                                   setParentCategoryMenuOpen(false);
                                   setCategoryMenuOpen(false);
                                 }}
-                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#d1d5db] hover:bg-white/5 hover:text-white'}`}
+                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#111111] hover:bg-[#f3f4f6] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'}`}
                               >
                                 {getCategoryLabel(category)}
                               </button>
@@ -910,12 +990,12 @@ export default function MyProductsPage() {
                   </div>
                 </label>
                 <label className="block">
-                  <span className={subtleLabelClass}>Subkategoriya</span>
+                  <span className={subtleLabelClass}>{p.subcategory}</span>
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => filteredCategories.length > 0 && setCategoryMenuOpen((prev) => !prev)}
-                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${categoryMenuOpen ? 'border-[#22c55e]/55 bg-white/[0.08] shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''} ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
+                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${categoryMenuOpen ? 'border-[#22c55e]/55 bg-white shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''} ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
                       aria-haspopup="listbox"
                       aria-expanded={categoryMenuOpen}
                     >
@@ -925,7 +1005,7 @@ export default function MyProductsPage() {
                       <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${categoryMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {categoryMenuOpen && filteredCategories.length > 0 && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-white/10 bg-[rgba(18,18,18,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-black/10 bg-[rgba(255,255,255,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
                         <div className="soft-scrollbar max-h-60 space-y-1 overflow-y-auto pr-1">
                           {filteredCategories.map((c) => {
                             const active = form.category_id === c.id;
@@ -934,7 +1014,7 @@ export default function MyProductsPage() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => { setForm((p) => ({ ...p, category_id: c.id })); setCategoryMenuOpen(false); }}
-                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#d1d5db] hover:bg-white/5 hover:text-white'}`}
+                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#111111] hover:bg-[#f3f4f6] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'}`}
                               >
                                 {getCategoryLabel(c)}
                               </button>
@@ -946,19 +1026,19 @@ export default function MyProductsPage() {
                   </div>
                 </label>
                 <label className="block">
-                  <span className={subtleLabelClass}>Tavsif (ixtiyoriy)</span>
+                  <span className={subtleLabelClass}>{p.description}</span>
                   <RichTextEditor
                     value={form.description}
                     onChange={(value) => setForm((p) => ({ ...p, description: value }))}
-                    placeholder="Mahsulot haqida qisqacha..."
+                    placeholder={p.descriptionPlaceholder}
                   />
                 </label>
                 {/* Image upload */}
                 <div>
-                  <span className={subtleLabelClass}>Rasmlar (ixtiyoriy)</span>
-                  <div className={`flex flex-wrap gap-2.5 rounded-[24px] border p-3 ${formErrors.images ? 'border-red-500/80 bg-red-50/30 dark:bg-red-500/10' : 'border-white/8 bg-black/[0.02] dark:bg-white/[0.02]'}`}>
+                  <span className={subtleLabelClass}>{p.images}</span>
+                  <div className={`flex flex-wrap gap-2.5 rounded-[24px] border p-3 ${formErrors.images ? 'border-red-500/80 bg-red-50/40 dark:bg-red-500/10' : 'border-black/10 bg-[#f8fafc] dark:border-white/8 dark:bg-white/[0.02]'}`}>
                     {formImages.map((url, i) => (
-                      <div key={i} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-white/10 bg-black/5 dark:bg-white/5">
+                      <div key={i} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-black/10 bg-white dark:border-white/10 dark:bg-white/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="" className="h-full w-full object-cover" />
                         <button
@@ -970,13 +1050,13 @@ export default function MyProductsPage() {
                         </button>
                       </div>
                     ))}
-                    <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-white/15 bg-white/[0.04] text-[#94a3b8] transition-all hover:border-[#22c55e]/50 hover:bg-[#22c55e]/8 hover:text-[#16a34a] dark:bg-[#101010]">
+                    <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-black/12 bg-white text-[#64748b] transition-all hover:border-[#22c55e]/50 hover:bg-[#22c55e]/8 hover:text-[#16a34a] dark:border-white/15 dark:bg-[#101010] dark:text-[#94a3b8]">
                       {uploadingImg ? (
                         <Loader2 size={18} className="animate-spin" />
                       ) : (
                         <>
                           <Camera size={18} />
-                          <span className="text-[9px] font-bold">Rasm</span>
+                          <span className="text-[9px] font-bold">{p.image}</span>
                         </>
                       )}
                       <input
@@ -990,11 +1070,11 @@ export default function MyProductsPage() {
                     </label>
                   </div>
                   <p className={`mt-1 text-[12px] ${formErrors.images ? 'text-red-500' : 'text-[#6b7280] dark:text-[#9ca3af]'}`}>
-                    {formImages.length}/{MAX_PRODUCT_IMAGES} ta rasm yuklandi
+                    {formImages.length}/{MAX_PRODUCT_IMAGES} {p.uploadedImages}
                   </p>
                   {formErrors.images && (
                     <p className="mt-1 text-[12px] text-red-500">
-                      Rasm yuklashda xatolik bor. Ko&apos;pi bilan {MAX_PRODUCT_IMAGES} ta rasm tanlang.
+                      {p.imageError.replace('{count}', String(MAX_PRODUCT_IMAGES))}
                     </p>
                   )}
                 </div>
@@ -1005,7 +1085,7 @@ export default function MyProductsPage() {
                   onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }}
                   className="flex-1 h-12 rounded-full border border-white/10 bg-black/[0.03] text-[13px] font-black text-[#111111] transition-colors hover:bg-black/[0.05] dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
                 >
-                  Bekor
+                  {p.cancel}
                 </button>
                 <button
                   onClick={handleSave}
@@ -1013,9 +1093,10 @@ export default function MyProductsPage() {
                   className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[13px] font-black text-[#052e16] transition-transform hover:translate-y-[-1px] disabled:opacity-60"
                 >
                   {saving && <Loader2 size={13} className="animate-spin" />}
-                  Saqlash
+                  {p.save}
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>
