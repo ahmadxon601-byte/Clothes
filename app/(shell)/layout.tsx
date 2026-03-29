@@ -33,6 +33,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const [authModal, setAuthModal] = useState<{ open: boolean; tab: 'login' | 'register' }>({ open: false, tab: 'login' });
     const [supportOpen, setSupportOpen] = useState(false);
     const [hideWebHeader, setHideWebHeader] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [footerCategories, setFooterCategories] = useState<Array<{ id: string; name: string; name_uz?: string | null; name_ru?: string | null; name_en?: string | null; parent_id?: string | null }>>([]);
     const langRef = useRef<HTMLDivElement>(null);
     const mobileUserMenuRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         closeMenus();
         router.push(href);
     };
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         document.documentElement.classList.toggle('dark', isDark);
@@ -97,6 +102,16 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             })
             .catch(() => setFooterCategories([]));
     }, [isTelegram]);
+
+    if (!mounted) {
+        return (
+            <div className="min-h-[100dvh] w-full bg-[#f8f9fb] text-[#111111] dark:bg-[#0f0f0f] dark:text-white">
+                <main className="w-full" suppressHydrationWarning>
+                    {children}
+                </main>
+            </div>
+        );
+    }
 
     if (!isTelegram) {
         const WEB_LINKS = {
