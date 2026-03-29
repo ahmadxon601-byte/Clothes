@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     params.push(limit, offset);
     const dataResult = await query(
       `SELECT
-         st.id, st.name, st.description, st.phone, st.address,
+         st.id, st.name, st.description, st.phone, st.address, st.image_url,
          st.is_active, st.created_at,
          u.id AS owner_id, u.name AS owner_name, u.email AS owner_email,
          (SELECT COUNT(*) FROM products p

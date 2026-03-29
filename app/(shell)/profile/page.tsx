@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check, Package } from 'lucide-react';
+import { ChevronRight, Heart, Mail, MapPin, Phone, UserRound, Edit3, Loader2, Store, Clock, X, Copy, Check, Package, MessageCircleMore } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
+import { useWebI18n } from '../../../src/shared/lib/webI18n';
 
 const MapDisplay = dynamic(
     () => import('../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
@@ -21,6 +22,8 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 }
 
 export default function SiteProfilePage() {
+    const { w } = useWebI18n();
+    const p = w.profilePage;
     const { user, loading, storeStatus, refreshUser, refreshStore } = useWebAuth();
     const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; is_read: boolean; created_at: string }>>([]);
     const [keyCopied, setKeyCopied] = useState(false);
@@ -132,8 +135,14 @@ export default function SiteProfilePage() {
     const storePending = storeStatus?.status === 'pending';
 
     const menu = [
-        { href: '/favorites', label: 'Sevimlilar', sub: 'Saqlangan mahsulotlar', icon: Heart },
-        { href: '/my-products', label: 'Mening mahsulotlarim', sub: 'Mahsulotlarni boshqarish', icon: Package },
+        { href: '/favorites', label: p.favorites, sub: p.favoritesDesc, icon: Heart },
+        { href: '/my-products', label: p.products, sub: p.productsDesc, icon: Package },
+        {
+            label: p.support,
+            sub: p.supportDesc,
+            icon: MessageCircleMore,
+            onClick: () => window.dispatchEvent(new Event('open-support-chat')),
+        },
     ];
 
     if (loading) {
@@ -154,20 +163,20 @@ export default function SiteProfilePage() {
                         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f4f6]">
                             <UserRound size={36} className="text-[#9ca3af]" />
                         </div>
-                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111]">Profilingiz</h1>
-                        <p className="mt-3 text-[15px] text-[#6b7280]">Profilingizni ko'rish va do'kon ochish uchun kirish yoki ro'yxatdan o'ting.</p>
+                        <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-[32px] font-black text-[#111111]">{p.title}</h1>
+                        <p className="mt-3 text-[15px] text-[#6b7280]">{p.guestDesc}</p>
                         <div className="mt-7 flex flex-wrap justify-center gap-3">
                             <button
                                 onClick={() => setAuthModal({ open: true, tab: 'login' })}
                                 className="inline-flex h-12 items-center gap-2 rounded-full border border-black/10 bg-white px-7 text-[13px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-16px_rgba(0,0,0,0.5)]"
                             >
-                                Kirish
+                                {p.login}
                             </button>
                             <button
                                 onClick={() => setAuthModal({ open: true, tab: 'register' })}
                                 className="inline-flex h-12 items-center gap-2 rounded-full bg-[#13ec37] px-7 text-[13px] font-bold text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                             >
-                                Ro'yxatdan o'tish
+                                {p.register}
                             </button>
                         </div>
                     </div>
@@ -184,7 +193,7 @@ export default function SiteProfilePage() {
 
                 <div className="relative grid gap-4 lg:grid-cols-[1.25fr_1fr]">
                     <div className="rounded-3xl border border-black/10 bg-white/88 p-6 backdrop-blur md:p-7 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Profil</p>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{p.badge}</p>
                         <div className="mt-4 flex items-center gap-4">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#111111] text-[22px] font-black text-white">
                                 {initials}
@@ -193,37 +202,37 @@ export default function SiteProfilePage() {
                                 <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-black leading-none text-[#111111] md:text-[42px] dark:text-white">
                                     {user.name}
                                 </h1>
-                                <p className="mt-1 text-[13px] text-[#647184] capitalize dark:text-[#9ca3af]">{user.role} account</p>
+                                <p className="mt-1 text-[13px] text-[#647184] capitalize dark:text-[#9ca3af]">{user.role} {p.accountSuffix}</p>
                             </div>
                         </div>
                         <div className="mt-6 h-[1px] w-full bg-gradient-to-r from-[#00c853]/35 to-transparent" />
                         <div className="mt-4 flex items-center justify-between">
-                            <p className="text-[14px] font-medium text-[#374151] dark:text-[#9ca3af]">Xarid qilish va sevimlilar uchun profil tayyor.</p>
+                            <p className="text-[14px] font-medium text-[#374151] dark:text-[#9ca3af]">{p.ready}</p>
                             <button
                                 onClick={() => setEditOpen(true)}
                                 className="inline-flex h-8 items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[11px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-white"
                             >
-                                <Edit3 size={12} /> Tahrirlash
+                                <Edit3 size={12} /> {p.edit}
                             </button>
                         </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                         <div className="rounded-2xl border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-white/5">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280] dark:text-[#9ca3af]">Email</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280] dark:text-[#9ca3af]">{p.email}</p>
                             <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#111111] dark:text-white">
                                 <Mail size={14} />{user.email}
                             </p>
                         </div>
                         <div className="rounded-2xl border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-white/5">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280] dark:text-[#9ca3af]">Rol</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7280] dark:text-[#9ca3af]">{p.role}</p>
                             <p className="mt-2 flex items-center gap-2 text-[14px] font-semibold text-[#111111] capitalize dark:text-white">
                                 <UserRound size={14} />{user.role}
                             </p>
                         </div>
                         {accessKey && (
                             <div className="rounded-2xl border border-[#00c853]/30 bg-[#f0faf4] p-4 dark:border-[#00c853]/20 dark:bg-[#0e2e1a] sm:col-span-2 lg:col-span-1">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">Kalit so&apos;z</p>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">{p.accessKey}</p>
                                 <div className="mt-2 flex items-center justify-between gap-2">
                                     <p className="font-mono text-[18px] font-black tracking-[0.25em] text-[#111111] dark:text-white">{accessKey}</p>
                                     <button
@@ -237,7 +246,7 @@ export default function SiteProfilePage() {
                                         {keyCopied ? <Check size={14} /> : <Copy size={14} />}
                                     </button>
                                 </div>
-                                <p className="mt-1 text-[10px] text-[#6b7280]">Telegram botda yoki boshqa qurilmada kirish uchun</p>
+                                <p className="mt-1 text-[10px] text-[#6b7280]">{p.accessKeyHint}</p>
                             </div>
                         )}
                     </div>
@@ -248,7 +257,7 @@ export default function SiteProfilePage() {
             <div className="mt-5">
                 {notifications.length > 0 && (
                     <div className="mb-5 rounded-3xl border border-black/10 bg-white p-5 dark:border-white/10 dark:bg-[#1a1a1a]">
-                        <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Bildirishnomalar</h2>
+                        <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{p.notifications}</h2>
                         <div className="mt-4 space-y-3">
                             {notifications.slice(0, 3).map((item) => (
                                 <div key={item.id} className="rounded-2xl border border-black/8 bg-[#f8faf8] px-4 py-3 dark:border-white/10 dark:bg-white/5">
@@ -268,11 +277,11 @@ export default function SiteProfilePage() {
                                     <Store size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">Mening Do'konim</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">{p.myStore}</p>
                                     <h2 className="text-[18px] font-extrabold text-[#111111] dark:text-white">{storeStatus.store.name}</h2>
                                     <span className="inline-flex items-center gap-1 rounded-full bg-[#00c853]/15 px-2 py-0.5 text-[10px] font-bold text-[#00a645]">
                                         <span className="h-1.5 w-1.5 rounded-full bg-[#00c853]" />
-                                        Tasdiqlangan
+                                        {p.approved}
                                     </span>
                                 </div>
                             </div>
@@ -280,7 +289,7 @@ export default function SiteProfilePage() {
                                 href="/my-store"
                                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#00c853]/30 bg-white px-4 text-[11px] font-bold text-[#008d3a] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(0,200,83,0.3)] dark:bg-[#00c853]/10 dark:text-[#4ade80]"
                             >
-                                Boshqarish <ChevronRight size={13} />
+                                {p.manage} <ChevronRight size={13} />
                             </Link>
                         </div>
                         <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -347,9 +356,9 @@ export default function SiteProfilePage() {
                             <Clock size={18} />
                         </div>
                         <div>
-                            <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Do'kon arizasi kutilmoqda</h2>
+                            <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{p.pendingTitle}</h2>
                             <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
-                                Admin tasdiqlagunicha kuting.
+                                {p.pendingDesc}
                                 {storeStatus?.status === 'pending' && storeStatus.request.store_name ? ` · ${storeStatus.request.store_name}` : ''}
                             </p>
                         </div>
@@ -365,8 +374,8 @@ export default function SiteProfilePage() {
                                 <Store size={18} />
                             </div>
                             <div>
-                                <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">Do'kon Ochish</h2>
-                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Qulaymarket platformasida o'z do'koningizni oching</p>
+                                <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{p.openStore}</h2>
+                                <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{p.openStoreDesc}</p>
                             </div>
                         </div>
                         <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
@@ -375,26 +384,48 @@ export default function SiteProfilePage() {
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
-                {menu.map((item) => (
-                    <Link
-                        key={item.label}
-                        href={item.href}
-                        className="group rounded-3xl border border-black/10 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-24px_rgba(0,0,0,0.24)] dark:border-white/10 dark:bg-[#1a1a1a]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00c853]/12 text-[#008d3a]">
-                                    <item.icon size={18} />
+                {menu.map((item) =>
+                    item.href ? (
+                        <Link
+                            key={item.label}
+                            href={item.href}
+                            className="group rounded-3xl border border-black/10 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-24px_rgba(0,0,0,0.24)] dark:border-white/10 dark:bg-[#1a1a1a]"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00c853]/12 text-[#008d3a]">
+                                        <item.icon size={18} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{item.label}</h2>
+                                        <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{item.sub}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{item.label}</h2>
-                                    <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{item.sub}</p>
-                                </div>
+                                <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
                             </div>
-                            <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
-                        </div>
-                    </Link>
-                ))}
+                        </Link>
+                    ) : (
+                        <button
+                            key={item.label}
+                            type="button"
+                            onClick={item.onClick}
+                            className="group rounded-3xl border border-black/10 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-24px_rgba(0,0,0,0.24)] dark:border-white/10 dark:bg-[#1a1a1a]"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00c853]/12 text-[#008d3a]">
+                                        <item.icon size={18} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{item.label}</h2>
+                                        <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{item.sub}</p>
+                                    </div>
+                                </div>
+                                <ChevronRight size={17} className="text-[#9ca3af] transition-transform group-hover:translate-x-0.5" />
+                            </div>
+                        </button>
+                    ),
+                )}
 
             </div>
 
@@ -409,7 +440,7 @@ export default function SiteProfilePage() {
                             <X size={16} />
                         </button>
                         <div className="p-7">
-                            <h2 className="text-[20px] font-black text-[#111111] dark:text-white">Profilni Tahrirlash</h2>
+                            <h2 className="text-[20px] font-black text-[#111111] dark:text-white">{p.editProfileTitle}</h2>
                             {/* Tabs */}
                             <div className="mt-4 flex gap-1 rounded-xl bg-[#f3f4f6] p-1 dark:bg-[#111111]">
                                 <button
@@ -417,14 +448,14 @@ export default function SiteProfilePage() {
                                     onClick={() => setEditTab('profile')}
                                     className={`flex-1 rounded-lg py-2 text-[12px] font-bold transition-all ${editTab === 'profile' ? 'bg-white text-[#111111] shadow dark:bg-[#1a1a1a] dark:text-white' : 'text-[#6b7280] dark:text-[#9ca3af]'}`}
                                 >
-                                    Profil ma&#39;lumotlari
+                                    {p.profileTab}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setEditTab('password')}
                                     className={`flex-1 rounded-lg py-2 text-[12px] font-bold transition-all ${editTab === 'password' ? 'bg-white text-[#111111] shadow dark:bg-[#1a1a1a] dark:text-white' : 'text-[#6b7280] dark:text-[#9ca3af]'}`}
                                 >
-                                    Parol
+                                    {p.passwordTab}
                                 </button>
                             </div>
 
@@ -432,7 +463,7 @@ export default function SiteProfilePage() {
                             {editTab === 'profile' && (
                                 <form onSubmit={handleUpdateProfile} className="mt-4 grid gap-3">
                                     <label className="grid gap-1.5">
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Ism</span>
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{p.name}</span>
                                         <input
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
@@ -441,7 +472,7 @@ export default function SiteProfilePage() {
                                         />
                                     </label>
                                     <label className="grid gap-1.5">
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Email</span>
+                                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{p.email}</span>
                                         <input
                                             type="email"
                                             value={editEmail}
@@ -452,10 +483,10 @@ export default function SiteProfilePage() {
                                     </label>
                                     {editError && <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{editError}</p>}
                                     <div className="flex gap-2">
-                                        <button type="button" onClick={() => setEditOpen(false)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">Bekor</button>
+                                        <button type="button" onClick={() => setEditOpen(false)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">{p.cancel}</button>
                                         <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black text-[#06200f] disabled:opacity-60">
                                             {saving && <Loader2 size={13} className="animate-spin" />}
-                                            Saqlash
+                                            {p.save}
                                         </button>
                                     </div>
                                 </form>
@@ -465,9 +496,9 @@ export default function SiteProfilePage() {
                             {editTab === 'password' && (
                                 <form onSubmit={handleChangePassword} className="mt-4 grid gap-3">
                                     {[
-                                        { label: 'Joriy parol', value: currentPwd, setter: setCurrentPwd },
-                                        { label: 'Yangi parol', value: newPwd, setter: setNewPwd },
-                                        { label: 'Yangi parolni tasdiqlash', value: confirmPwd, setter: setConfirmPwd },
+                                        { label: p.currentPassword, value: currentPwd, setter: setCurrentPwd },
+                                        { label: p.newPassword, value: newPwd, setter: setNewPwd },
+                                        { label: p.confirmPassword, value: confirmPwd, setter: setConfirmPwd },
                                     ].map(({ label, value, setter }) => (
                                         <label key={label} className="grid gap-1.5">
                                             <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{label}</span>
@@ -483,10 +514,10 @@ export default function SiteProfilePage() {
                                     {pwdError && <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{pwdError}</p>}
                                     {pwdSuccess && <p className="rounded-xl bg-[#00c853]/10 px-3 py-2 text-[12px] font-semibold text-[#008d3a]">{pwdSuccess}</p>}
                                     <div className="flex gap-2">
-                                        <button type="button" onClick={() => setEditOpen(false)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">Bekor</button>
+                                        <button type="button" onClick={() => setEditOpen(false)} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">{p.cancel}</button>
                                         <button type="submit" disabled={pwdSaving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#111111] text-[12px] font-black text-white disabled:opacity-60 dark:bg-white dark:text-[#111111]">
                                             {pwdSaving && <Loader2 size={13} className="animate-spin" />}
-                                            O&#39;zgartirish
+                                            {p.changePassword}
                                         </button>
                                     </div>
                                 </form>

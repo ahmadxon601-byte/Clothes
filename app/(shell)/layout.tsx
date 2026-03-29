@@ -55,6 +55,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         return () => document.removeEventListener('mousedown', onDocClick);
     }, []);
 
+    useEffect(() => {
+        const openSupport = () => setSupportOpen(true);
+        window.addEventListener('open-support-chat', openSupport);
+        return () => window.removeEventListener('open-support-chat', openSupport);
+    }, []);
+
     if (!isTelegram) {
         const WEB_LINKS = {
             HOME: '/',

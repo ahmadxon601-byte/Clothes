@@ -7,12 +7,13 @@ interface Props {
     title?: string;
     message?: string;
     confirmLabel?: string;
+    cancelLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
     danger?: boolean;
 }
 
-export function ConfirmDialog({ open, title, message, confirmLabel = "O'chirish", onConfirm, onCancel, danger = true }: Props) {
+export function ConfirmDialog({ open, title, message, confirmLabel = "O'chirish", cancelLabel = 'Bekor qilish', onConfirm, onCancel, danger = true }: Props) {
     useEffect(() => {
         if (open) document.body.style.overflow = 'hidden';
         else document.body.style.overflow = '';
@@ -40,7 +41,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "O'chirish"
                         onClick={onCancel}
                         className="h-11 flex-1 rounded-full border border-[var(--color-border,#e5e7eb)] text-[13px] font-bold text-[var(--color-text,#111)] transition-all active:scale-95"
                     >
-                        Bekor qilish
+                        {cancelLabel}
                     </button>
                     <button
                         onClick={onConfirm}

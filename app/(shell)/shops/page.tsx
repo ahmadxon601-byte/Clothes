@@ -23,11 +23,19 @@ const DEFAULT_STORE_IMAGE =
 export default function ShopsPage() {
   const { w } = useWebI18n();
   const [stores, setStores] = useState<Store[]>([]);
+  const [heroImage, setHeroImage] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    fetch('/api/ui-settings?key=shops_hero_image')
+      .then((r) => r.json())
+      .then((json) => setHeroImage(json?.data?.value ?? json?.value ?? ''))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 250);
@@ -66,7 +74,7 @@ export default function ShopsPage() {
       {/* Hero */}
       <div className="relative w-full h-56 md:h-72 overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2000&auto=format&fit=crop"
+          src={heroImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2000&auto=format&fit=crop"}
           alt="Shops"
           className="h-full w-full object-cover"
         />

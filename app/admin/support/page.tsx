@@ -43,6 +43,13 @@ type SupportConversationDetails = {
   messages: SupportMessage[];
 };
 
+function isImageMessage(value: string) {
+  const trimmed = value.trim();
+  return trimmed.startsWith('data:image/')
+    || trimmed.startsWith('/uploads/')
+    || /^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(trimmed);
+}
+
 function formatMessageTime(value: string) {
   return new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
@@ -228,7 +235,13 @@ export default function SupportPage() {
                               }`}
                             />
                             <div className='flex items-end justify-end gap-2'>
-                              <p className='min-w-0 flex-1 whitespace-pre-wrap break-words text-[12px] leading-5'>{message.body}</p>
+                              <div className='min-w-0 flex-1'>
+                                {isImageMessage(message.body) ? (
+                                  <img src={message.body} alt='attachment' className='max-h-64 rounded-[12px] object-contain' />
+                                ) : (
+                                  <p className='whitespace-pre-wrap break-words text-[12px] leading-5'>{message.body}</p>
+                                )}
+                              </div>
                               <div className={`shrink-0 whitespace-nowrap text-[9px] ${mine ? 'text-white/80' : 'text-[var(--admin-muted)]'}`}>
                                 <span>{formatMessageTime(message.created_at)}</span>
                                 {mine ? <CheckCheck className='ml-1 inline size-3 text-white/85 align-[-1px]' /> : null}

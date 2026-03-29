@@ -10,6 +10,11 @@ const sendSchema = z.object({
   message: z.string().trim().min(1).max(2000),
 });
 
+const editSchema = z.object({
+  id: z.string().uuid(),
+  message: z.string().trim().min(1).max(2000),
+});
+
 export async function GET(req: NextRequest) {
   try {
     const user = requireAuth(req);
@@ -80,6 +85,39 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[support POST]", e);
+    return fail("Internal server error", 500);
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    const body = await req.json();
+    const parsed = editSchema.safeParse(body);
+    if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
+
+    await ensureSupportTables();
+
+    const updated = await query(
+      `UPDATE support_messages sm
+       SET body = $1
+       FROM support_conversations sc
+       WHERE sm.id = $2
+         AND sm.conversation_id = sc.id
+         AND sc.user_id = $3
+         AND sm.sender_role = 'user'
+         AND sm.sender_user_id = $3
+       RETURNING sm.id, sm.conversation_id, sm.sender_role, sm.sender_user_id, sm.body, sm.is_read, sm.created_at`,
+      [parsed.data.message, parsed.data.id, user.userId]
+    );
+
+    if (updated.rows.length === 0) return fail("Message not found", 404);
+
+    emitAdminEvent({ type: "support", action: "updated" });
+    return ok({ message: updated.rows[0] });
+  } catch (e) {
+    if (e instanceof AuthError) return fail(e.message, e.status);
+    console.error("[support PATCH]", e);
     return fail("Internal server error", 500);
   }
 }

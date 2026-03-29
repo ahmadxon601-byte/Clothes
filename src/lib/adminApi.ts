@@ -32,6 +32,13 @@ function token(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
+export function getAdminAuthHeaders(headers?: HeadersInit): HeadersInit {
+  return {
+    ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
+    ...(headers ?? {}),
+  };
+}
+
 function makeUrl(path: string, params?: QueryParams): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   const url = new URL(`${API_BASE}${normalized}`, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
@@ -56,8 +63,7 @@ async function request<T>(path: string, options: RequestInit = {}, schema?: z.Zo
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
-      ...(options.headers ?? {}),
+      ...getAdminAuthHeaders(options.headers),
     },
     cache: 'no-store',
   });

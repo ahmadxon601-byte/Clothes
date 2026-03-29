@@ -2,12 +2,19 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ChevronLeft, MapPin, Package, Phone, Store as StoreIcon } from 'lucide-react';
+import { ChevronLeft, MapPin, Navigation, Package, Phone, Store as StoreIcon } from 'lucide-react';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { useWebI18n } from '../../../../src/shared/lib/webI18n';
 import { useTranslatedLabelMap } from '../../../../src/shared/hooks/useTranslatedLabelMap';
 import { sanitizeProductLabel } from '../../../../src/shared/lib/webProductText';
 import { formatPrice } from '../../../../src/shared/lib/formatPrice';
+
+const MapDisplay = dynamic(
+  () => import('../../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
+  { ssr: false, loading: () => <div className="h-[220px] w-full animate-pulse bg-[#f3f4f6] dark:bg-[#111111]" /> }
+);
 
 interface StoreData {
   id: string;
@@ -41,6 +48,7 @@ const DEFAULT_STORE_IMAGE =
 
 export default function StorePage({ params }: { params: Promise<{ id: string }> }) {
   const { t, language } = useTranslation();
+  const { w } = useWebI18n();
   const { id } = use(params);
   const router = useRouter();
   const [store, setStore] = useState<StoreData | null>(null);
@@ -81,7 +89,10 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     );
   }
 
-  const { text: addressText, lat, lng } = parseCoords(store.address);
+  const { text: addressText, lat: addressLat, lng: addressLng } = parseCoords(store.address);
+  const { text: descriptionText, lat: descriptionLat, lng: descriptionLng } = parseCoords(store.description);
+  const lat = addressLat ?? descriptionLat;
+  const lng = addressLng ?? descriptionLng;
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
@@ -90,7 +101,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
         <img
           src={store.image_url || DEFAULT_STORE_IMAGE}
           alt={store.name}
-          className="h-full w-full object-cover opacity-60"
+          className="h-full w-full object-contain"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <button
@@ -112,37 +123,77 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
 
       <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
         {/* Store meta */}
-        <div className="mb-6 rounded-[24px] border border-black/8 bg-white p-5 dark:border-white/10 dark:bg-[#1a1a1a]">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00c853]/10 text-[#00a645]">
-              <StoreIcon size={22} />
+        <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
+          <div className="rounded-[24px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a] md:p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-[#00c853]/10 text-[#00a645]">
+                <StoreIcon size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-[28px] font-black leading-none text-[#111111] dark:text-white">{store.name}</h2>
+                  <span className="inline-flex h-8 items-center rounded-full bg-[#00c853]/10 px-3 text-[12px] font-bold text-[#008d3a] ring-1 ring-[#00c853]/15">
+                    {t.items_count.replace('{count}', String(store.product_count))}
+                  </span>
+                </div>
+                <p className="mt-2 text-[15px] text-[#6b7280] dark:text-[#9ca3af]">{store.owner_name}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-[#111111] dark:text-white">{store.name}</p>
-              <p className="text-[13px] text-[#6b7280]">{store.owner_name}</p>
+
+            <div className="mt-6 space-y-4">
+              {addressText ? (
+                <div className="rounded-[20px] border border-black/6 bg-[#f8f9fb] px-4 py-4 dark:border-white/8 dark:bg-[#202020]">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00c853]/10 text-[#00a645]">
+                      <MapPin size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">{w.shopPage.location}</p>
+                      <p className="mt-1.5 text-[15px] leading-7 text-[#374151] dark:text-[#d1d5db]">{addressText}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap gap-3">
+                {store.phone ? (
+                  <a
+                    href={`tel:${store.phone}`}
+                    className="inline-flex h-12 items-center gap-3 rounded-[18px] border border-black/8 bg-transparent px-4 text-[15px] font-bold text-[#111111] transition-all hover:border-[#00c853]/40 hover:text-[#008d3a] dark:border-white/10 dark:text-white"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00c853]/10 text-[#00a645]">
+                      <Phone size={15} />
+                    </span>
+                    {store.phone}
+                  </a>
+                ) : null}
+
+                {lat && lng ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-12 items-center gap-2 rounded-[18px] bg-[#00c853] px-5 text-[15px] font-bold text-[#052e14] transition-all hover:bg-[#0bd45a]"
+                  >
+                    <Navigation size={15} />
+                    {t.view}
+                  </a>
+                ) : null}
+              </div>
+
+              {descriptionText ? (
+                <p className="max-w-[62ch] text-[14px] leading-7 text-[#4b5563] dark:text-[#cbd5e1]">{descriptionText}</p>
+              ) : null}
             </div>
-            <span className="rounded-full bg-[#00c853]/10 px-3 py-1 text-[12px] font-bold text-[#008d3a]">
-              {t.items_count.replace('{count}', String(store.product_count))}
-            </span>
           </div>
-          {store.phone && (
-            <a href={`tel:${store.phone}`} className="mt-4 flex items-center gap-2 text-[14px] font-semibold text-[#111111] dark:text-white">
-              <Phone size={14} className="text-[#00a645]" /> {store.phone}
-            </a>
-          )}
-          {store.description && (
-            <p className="mt-3 text-[13px] text-[#6b7280]">{store.description.replace(/\s*Coordinates:.*$/i, '').trim()}</p>
-          )}
-          {lat && lng && (
-            <a
-              href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=15`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#00c853]/30 bg-[#f0faf4] px-4 py-2 text-[13px] font-bold text-[#008d3a] dark:bg-[#0e2e1a]"
-            >
-              <MapPin size={14} /> {t.view}
-            </a>
-          )}
+
+          {lat && lng ? (
+            <div className="overflow-hidden rounded-[24px] border border-black/8 bg-white p-2 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
+              <div className="overflow-hidden rounded-[20px]">
+                <MapDisplay lat={lat} lng={lng} height={320} label={addressText || store.name} />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Products */}
@@ -150,7 +201,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
         {products.length === 0 ? (
           <div className="rounded-[24px] border border-black/8 bg-white py-16 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
             <Package size={36} className="mx-auto mb-3 text-[#d1d5db]" />
-            <p className="text-[14px] text-[#9ca3af]">Do&apos;konda hozircha mahsulot yo&apos;q</p>
+            <p className="text-[14px] text-[#9ca3af]">{w.shopPage.noProducts}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">

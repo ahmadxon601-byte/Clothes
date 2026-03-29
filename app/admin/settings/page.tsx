@@ -1,7 +1,7 @@
 'use client';
 
 import { Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { useAdminAuth } from '../../../src/context/AdminAuthContext';
@@ -19,7 +19,7 @@ import {
   THead,
   TR,
 } from '../../../src/features/admin/components/DataViews';
-import { adminApi } from '../../../src/lib/adminApi';
+import { adminApi, getAdminAuthHeaders } from '../../../src/lib/adminApi';
 import { useToast } from '../../../src/shared/ui/useToast';
 
 // ── Profile section ───────────────────────────────────────────────────────────
@@ -110,6 +110,102 @@ function ProfileSection() {
             {changePwd.isPending ? t('common.loading') : t('settings.changePwd')}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopsHeroSection() {
+  const { showToast } = useToast();
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/ui-settings?key=shops_hero_image', {
+      headers: getAdminAuthHeaders(),
+    })
+      .then((r) => r.json())
+      .then((json) => setImageUrl(json?.data?.value ?? json?.value ?? ''))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const saveImageUrl = async (nextUrl: string) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/ui-settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAdminAuthHeaders(),
+        },
+        body: JSON.stringify({ key: 'shops_hero_image', value: nextUrl || null }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error ?? body?.message ?? 'Saqlab bo‘lmadi');
+      setImageUrl(nextUrl);
+      showToast({ message: 'Do‘konlar hero rasmi yangilandi', type: 'success' });
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Saqlab bo‘lmadi', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      const url = body?.data?.url ?? body?.url;
+      if (!res.ok || !url) throw new Error(body?.error ?? body?.message ?? 'Upload xatosi');
+      await saveImageUrl(String(url));
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Upload xatosi', type: 'error' });
+      setSaving(false);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className='admin-card mt-6 p-5'>
+      <h3 className='mb-4 text-sm font-semibold'>Do&apos;konlar hero rasmi</h3>
+      <div className='overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)]'>
+        {imageUrl ? (
+          <img src={imageUrl} alt='Shops hero' className='h-48 w-full object-cover' />
+        ) : (
+          <div className='flex h-48 items-center justify-center text-sm text-[var(--admin-muted)]'>
+            {loading ? 'Yuklanmoqda...' : 'Rasm tanlanmagan'}
+          </div>
+        )}
+      </div>
+      <input
+        ref={fileInputRef}
+        type='file'
+        accept='image/*'
+        className='hidden'
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void uploadImage(file);
+        }}
+      />
+      <div className='mt-4 flex gap-3'>
+        <button
+          type='button'
+          onClick={() => fileInputRef.current?.click()}
+          disabled={saving}
+          className='rounded-full bg-[var(--admin-accent)] px-5 py-2 text-xs font-semibold text-white disabled:opacity-50'
+        >
+          {saving ? 'Yuklanmoqda...' : 'Rasm yuklash'}
+        </button>
       </div>
     </div>
   );
@@ -400,6 +496,7 @@ export default function SettingsPage() {
     <AdminShell title={t('settings.title')}>
       <AdminPageSection title={t('settings.profile')} description={t('settings.profileDesc')} />
       <ProfileSection />
+      <ShopsHeroSection />
 
       <div className='mt-6'>
         <AdminsSection />

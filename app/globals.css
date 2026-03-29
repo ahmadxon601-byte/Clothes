@@ -230,6 +230,75 @@
 }
 
 @layer utilities {
+    .leaflet-container {
+        font: inherit;
+        background: #f3f4f6;
+    }
+
+    .leaflet-control-zoom {
+        overflow: hidden;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.45) !important;
+    }
+
+    .leaflet-touch .leaflet-bar,
+    .leaflet-bar {
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        background: rgba(255, 255, 255, 0.94) !important;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.45) !important;
+    }
+
+    .dark .leaflet-touch .leaflet-bar,
+    .dark .leaflet-bar {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(20, 20, 20, 0.92) !important;
+        box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.65) !important;
+    }
+
+    .leaflet-bar a,
+    .leaflet-bar a:hover {
+        width: 42px !important;
+        height: 42px !important;
+        line-height: 40px !important;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+        color: #111111 !important;
+        background: transparent !important;
+        font-size: 24px !important;
+        font-weight: 500;
+    }
+
+    .dark .leaflet-bar a,
+    .dark .leaflet-bar a:hover {
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+    }
+
+    .leaflet-bar a:last-child {
+        border-bottom: none !important;
+    }
+
+    .leaflet-bar a:hover {
+        color: #008d3a !important;
+        background: rgba(19, 236, 55, 0.08) !important;
+    }
+
+    .leaflet-control-attribution {
+        border-radius: 10px 0 0 0 !important;
+        background: rgba(255, 255, 255, 0.92) !important;
+        padding: 3px 8px !important;
+        color: #4b5563 !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .dark .leaflet-control-attribution {
+        background: rgba(20, 20, 20, 0.9) !important;
+        color: #cbd5e1 !important;
+    }
+
     .glass-blur {
         backdrop-filter: blur(20px) saturate(150%);
         -webkit-backdrop-filter: blur(20px) saturate(150%);

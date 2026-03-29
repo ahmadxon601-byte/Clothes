@@ -338,6 +338,13 @@ export default function ApplicationsPage() {
                 </div>
                 <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
                   <p className='mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-muted)]'>Yangi ma'lumotlar</p>
+                  {viewRequest.image_url ? (
+                    <img
+                      src={viewRequest.image_url}
+                      alt={viewRequest.store_name || "Do'kon rasmi"}
+                      className='mb-3 h-40 w-full rounded-2xl object-contain'
+                    />
+                  ) : null}
                   <div className='space-y-2 text-sm'>
                     <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Nomi</span><span className='text-right font-semibold'>{viewRequest.store_name || '-'}</span></div>
                     <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Telefon</span><span className='text-right font-semibold'>{viewRequest.store_phone || '-'}</span></div>
@@ -348,6 +355,13 @@ export default function ApplicationsPage() {
               </div>
             ) : (
               <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
+                {viewRequest.image_url ? (
+                  <img
+                    src={viewRequest.image_url}
+                    alt={viewRequest.store_name || "Do'kon rasmi"}
+                    className='mb-3 h-40 w-full rounded-2xl object-contain'
+                  />
+                ) : null}
                 <div className='space-y-2 text-sm'>
                   <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Nomi</span><span className='text-right font-semibold'>{viewRequest.store_name || '-'}</span></div>
                   <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Telefon</span><span className='text-right font-semibold'>{viewRequest.store_phone || '-'}</span></div>

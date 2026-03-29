@@ -25,6 +25,7 @@ export const applicationSchema = z.object({
   current_store_description: z.string().nullish(),
   current_store_phone: z.string().nullish(),
   current_store_address: z.string().nullish(),
+  image_url: z.string().nullish(),
   status: z.string().default('pending'),
   created_at: z.string(),
 });
@@ -34,6 +35,7 @@ export const storeSchema = z.object({
   name: z.string(),
   phone: z.string().nullish(),
   address: z.string().nullish(),
+  image_url: z.string().nullish(),
   owner_name: z.string().default(''),
   owner_email: z.string().default(''),
   is_active: z.boolean().default(true),

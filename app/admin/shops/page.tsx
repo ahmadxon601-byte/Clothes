@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, Search, ShieldOff, Shield, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
@@ -22,7 +22,7 @@ import {
 } from '../../../src/features/admin/components/DataViews';
 import { useStoreMutation, useStores } from '../../../src/features/admin/components/hooks';
 import { useToast } from '../../../src/shared/ui/useToast';
-import { adminApi } from '../../../src/lib/adminApi';
+import { adminApi, getAdminAuthHeaders } from '../../../src/lib/adminApi';
 import type { StoreItem } from '../../../src/lib/adminApi';
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -40,6 +40,8 @@ export default function ShopsPage() {
   const [page, setPage] = useState(1);
   const [viewStore, setViewStore] = useState<StoreItem | null>(null);
   const [deleteStore, setDeleteStore] = useState<StoreItem | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   const query = useStores({ page, limit: 12, search });
   const mutation = useStoreMutation();
@@ -57,6 +59,36 @@ export default function ShopsPage() {
   async function toggleShop(id: string, isActive: boolean) {
     await mutation.mutateAsync({ id, payload: { is_active: !isActive } });
     showToast({ message: isActive ? t('stores.suspendedMsg') : t('stores.activatedMsg'), type: isActive ? 'error' : 'success' });
+  }
+
+  async function updateStoreImage(file: File) {
+    if (!viewStore) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: formData,
+      });
+      const uploadJson = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok || !uploadJson?.data?.url) {
+        throw new Error(uploadJson?.error ?? uploadJson?.message ?? 'Image upload failed');
+      }
+
+      const nextUrl = String(uploadJson.data.url);
+      await mutation.mutateAsync({ id: viewStore.id, payload: { image_url: nextUrl } });
+      setViewStore((prev) => (prev ? { ...prev, image_url: nextUrl } : prev));
+      showToast({ message: 'Rasm yangilandi', type: 'success' });
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Rasmni yangilab bo‘lmadi', type: 'error' });
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
   }
 
   return (
@@ -156,6 +188,33 @@ export default function ShopsPage() {
           <div className="admin-card relative w-full max-w-sm p-6">
             <button onClick={() => setViewStore(null)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)]"><X size={14} /></button>
             <h2 className="mb-4 text-base font-bold">Do&apos;kon ma&apos;lumotlari</h2>
+            <div className="mb-4">
+              <div className="overflow-hidden rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)]">
+                {viewStore.image_url ? (
+                  <img src={viewStore.image_url} alt={viewStore.name} className="h-44 w-full object-contain" />
+                ) : (
+                  <div className="flex h-44 items-center justify-center text-sm text-[var(--admin-muted)]">Rasm yo&apos;q</div>
+                )}
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void updateStoreImage(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="mt-3 rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 hover:shadow-none disabled:opacity-50"
+              >
+                {uploadingImage ? 'Yuklanmoqda...' : 'Rasm yuklash'}
+              </button>
+            </div>
             <div className="space-y-3 text-sm">
               <Row label="Nomi" value={viewStore.name} />
               <Row label="Egasi" value={viewStore.owner_name || '—'} />

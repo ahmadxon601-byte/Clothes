@@ -29,7 +29,7 @@ export function ReasonDialog({ open, title, confirmLabel, onClose, onConfirm }: 
           placeholder='Type rejection reason'
         />
         <div className='mt-4 flex items-center justify-end gap-2'>
-          <button onClick={onClose} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm'>
+          <button onClick={onClose} className='rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm transition hover:bg-transparent hover:shadow-none'>
             Cancel
           </button>
           <button
@@ -45,7 +45,7 @@ export function ReasonDialog({ open, title, confirmLabel, onClose, onConfirm }: 
               }
             }}
             disabled={loading || !reason.trim()}
-            className='rounded-full bg-[var(--admin-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50'
+            className='rounded-full bg-[var(--admin-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--admin-accent)] hover:shadow-none disabled:opacity-50'
           >
             {loading ? 'Saving...' : confirmLabel}
           </button>

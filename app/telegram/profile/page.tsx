@@ -25,6 +25,7 @@ const TELEGRAM_SESSION_KEY = 'tg_auth_session';
 export default function TelegramProfilePage() {
     const { WebApp, user: tgUser, isReady } = useTelegram();
     const { t } = useTranslation();
+    const extraCopy = t as unknown as Record<string, string>;
 
     const [me, setMe] = useState<MeUser | null>(null);
     const [token, setToken] = useState<string | null>(() => getApiToken());
@@ -169,8 +170,9 @@ export default function TelegramProfilePage() {
         <div className="flex flex-col min-h-full bg-[var(--color-bg)] pb-6">
             <ConfirmDialog
                 open={logoutDialogOpen}
-                title="Akkauntdan chiqilsinmi?"
-                confirmLabel="Ha"
+                title={extraCopy.logout_confirm_title ?? t.logout}
+                confirmLabel={extraCopy.yes ?? 'Yes'}
+                cancelLabel={t.cancel}
                 danger={false}
                 onConfirm={handleLogout}
                 onCancel={() => setLogoutDialogOpen(false)}

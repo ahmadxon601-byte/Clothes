@@ -486,14 +486,6 @@ export default function WebsiteHomePage() {
                         <p className="mt-3 max-w-[40ch] text-[13px] leading-6 text-[#5f6571] dark:text-white/70 sm:mt-5 sm:text-[15px] sm:leading-8">
                             {heroDescription}
                         </p>
-                        <div className="mt-5 flex flex-wrap gap-3 sm:mt-8 sm:gap-4">
-                            <Link
-                                href={WEB_LINKS.CATEGORIES}
-                                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[12px] font-bold text-[#111111] shadow-[0_18px_45px_-28px_rgba(17,24,39,0.35)] transition-all duration-300 hover:-translate-y-0.5 dark:bg-white/10 dark:text-white sm:h-12 sm:px-6"
-                            >
-                                {heroCopy.secondary}
-                            </Link>
-                        </div>
                     </div>
 
                     <div className="relative flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">

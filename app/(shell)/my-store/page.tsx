@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, Edit3, MapPin, Phone, Trash2, X, Loader2, Clock, XCircle, CheckCircle2 } from 'lucide-react';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
+import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 
@@ -67,6 +68,7 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 export default function MyStorePage() {
     const router = useRouter();
     const { user, loading: authLoading, refreshStore } = useWebAuth();
+    const { w } = useWebI18n();
 
     const [stores, setStores] = useState<StoreData[]>([]);
     const [requests, setRequests] = useState<RequestData[]>([]);
@@ -213,9 +215,9 @@ export default function MyStorePage() {
 
             {/* Page title */}
             <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Do'konlarim</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{w.myStore.badge}</p>
                 <h1 className="mt-1 font-[family-name:var(--font-playfair)] text-[clamp(1.8rem,4vw,2.8rem)] font-black leading-none text-[#111111] dark:text-white">
-                    Mening Do'konlarim
+                    {w.myStore.title}
                 </h1>
             </div>
 
@@ -319,7 +321,7 @@ export default function MyStorePage() {
             {/* Pending requests */}
             {pendingRequests.length > 0 && (
                 <div className="space-y-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] dark:text-[#9ca3af]">Ko'rib chiqilayotgan arizalar</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] dark:text-[#9ca3af]">{w.myStore.pendingSection}</p>
                     {pendingRequests.map((req) => (
                         <div key={req.id} className="flex items-center gap-4 rounded-2xl border border-yellow-200/70 bg-yellow-50/60 px-5 py-4 dark:border-yellow-500/20 dark:bg-yellow-500/5">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-500/15">
@@ -328,14 +330,14 @@ export default function MyStorePage() {
                             <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#111111] dark:text-white truncate">{req.store_name}</p>
                                 <p className="text-[12px] font-semibold text-yellow-700 dark:text-yellow-400">
-                                    {req.request_type === 'store_update' ? "Do'kon tahrirlash arizasi" : "Yangi do'kon arizasi"}
+                                    {req.request_type === 'store_update' ? w.myStore.editRequest : w.myStore.newRequest}
                                 </p>
                                 <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                                     {new Date(req.created_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
                             </div>
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-bold text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400">
-                                ⏳ Kutilmoqda
+                                ⏳ {w.myStore.pending}
                             </span>
                             <button onClick={() => handleDeleteRequest(req.id)} className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors">
                                 <Trash2 size={14} />
@@ -348,7 +350,7 @@ export default function MyStorePage() {
             {/* Rejected requests */}
             {rejectedRequests.length > 0 && (
                 <div className="space-y-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] dark:text-[#9ca3af]">Rad etilgan arizalar</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280] dark:text-[#9ca3af]">{w.myStore.rejectedSection}</p>
                     {rejectedRequests.map((req) => (
                         <div key={req.id} className="flex items-center gap-4 rounded-2xl border border-red-200/70 bg-red-50/60 px-5 py-4 dark:border-red-500/20 dark:bg-red-500/5">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/15">
@@ -357,14 +359,14 @@ export default function MyStorePage() {
                             <div className="flex-1 min-w-0">
                                 <p className="text-[14px] font-bold text-[#111111] dark:text-white truncate">{req.store_name}</p>
                                 <p className="text-[12px] font-semibold text-red-600 dark:text-red-400">
-                                    {req.request_type === 'store_update' ? "Do'kon tahrirlash arizasi" : "Yangi do'kon arizasi"}
+                                    {req.request_type === 'store_update' ? w.myStore.editRequest : w.myStore.newRequest}
                                 </p>
                                 {req.admin_note && (
                                     <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af] truncate">{req.admin_note}</p>
                                 )}
                             </div>
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-600 dark:bg-red-500/20 dark:text-red-400">
-                                Rad etildi
+                                {w.myStore.rejected}
                             </span>
                             <button onClick={() => handleDeleteRequest(req.id)} className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors">
                                 <Trash2 size={14} />
@@ -378,7 +380,7 @@ export default function MyStorePage() {
             {stores.length === 0 && pendingRequests.length === 0 && rejectedRequests.length === 0 && (
                 <div className="rounded-[28px] border border-black/10 bg-white p-10 text-center dark:border-white/10 dark:bg-[#1a1a1a]">
                     <CheckCircle2 size={40} className="mx-auto text-[#d1d5db] dark:text-[#4b5563]" />
-                    <p className="mt-3 text-[15px] font-semibold text-[#6b7280] dark:text-[#9ca3af]">Hali do'kon yo'q</p>
+                    <p className="mt-3 text-[15px] font-semibold text-[#6b7280] dark:text-[#9ca3af]">{w.myStore.empty}</p>
                 </div>
             )}
 
@@ -386,14 +388,14 @@ export default function MyStorePage() {
             <div className="rounded-[24px] border border-black/10 bg-white p-6 dark:border-white/10 dark:bg-[#1a1a1a]">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <h3 className="text-[18px] font-extrabold text-[#111111] dark:text-white">Yangi Do'kon Qo'shish</h3>
-                        <p className="mt-1 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">Qo'shimcha do'kon ochish uchun ariza yuboring.</p>
+                        <h3 className="text-[18px] font-extrabold text-[#111111] dark:text-white">{w.myStore.addTitle}</h3>
+                        <p className="mt-1 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{w.myStore.addDesc}</p>
                     </div>
                     <Link
                         href="/open-store"
                         className="inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
                     >
-                        Ariza Yuborish <ArrowRight size={14} />
+                        {w.myStore.submit} <ArrowRight size={14} />
                     </Link>
                 </div>
             </div>

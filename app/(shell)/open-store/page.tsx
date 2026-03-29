@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, LocateFixed, Minus, Plus, Loader2, UserRound } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ArrowRight, LocateFixed, Loader2, UserRound } from 'lucide-react';
 import { cn } from '../../../src/shared/lib/utils';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
@@ -23,31 +24,43 @@ type MapState = {
     markerLat: number;
     markerLng: number;
     zoom: number;
+    selected: boolean;
 };
 
-const DEFAULT_LAT = 41.2995;
-const DEFAULT_LNG = 69.2401;
+const DEFAULT_LAT = 41.0011;
+const DEFAULT_LNG = 71.6681;
 
-function lngLatToWorld(lng: number, lat: number, zoom: number) {
-    const sin = Math.sin((lat * Math.PI) / 180);
-    const scale = 256 * Math.pow(2, zoom);
-    const x = ((lng + 180) / 360) * scale;
-    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
-    return { x, y };
+const MapPickerLeaflet = dynamic(
+    () => import('../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
+    { ssr: false, loading: () => <div className="h-[260px] w-full animate-pulse rounded-2xl bg-[#f3f5f8] dark:bg-[#111111]" /> }
+);
+
+function formatResolvedAddress(body: any, lat: number, lng: number) {
+    const addr = body?.address ?? {};
+    const parts = [
+        addr.road || addr.pedestrian || addr.footway,
+        addr.house_number,
+        addr.neighbourhood || addr.suburb || addr.quarter,
+        addr.city || addr.town || addr.village || addr.county,
+        addr.state,
+        addr.postcode,
+        addr.country,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(', ') : body?.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
-function worldToLngLat(x: number, y: number, zoom: number) {
-    const scale = 256 * Math.pow(2, zoom);
-    const lng = (x / scale) * 360 - 180;
-    const n = Math.PI - (2 * Math.PI * y) / scale;
-    const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-    return { lat, lng };
+function parseCoords(input: string) {
+    const match = input.match(/Coordinates:\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+    if (!match) return null;
+    return { lat: Number(match[1]), lng: Number(match[2]) };
 }
 
 export default function OpenStorePage() {
     const router = useRouter();
     const { w } = useWebI18n();
     const { user, loading: authLoading, refreshStore } = useWebAuth();
+    const imageInputRef = useRef<HTMLInputElement>(null);
     const [authModal, setAuthModal] = useState(false);
     const [form, setForm] = useState<FormState>({
         storeName: '',
@@ -60,12 +73,14 @@ export default function OpenStorePage() {
     const [loading, setLoading] = useState(false);
     const [addressLoading, setAddressLoading] = useState(false);
     const [result, setResult] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+    const latestReverseRef = useRef(0);
     const [map, setMap] = useState<MapState>({
         centerLat: DEFAULT_LAT,
         centerLng: DEFAULT_LNG,
         markerLat: DEFAULT_LAT,
         markerLng: DEFAULT_LNG,
         zoom: 12,
+        selected: false,
     });
 
     const onChange = (key: 'storeName' | 'ownerName' | 'phone' | 'address' | 'description', value: string) => {
@@ -125,38 +140,26 @@ export default function OpenStorePage() {
     };
 
     const reverseGeocode = async (lat: number, lng: number) => {
+        const requestId = latestReverseRef.current + 1;
+        latestReverseRef.current = requestId;
         setAddressLoading(true);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
+                headers: {
+                    'Accept-Language': 'uz,ru,en',
+                },
+            });
             const body = await res.json().catch(() => ({}));
-            const resolved = body?.display_name as string | undefined;
-            onChange('address', resolved ?? `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            if (latestReverseRef.current !== requestId) return;
+            onChange('address', formatResolvedAddress(body, lat, lng));
         } catch {
+            if (latestReverseRef.current !== requestId) return;
             onChange('address', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
         } finally {
-            setAddressLoading(false);
+            if (latestReverseRef.current === requestId) {
+                setAddressLoading(false);
+            }
         }
-    };
-
-    const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
-        const centerWorld = lngLatToWorld(map.centerLng, map.centerLat, map.zoom);
-        const pointWorldX = centerWorld.x + (clickX - rect.width / 2);
-        const pointWorldY = centerWorld.y + (clickY - rect.height / 2);
-        const point = worldToLngLat(pointWorldX, pointWorldY, map.zoom);
-
-        setMap((prev) => ({
-            ...prev,
-            markerLat: point.lat,
-            markerLng: point.lng,
-        }));
-        void reverseGeocode(point.lat, point.lng);
-    };
-
-    const setZoom = (delta: number) => {
-        setMap((prev) => ({ ...prev, zoom: Math.max(3, Math.min(18, prev.zoom + delta)) }));
     };
 
     const pickMyLocation = () => {
@@ -174,6 +177,7 @@ export default function OpenStorePage() {
                     centerLng: lng,
                     markerLat: lat,
                     markerLng: lng,
+                    selected: true,
                 }));
                 void reverseGeocode(lat, lng);
             },
@@ -184,15 +188,13 @@ export default function OpenStorePage() {
         );
     };
 
-    const mapUrl = `https://static-maps.yandex.ru/1.x/?lang=en_US&ll=${map.centerLng.toFixed(6)},${map.centerLat.toFixed(6)}&z=${map.zoom}&size=650,340&l=map&pt=${map.markerLng.toFixed(6)},${map.markerLat.toFixed(6)},pm2rdm`;
-
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setResult(null);
 
         if (!user) { setAuthModal(true); return; }
 
-        if (!form.storeName.trim() || !form.ownerName.trim() || !form.phone.trim() || !form.address.trim()) {
+        if (!form.storeName.trim() || !form.ownerName.trim() || !form.phone.trim() || !form.address.trim() || !map.selected) {
             setResult({ type: 'error', message: w.openStore.fillRequired });
             return;
         }
@@ -332,7 +334,7 @@ export default function OpenStorePage() {
                                 value={form.storeName}
                                 onChange={(e) => onChange('storeName', e.target.value)}
                                 className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                placeholder="Masalan: Urban Line"
+                                placeholder={w.openStore.storeNamePlaceholder}
                                 disabled={loading}
                             />
                         </label>
@@ -344,7 +346,7 @@ export default function OpenStorePage() {
                                     value={form.ownerName}
                                     onChange={(e) => onChange('ownerName', e.target.value)}
                                     className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                    placeholder="Ism Familiya"
+                                    placeholder={w.openStore.ownerNamePlaceholder}
                                     disabled={loading}
                                 />
                             </label>
@@ -354,7 +356,7 @@ export default function OpenStorePage() {
                                     value={form.phone}
                                     onChange={(e) => onChange('phone', e.target.value)}
                                     className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                    placeholder="+998 90 123 45 67"
+                                    placeholder={w.openStore.phonePlaceholder}
                                     disabled={loading}
                                 />
                             </label>
@@ -366,22 +368,6 @@ export default function OpenStorePage() {
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <button
                                         type="button"
-                                        onClick={() => setZoom(-1)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
-                                        aria-label={w.openStore.zoomOut}
-                                    >
-                                        <Minus size={14} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setZoom(1)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-white text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
-                                        aria-label={w.openStore.zoomIn}
-                                    >
-                                        <Plus size={14} />
-                                    </button>
-                                    <button
-                                        type="button"
                                         onClick={pickMyLocation}
                                         className="inline-flex h-8 items-center gap-1.5 rounded-full border border-black/15 bg-white px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#111111] dark:border-white/10 dark:bg-white/10 dark:text-white"
                                     >
@@ -391,15 +377,40 @@ export default function OpenStorePage() {
                                 </div>
                             </div>
 
-                            <div
-                                onClick={handleMapClick}
-                                className="group relative overflow-hidden rounded-2xl border border-black/12 bg-[#f3f5f8] cursor-crosshair dark:border-white/10 dark:bg-[#111111]"
-                            >
-                                <img src={mapUrl} alt="Map picker" className="h-[260px] w-full object-cover" />
-                                <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-bold text-white">
-                                    {w.openStore.clickMap}
-                                </div>
-                            </div>
+                            <MapPickerLeaflet
+                                embedded
+                                initialLat={map.markerLat}
+                                initialLng={map.markerLng}
+                onChange={(formatted) => {
+                                    const coords = parseCoords(formatted);
+                                    if (!coords) return;
+                                    setMap((prev) => ({
+                                        ...prev,
+                                        markerLat: coords.lat,
+                                        markerLng: coords.lng,
+                                        centerLat: coords.lat,
+                                        centerLng: coords.lng,
+                                        selected: true,
+                                    }));
+                                    onChange('address', formatted.replace(/\s*Coordinates:.*$/i, '').trim());
+                                }}
+                                onConfirm={(formatted) => {
+                                    const coords = parseCoords(formatted);
+                                    if (!coords) return;
+                                    setMap((prev) => ({
+                                        ...prev,
+                                        markerLat: coords.lat,
+                                        markerLng: coords.lng,
+                                        centerLat: coords.lat,
+                                        centerLng: coords.lng,
+                                        selected: true,
+                                    }));
+                                    onChange('address', formatted.replace(/\s*Coordinates:.*$/i, '').trim());
+                                }}
+                                onClose={() => {}}
+                            />
+                            <input type="hidden" name="latitude" value={map.markerLat.toFixed(6)} />
+                            <input type="hidden" name="longitude" value={map.markerLng.toFixed(6)} />
 
                             <div className="rounded-xl border border-black/12 bg-[#f9fafb] px-3 py-2.5 text-[13px] text-[#4b5563] dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db]">
                                 {addressLoading ? w.openStore.resolving : (form.address || w.openStore.notPicked)}
@@ -415,25 +426,41 @@ export default function OpenStorePage() {
                                 value={form.description}
                                 onChange={(e) => onChange('description', e.target.value)}
                                 className="min-h-[110px] rounded-xl border border-black/12 px-3 py-2.5 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
-                                placeholder="Nimalarni sotmoqchisiz, assortimenti haqida yozing..."
+                                placeholder={w.openStore.descPlaceholder}
                                 disabled={loading}
                             />
                         </label>
 
                         <label className="grid gap-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">Do'kon rasmlari</span>
+                                <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.storeImages}</span>
                                 <span className="text-[11px] font-semibold text-[#6b7280] dark:text-[#9ca3af]">{form.images.length}/10</span>
                             </div>
                             <input
+                                ref={imageInputRef}
                                 type="file"
                                 accept="image/*"
                                 multiple
                                 onChange={handleStoreImages}
                                 disabled={loading || form.images.length >= 10}
-                                className="block w-full rounded-xl border border-black/12 bg-white px-3 py-2 text-[13px] text-[#374151] file:mr-3 file:rounded-full file:border-0 file:bg-[#13ec37] file:px-3 file:py-1.5 file:text-[11px] file:font-black file:uppercase file:tracking-[0.08em] file:text-[#06200f] hover:file:brightness-95 dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db]"
+                                className="sr-only"
                             />
-                            <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">Kamida 1 ta, ko'pi bilan 10 ta rasm yuklang.</p>
+                            <button
+                                type="button"
+                                onClick={() => imageInputRef.current?.click()}
+                                disabled={loading || form.images.length >= 10}
+                                className="flex w-full items-center gap-4 rounded-xl border border-black/12 bg-white px-3 py-2 text-left text-[13px] text-[#374151] dark:border-white/10 dark:bg-[#111111] dark:text-[#d1d5db] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span className="inline-flex rounded-full bg-[#13ec37] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] text-[#06200f]">
+                                    {w.openStore.chooseFiles}
+                                </span>
+                                <span>
+                                    {form.images.length > 0
+                                        ? `${form.images.length} ${w.openStore.filesSelected}`
+                                        : w.openStore.noFilesChosen}
+                                </span>
+                            </button>
+                            <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.imagesHint}</p>
                             {form.images.length > 0 && (
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                     {form.images.map((image, index) => (

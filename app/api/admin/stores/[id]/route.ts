@@ -5,24 +5,44 @@ import { logAction } from "@/src/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
-// ── PATCH /api/admin/stores/[id]  (toggle is_active) ─────────────────────────
+// ── PATCH /api/admin/stores/[id] ─────────────────────────────────────────────
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const admin = requireRole(req, "admin");
     const { id } = await params;
     const body = await req.json();
 
-    if (typeof body.is_active !== "boolean") {
-      return fail("is_active (boolean) required", 422);
+    const updates: string[] = [];
+    const values: unknown[] = [];
+
+    if (typeof body.is_active === "boolean") {
+      values.push(body.is_active);
+      updates.push(`is_active = $${values.length}`);
     }
 
+    if (typeof body.image_url === "string" || body.image_url === null) {
+      values.push(body.image_url ?? null);
+      updates.push(`image_url = $${values.length}`);
+    }
+
+    if (updates.length === 0) {
+      return fail("is_active (boolean) or image_url required", 422);
+    }
+
+    values.push(id);
     const result = await query(
-      `UPDATE stores SET is_active = $1, updated_at = NOW()
-       WHERE id = $2 RETURNING id, name, is_active`,
-      [body.is_active, id]
+      `UPDATE stores SET ${updates.join(", ")}, updated_at = NOW()
+       WHERE id = $${values.length} RETURNING id, name, is_active, image_url`,
+      values
     );
     if (result.rows.length === 0) return fail("Store not found", 404);
-    logAction({ admin, action: "update", entity: "store", entityId: id, details: { is_active: body.is_active } });
+    logAction({
+      admin,
+      action: "update",
+      entity: "store",
+      entityId: id,
+      details: { is_active: body.is_active, image_url: body.image_url ?? undefined },
+    });
 
     return ok({ store: result.rows[0] });
   } catch (e) {
