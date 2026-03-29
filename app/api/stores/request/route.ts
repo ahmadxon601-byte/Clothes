@@ -5,6 +5,7 @@ import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
+import { deleteStagedImages, saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 const schema = z.object({
@@ -65,14 +66,15 @@ export async function POST(req: NextRequest) {
       return fail("Ko'pi bilan 10 ta do'kon rasmi yuborish mumkin", 422);
     }
 
-    const primaryImage = normalizedImages[0];
+    let requestId = "";
 
     if (support.hasRequestType) {
       if (storeSupport.hasSellerRequestImageUrl) {
-        await query(
+        const insertResult = await query(
           `INSERT INTO seller_requests
              (user_id, store_name, store_description, owner_name, phone, address, image_url, request_type)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_create')`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_create')
+           RETURNING id`,
           [
             jwtUser.userId,
             store_name,
@@ -80,14 +82,16 @@ export async function POST(req: NextRequest) {
             owner_name,
             phone ?? null,
             address ?? null,
-            primaryImage,
+            null,
           ]
         );
+        requestId = insertResult.rows[0]?.id ?? "";
       } else {
-        await query(
+        const insertResult = await query(
           `INSERT INTO seller_requests
              (user_id, store_name, store_description, owner_name, phone, address, request_type)
-           VALUES ($1, $2, $3, $4, $5, $6, 'store_create')`,
+           VALUES ($1, $2, $3, $4, $5, $6, 'store_create')
+           RETURNING id`,
           [
             jwtUser.userId,
             store_name,
@@ -97,13 +101,15 @@ export async function POST(req: NextRequest) {
             address ?? null,
           ]
         );
+        requestId = insertResult.rows[0]?.id ?? "";
       }
     } else {
       if (storeSupport.hasSellerRequestImageUrl) {
-        await query(
+        const insertResult = await query(
           `INSERT INTO seller_requests
              (user_id, store_name, store_description, owner_name, phone, address, image_url)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id`,
           [
             jwtUser.userId,
             store_name,
@@ -111,14 +117,16 @@ export async function POST(req: NextRequest) {
             owner_name,
             phone ?? null,
             address ?? null,
-            primaryImage,
+            null,
           ]
         );
+        requestId = insertResult.rows[0]?.id ?? "";
       } else {
-        await query(
+        const insertResult = await query(
           `INSERT INTO seller_requests
              (user_id, store_name, store_description, owner_name, phone, address)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id`,
           [
             jwtUser.userId,
             store_name,
@@ -128,7 +136,12 @@ export async function POST(req: NextRequest) {
             address ?? null,
           ]
         );
+        requestId = insertResult.rows[0]?.id ?? "";
       }
+    }
+
+    if (requestId) {
+      await saveStagedImages("seller-request", requestId, normalizedImages);
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
@@ -193,6 +206,7 @@ export async function DELETE(req: NextRequest) {
     if (result.rows.length === 0)
       return fail("Ariza topilmadi yoki o'chirib bo'lmaydi", 404);
 
+    await deleteStagedImages("seller-request", id);
     emitAdminEvent({ type: "seller_requests", action: "updated" });
     return ok({ message: "Ariza o'chirildi" });
   } catch (e) {

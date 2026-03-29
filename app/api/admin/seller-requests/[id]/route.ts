@@ -6,6 +6,11 @@ import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
+import {
+  deleteStagedImages,
+  readFirstStagedImage,
+  scheduleStagedImageDeletion,
+} from "@/src/lib/stagedImages";
 import { notifySellerDecisionViaTelegram } from "@/src/server/telegram/seller-notifier";
 
 type Params = { params: Promise<{ id: string }> };
@@ -44,6 +49,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
 
     const newStatus = action === "approve" ? "approved" : "rejected";
+    const stagedImageUrl = await readFirstStagedImage("seller-request", id);
 
     const client = await pool.connect();
     try {
@@ -75,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
                 sellerReq.store_description,
                 sellerReq.phone,
                 sellerReq.address,
-                sellerReq.image_url ?? null,
+                stagedImageUrl ?? sellerReq.image_url ?? null,
                 sellerReq.target_store_id,
                 sellerReq.user_id,
               ]
@@ -106,7 +112,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
                 sellerReq.store_description,
                 sellerReq.phone,
                 sellerReq.address,
-                sellerReq.image_url ?? null,
+                stagedImageUrl ?? sellerReq.image_url ?? null,
               ]
             );
           } else {
@@ -131,6 +137,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
 
       await client.query("COMMIT");
+      if (action === "approve") {
+        await deleteStagedImages("seller-request", id);
+      } else {
+        await scheduleStagedImageDeletion("seller-request", id);
+      }
       emitAdminEvent({ type: "seller_requests", action: "updated" });
       emitAdminEvent({ type: "stores", action: "updated" });
       logAction({ admin, action, entity: "seller_request", entityId: id, details: { note, newStatus } });

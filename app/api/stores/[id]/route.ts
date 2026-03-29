@@ -5,6 +5,7 @@ import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
+import { saveStagedImages } from "@/src/lib/stagedImages";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -111,10 +112,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     if (storeSupport.hasSellerRequestImageUrl) {
-      await query(
+      const insertResult = await query(
         `INSERT INTO seller_requests
            (user_id, store_name, store_description, owner_name, phone, address, image_url, request_type, target_store_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_update', $8)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_update', $8)
+         RETURNING id`,
         [
           jwtUser.userId,
           parsed.data.name ?? storeResult.rows[0].name,
@@ -122,15 +124,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           storeResult.rows[0].owner_name,
           parsed.data.phone ?? null,
           parsed.data.address ?? null,
-          parsed.data.image_url ?? null,
+          null,
           id,
         ]
       );
+      if (insertResult.rows[0]?.id && parsed.data.image_url) {
+        await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
+      }
     } else {
-      await query(
+      const insertResult = await query(
         `INSERT INTO seller_requests
            (user_id, store_name, store_description, owner_name, phone, address, request_type, target_store_id)
-         VALUES ($1, $2, $3, $4, $5, $6, 'store_update', $7)`,
+         VALUES ($1, $2, $3, $4, $5, $6, 'store_update', $7)
+         RETURNING id`,
         [
           jwtUser.userId,
           parsed.data.name ?? storeResult.rows[0].name,
@@ -141,6 +147,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           id,
         ]
       );
+      if (insertResult.rows[0]?.id && parsed.data.image_url) {
+        await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
+      }
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });

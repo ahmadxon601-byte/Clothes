@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { readFirstStagedImage } from "@/src/lib/stagedImages";
 
 // ── GET /api/products/my ──────────────────────────────────────────────────────
 // Returns all products from the current user's stores
@@ -48,7 +49,14 @@ export async function GET(req: NextRequest) {
       [jwtUser.userId]
     );
 
-    return ok({ products: result.rows });
+    const products = await Promise.all(
+      result.rows.map(async (row) => ({
+        ...row,
+        thumbnail: row.thumbnail ?? (await readFirstStagedImage("product", String(row.id))),
+      }))
+    );
+
+    return ok({ products });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[products/my GET]", e);

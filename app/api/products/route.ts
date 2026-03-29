@@ -4,6 +4,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, paginate, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 // ── GET /api/products ────────────────────────────────────────────────────────
@@ -232,8 +233,8 @@ export async function POST(req: NextRequest) {
           );
       const product = productResult.rows[0];
 
-      // Insert images
-      if (images?.length) {
+      // Only persist seller images after moderation approval.
+      if (images?.length && actualRole === "admin") {
         for (const img of images) {
           await client.query(
             "INSERT INTO product_images (product_id, url, sort_order) VALUES ($1, $2, $3)",
@@ -264,6 +265,9 @@ export async function POST(req: NextRequest) {
       }
 
       await client.query("COMMIT");
+      if (images?.length && actualRole !== "admin") {
+        await saveStagedImages("product", product.id, images);
+      }
       emitAdminEvent({ type: "products", action: "created" });
       if (reviewSupport.hasReviewStatus && reviewStatus === "pending") {
         await notifyAdminsViaTelegram({

@@ -3,6 +3,7 @@ import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
+import { readFirstStagedImage } from "@/src/lib/stagedImages";
 
 // ── GET /api/stores/my/all ────────────────────────────────────────────────────
 // Returns ALL active stores and ALL seller requests for the current user
@@ -36,9 +37,16 @@ export async function GET(req: NextRequest) {
       ),
     ]);
 
+    const requests = await Promise.all(
+      requestsResult.rows.map(async (row) => ({
+        ...row,
+        image_url: await readFirstStagedImage("seller-request", String(row.id)),
+      }))
+    );
+
     return ok({
       stores: storesResult.rows,
-      requests: requestsResult.rows,
+      requests,
     });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);

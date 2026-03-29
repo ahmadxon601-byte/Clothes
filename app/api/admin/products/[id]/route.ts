@@ -4,6 +4,11 @@ import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { logAction } from "@/src/lib/audit";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import {
+  deleteStagedImages,
+  readStagedImages,
+  scheduleStagedImageDeletion,
+} from "@/src/lib/stagedImages";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -18,6 +23,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
     if (result.rows.length === 0) return fail("Product not found", 404);
 
+    await deleteStagedImages("product", id);
     emitAdminEvent({ type: "products", action: "deleted" });
     logAction({ admin, action: "delete", entity: "product", entityId: id, details: { name: result.rows[0].name } });
     return ok({ message: "Product deleted" });
@@ -162,6 +168,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       fields.push(`review_status = $${vals.length}`);
 
       if (body.review_status === "approved") {
+        const stagedImages = await readStagedImages("product", id);
+        if (stagedImages.length > 0) {
+          const db = await pool.connect();
+          try {
+            await db.query("BEGIN");
+            await db.query("DELETE FROM product_images WHERE product_id = $1", [id]);
+            for (const img of stagedImages) {
+              await db.query(
+                "INSERT INTO product_images (product_id, url, sort_order) VALUES ($1, $2, $3)",
+                [id, img.url, img.sort_order]
+              );
+            }
+            await db.query("COMMIT");
+          } catch (e) {
+            await db.query("ROLLBACK");
+            throw e;
+          } finally {
+            db.release();
+          }
+        }
         fields.push("is_active = TRUE");
         if (reviewSupport.hasReviewNote) {
           fields.push("review_note = NULL");
@@ -218,6 +244,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (result.rows.length === 0) return fail("Product not found", 404);
 
     emitAdminEvent({ type: "products", action: "updated" });
+    if (typeof body.review_status === "string") {
+      if (body.review_status === "approved") {
+        await deleteStagedImages("product", id);
+      } else if (body.review_status === "rejected") {
+        await scheduleStagedImageDeletion("product", id);
+      }
+    }
     logAction({
       admin,
       action: body.review_status === "approved" ? "approve" : body.review_status === "rejected" ? "reject" : "update",

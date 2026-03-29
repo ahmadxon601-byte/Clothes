@@ -4,6 +4,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { deleteStagedImages, readStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 type Params = { params: Promise<{ id: string }> };
@@ -86,7 +87,17 @@ export async function GET(req: NextRequest, { params }: Params) {
     const result = await query(PRODUCT_DETAIL_SQL, [id]);
     if (result.rows.length === 0) return fail("Product not found", 404);
 
-    return ok({ product: result.rows[0] });
+    const product = result.rows[0];
+    const stagedImages = await readStagedImages("product", id);
+    if (Array.isArray(product.images) && product.images.length === 0 && stagedImages.length > 0) {
+      product.images = stagedImages.map((image, index) => ({
+        id: `staged-${index}`,
+        url: image.url,
+        sort_order: image.sort_order,
+      }));
+    }
+
+    return ok({ product });
   } catch (e) {
     console.error("[product GET]", e);
     return fail("Internal server error", 500);
@@ -297,6 +308,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
     if (result.rows.length === 0) return fail("Product not found", 404);
 
+    await deleteStagedImages("product", id);
     emitAdminEvent({ type: "products", action: "deleted" });
     return ok({ message: "Product deleted" });
   } catch (e) {

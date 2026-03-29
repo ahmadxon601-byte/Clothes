@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { readFirstStagedImage } from "@/src/lib/stagedImages";
 
 // ── GET /api/admin/seller-requests ────────────────────────────────────────────
 // Query params: status (pending|approved|rejected), page, limit
@@ -55,8 +56,18 @@ export async function GET(req: NextRequest) {
       status ? [status, limit, offset] : [limit, offset]
     );
 
+    const requests = await Promise.all(
+      dataResult.rows.map(async (row) => ({
+        ...row,
+        image_url:
+          (await readFirstStagedImage("seller-request", String(row.id))) ??
+          row.image_url ??
+          null,
+      }))
+    );
+
     return ok({
-      requests: dataResult.rows,
+      requests,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (e) {

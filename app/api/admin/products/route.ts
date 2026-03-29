@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { readStagedImages } from "@/src/lib/stagedImages";
 
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -126,8 +127,26 @@ export async function GET(req: NextRequest) {
       params
     );
 
+    const products = await Promise.all(
+      dataResult.rows.map(async (row) => {
+        const stagedImages =
+          Array.isArray(row.current_images) && row.current_images.length === 0
+            ? await readStagedImages("product", String(row.id))
+            : [];
+
+        return {
+          ...row,
+          current_images:
+            stagedImages.length > 0
+              ? stagedImages.map((image) => ({ url: image.url, sort_order: image.sort_order }))
+              : row.current_images,
+          thumbnail: row.thumbnail ?? stagedImages[0]?.url ?? null,
+        };
+      })
+    );
+
     return ok({
-      products: dataResult.rows,
+      products,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (e) {
