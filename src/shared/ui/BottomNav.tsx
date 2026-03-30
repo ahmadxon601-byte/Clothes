@@ -9,6 +9,10 @@ export function BottomNav() {
     const pathname = usePathname();
     const routes = useAppRoutes();
 
+    if (pathname === routes.PROFILE_SUPPORT) {
+        return null;
+    }
+
     const links = [
         { href: routes.HOME, icon: Home, label: 'Products' },
         { href: routes.PRODUCTS, icon: Store, label: 'Stores' },

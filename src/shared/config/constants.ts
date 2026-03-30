@@ -13,6 +13,7 @@ const buildRoutes = (base: string) => {
         PRODUCTS: withBase('/products'),
         FAVORITES: withBase('/favorites'),
         PROFILE: withBase('/profile'),
+        PROFILE_SUPPORT: withBase('/profile/support'),
         PROFILE_DEALS: withBase('/profile/deals'),
         SEARCH: withBase('/search'),
         SETTINGS: withBase('/settings'),

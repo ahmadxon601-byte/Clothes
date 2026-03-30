@@ -42,8 +42,12 @@ export function paginate(
   page: string | null,
   limit: string | null
 ): { page: number; limit: number; offset: number } {
-  const p = Math.max(1, parseInt(page ?? "1"));
-  const l = Math.min(100, Math.max(1, parseInt(limit ?? "20")));
+  const parsedPage = Number.parseInt(page ?? "1", 10);
+  const parsedLimit = Number.parseInt(limit ?? "20", 10);
+  const p = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1;
+  const l = Number.isFinite(parsedLimit)
+    ? Math.min(100, Math.max(1, parsedLimit))
+    : 20;
   return { page: p, limit: l, offset: (p - 1) * l };
 }
 

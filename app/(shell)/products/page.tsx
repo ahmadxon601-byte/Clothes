@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
@@ -21,7 +21,7 @@ const SORT_OPTIONS: { value: SortType; label: string }[] = [
     { value: 'price_desc', label: 'Narx ↓' },
 ];
 
-export default function ProductsPage() {
+function ProductsPageContent() {
     const { t, language } = useTranslation();
     const searchParams = useSearchParams();
     const [products, setProducts] = useState<ApiProduct[]>([]);
@@ -315,5 +315,13 @@ export default function ProductsPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={null}>
+            <ProductsPageContent />
+        </Suspense>
     );
 }

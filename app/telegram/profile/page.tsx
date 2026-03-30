@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound, Percent } from 'lucide-react';
+import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Check, Smartphone, Copy, KeyRound, Percent, MessageCircleMore } from 'lucide-react';
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { clearApiToken, getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { clearTelegramLoggedOut, isTelegramLoggedOutByUser, markTelegramLoggedOut } from '../../../src/lib/telegramAuthState';
@@ -268,6 +268,22 @@ export default function TelegramProfilePage() {
 
                 {/* 3 main action buttons */}
                 <div className="space-y-2 pt-1">
+                    <Link
+                        href={TELEGRAM_ROUTES.PROFILE_SUPPORT}
+                        className="w-full flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all text-left"
+                    >
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                                <MessageCircleMore size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{extraCopy.support ?? 'Yordam markazi'}</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{extraCopy.supportDesc ?? 'Admin bilan bog\'lanish'}</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />
+                    </Link>
+
                     <Link
                         href="/telegram/profile/stores"
                         className="flex items-center justify-between px-4 py-3.5 bg-[var(--color-surface)] rounded-[20px] shadow-sm border border-[var(--color-border)] active:scale-[0.98] transition-all"

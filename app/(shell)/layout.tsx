@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { WebAuthProvider, useWebAuth } from '../../src/context/WebAuthContext';
 import { useSettingsStore } from '../../src/features/settings/model';
-import { isTelegramRoute } from '../../src/shared/config/constants';
+import { isTelegramRoute, TELEGRAM_ROUTES } from '../../src/shared/config/constants';
 import { useTranslation } from '../../src/shared/lib/i18n';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
@@ -553,10 +553,24 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-[100dvh] w-full justify-center bg-[var(--color-bg)]">
             <div className="relative h-[100dvh] min-h-[100dvh] w-full max-w-[540px] overflow-hidden bg-[var(--color-bg)] md:border-x md:border-[var(--color-border)] md:shadow-2xl">
                 <ToastProvider />
+                <AuthModal
+                    open={authModal.open}
+                    onClose={() => setAuthModal({ open: false, tab: 'login' })}
+                    defaultTab={authModal.tab}
+                />
+                <SupportChatModal
+                    open={supportOpen}
+                    onClose={() => setSupportOpen(false)}
+                    onRequireAuth={() => {
+                        setSupportOpen(false);
+                        setAuthModal({ open: true, tab: 'login' });
+                    }}
+                />
                 <AppHeader />
                 <main
                     className={cn(
-                        'absolute inset-0 overflow-y-auto overflow-x-hidden animate-in fade-in duration-300 [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch] pb-[var(--shell-nav-total)]',
+                        'absolute inset-0 overflow-y-auto overflow-x-hidden animate-in fade-in duration-300 [overscroll-behavior-y:contain] [-webkit-overflow-scrolling:touch]',
+                        pathname === TELEGRAM_ROUTES.PROFILE_SUPPORT ? 'pb-0' : 'pb-[var(--shell-nav-total)]',
                         hasHeader ? 'pt-[var(--shell-header-total)]' : 'pt-0',
                     )}
                 >

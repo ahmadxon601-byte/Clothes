@@ -1,1 +1,1 @@
-export { default } from '../../(shell)/settings/page';
+export { default } from '../../../src/screens/SettingsPage';
