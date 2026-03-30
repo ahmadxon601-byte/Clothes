@@ -1,6 +1,8 @@
 export interface TelegramWebApp {
     ready?: () => void;
     expand?: () => void;
+    requestFullscreen?: () => void;
+    isFullscreen?: boolean;
     colorScheme?: 'light' | 'dark';
     themeParams?: {
         bg_color?: string;

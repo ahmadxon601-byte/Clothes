@@ -278,8 +278,8 @@ export default function TelegramProfilePage() {
                                 <MessageCircleMore size={20} />
                             </div>
                             <div>
-                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{extraCopy.support ?? 'Yordam markazi'}</p>
-                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{extraCopy.supportDesc ?? 'Admin bilan bog\'lanish'}</p>
+                                <p className="text-[15px] font-bold text-[var(--color-text)] leading-tight">{t.support}</p>
+                                <p className="text-[11px] text-[var(--color-hint)] font-medium">{t.supportDesc}</p>
                             </div>
                         </div>
                         <ChevronRight size={18} className="text-[var(--color-hint)] opacity-30" />

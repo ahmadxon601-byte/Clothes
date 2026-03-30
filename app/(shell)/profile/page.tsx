@@ -22,7 +22,7 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
 }
 
 export default function SiteProfilePage() {
-    const { w } = useWebI18n();
+    const { w, language } = useWebI18n();
     const p = w.profilePage;
     const { user, loading, storeStatus, refreshUser, refreshStore } = useWebAuth();
     const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; is_read: boolean; created_at: string }>>([]);
@@ -53,7 +53,7 @@ export default function SiteProfilePage() {
     const loadNotifications = () => {
         const token = getToken();
         if (!token) return;
-        fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}`, 'X-Language': language } })
             .then(r => r.ok ? r.json() : null)
             .then(json => setNotifications(json?.data ?? []))
             .catch(() => {});
@@ -74,7 +74,7 @@ export default function SiteProfilePage() {
             }
             void refreshStore();
         }
-    }, [user, refreshStore]);
+    }, [user, refreshStore, language]);
 
     useSSERefetch(['notifications', 'daily_deals'], () => {
         loadNotifications();
@@ -94,8 +94,8 @@ export default function SiteProfilePage() {
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         setEditError('');
-        if (editName.trim().length < 2) { setEditError("Ism kamida 2 ta harf bo'lishi kerak"); return; }
-        if (!editEmail.trim().includes('@')) { setEditError("Email manzil noto'g'ri"); return; }
+        if (editName.trim().length < 2) { setEditError(p.nameTooShort); return; }
+        if (!editEmail.trim().includes('@')) { setEditError(p.invalidEmail); return; }
         setSaving(true);
         try {
             const res = await fetch('/api/auth/me', {
@@ -104,11 +104,11 @@ export default function SiteProfilePage() {
                 body: JSON.stringify({ name: editName.trim(), email: editEmail.trim() }),
             });
             const json = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(json?.error ?? 'Update failed');
+            if (!res.ok) throw new Error(json?.error ?? p.updateFailed);
             await refreshUser();
             setEditOpen(false);
         } catch (err) {
-            setEditError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
+            setEditError(err instanceof Error ? err.message : p.genericError);
         } finally {
             setSaving(false);
         }
@@ -118,8 +118,8 @@ export default function SiteProfilePage() {
         e.preventDefault();
         setPwdError('');
         setPwdSuccess('');
-        if (newPwd.length < 6) { setPwdError("Yangi parol kamida 6 ta belgi bo'lishi kerak"); return; }
-        if (newPwd !== confirmPwd) { setPwdError("Parollar mos kelmaydi"); return; }
+        if (newPwd.length < 6) { setPwdError(p.passwordTooShort); return; }
+        if (newPwd !== confirmPwd) { setPwdError(p.passwordsMismatch); return; }
         setPwdSaving(true);
         try {
             const res = await fetch('/api/auth/change-password', {
@@ -128,11 +128,11 @@ export default function SiteProfilePage() {
                 body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
             });
             const json = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(json?.error ?? 'Xatolik yuz berdi');
-            setPwdSuccess("Parol muvaffaqiyatli o'zgartirildi");
+            if (!res.ok) throw new Error(json?.error ?? p.genericError);
+            setPwdSuccess(p.passwordChanged);
             setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
         } catch (err) {
-            setPwdError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
+            setPwdError(err instanceof Error ? err.message : p.genericError);
         } finally {
             setPwdSaving(false);
         }

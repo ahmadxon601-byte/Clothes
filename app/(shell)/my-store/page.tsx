@@ -641,8 +641,8 @@ export default function MyStorePage() {
                                     <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.addressMap}</span>
                                     <MapPickerLeaflet
                                         embedded
-                                        initialLat={parseAddress(form.address).lat ?? 41.2995}
-                                        initialLng={parseAddress(form.address).lng ?? 69.2401}
+                                        initialLat={parseAddress(form.address).lat ?? 41.0011}
+                                        initialLng={parseAddress(form.address).lng ?? 71.6681}
                                         onChange={(v) => setForm((p) => ({ ...p, address: v }))}
                                         onConfirm={(v) => setForm((p) => ({ ...p, address: v }))}
                                         onClose={() => {}}

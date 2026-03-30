@@ -31,7 +31,7 @@ export function InlineMapPicker({ onPick, height = 260 }: Props) {
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
             });
 
-            const map = L.map(divRef.current!, { center: [41.2995, 69.2401], zoom: 13, zoomControl: true, attributionControl: false });
+            const map = L.map(divRef.current!, { center: [41.0011, 71.6681], zoom: 13, zoomControl: true, attributionControl: false });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
             map.on('click', (e: any) => {

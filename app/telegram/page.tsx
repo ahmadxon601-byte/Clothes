@@ -7,9 +7,11 @@ import { Check, Heart, Loader2, Search, SlidersHorizontal, X } from 'lucide-reac
 import { fetchCategories, fetchProducts, getApiToken, toggleFavorite, type ApiCategory, type ApiProduct } from '../../src/lib/apiClient';
 import { TELEGRAM_ROUTES } from '../../src/shared/config/constants';
 import { useSSERefetch } from '../../src/shared/hooks/useSSERefetch';
+import { useTranslatedLabelMap } from '../../src/shared/hooks/useTranslatedLabelMap';
 import { useTranslation } from '../../src/shared/lib/i18n';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { repairText } from '../../src/shared/lib/repairText';
+import { sanitizeProductLabel } from '../../src/shared/lib/webProductText';
 import { cn } from '../../src/shared/lib/utils';
 
 const TG_FAVORITES_CACHE_KEY = 'tg_fav_ids_cache';
@@ -80,15 +82,16 @@ export default function TgHomePage() {
     const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const categoryLabel = (cat: ApiCategory, withSticker = false) => {
+    const categoryLabel = (cat: ApiCategory) => {
         const name = repairText(language === 'ru' && cat.name_ru ? cat.name_ru : language === 'en' && cat.name_en ? cat.name_en : cat.name_uz || cat.name);
-        return withSticker && cat.sticker ? `${cat.sticker} ${name}` : name;
+        return name;
     };
     const parentCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
     const subcategories = useMemo(() => categories.filter((c) => c.parent_id === activeParentCat), [categories, activeParentCat]);
     const activeCategory = activeSubCat || (subcategories.length === 0 ? activeParentCat : '');
     const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
     const draftFilterCount = useMemo(() => countActiveFilters(draft), [draft]);
+    const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: repairText(product.name) })), language);
 
     const syncFavCache = useCallback((ids: string[]) => {
         try {
@@ -227,10 +230,78 @@ export default function TgHomePage() {
             </div> : null}
 
             <div className="mb-3 flex flex-wrap gap-2">
-                <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', !activeParentCat && !activeSubCat ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{t.all}</span></button>
-                {parentCategories.map((cat) => <button key={cat.id} onClick={() => { const next = activeParentCat === cat.id ? '' : cat.id; setActiveParentCat(next); setActiveSubCat(''); }} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', activeParentCat === cat.id ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{categoryLabel(cat, true)}</span></button>)}
+                <button
+                    onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
+                    className={cn(
+                        'inline-flex max-w-full items-center gap-2 rounded-full border px-4 py-1.5 text-[12px] font-semibold',
+                        !activeParentCat && !activeSubCat
+                            ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]',
+                    )}
+                >
+                    <span className="block max-w-[42vw] truncate">{t.all}</span>
+                </button>
+                {parentCategories.map((cat) => {
+                    const isActive = activeParentCat === cat.id;
+                    return (
+                        <button
+                            key={cat.id}
+                            onClick={() => { const next = isActive ? '' : cat.id; setActiveParentCat(next); setActiveSubCat(''); }}
+                            className={cn(
+                                'inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold',
+                                isActive
+                                    ? 'border-transparent bg-[var(--color-text)] text-[var(--color-bg)]'
+                                    : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]',
+                            )}
+                        >
+                            {cat.sticker ? (
+                                <span
+                                    className={cn(
+                                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[14px]',
+                                        isActive ? 'bg-[var(--color-bg)]/18' : 'bg-white/8',
+                                    )}
+                                    aria-hidden="true"
+                                >
+                                    {cat.sticker}
+                                </span>
+                            ) : null}
+                            <span className="block max-w-[34vw] truncate">{categoryLabel(cat)}</span>
+                        </button>
+                    );
+                })}
             </div>
-            {activeParentCat && subcategories.length > 0 ? <div className="mb-3 flex flex-wrap gap-2">{subcategories.map((cat) => <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)} className={cn('max-w-full rounded-full border px-4 py-1.5 text-[12px] font-semibold', activeSubCat === cat.id ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]')}><span className="block max-w-[42vw] truncate">{categoryLabel(cat)}</span></button>)}</div> : null}
+            {activeParentCat && subcategories.length > 0 ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {subcategories.map((cat) => {
+                        const isActive = activeSubCat === cat.id;
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveSubCat(isActive ? '' : cat.id)}
+                                className={cn(
+                                    'inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold',
+                                    isActive
+                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]',
+                                )}
+                            >
+                                {cat.sticker ? (
+                                    <span
+                                        className={cn(
+                                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[14px]',
+                                            isActive ? 'bg-white/20' : 'bg-white/8',
+                                        )}
+                                        aria-hidden="true"
+                                    >
+                                        {cat.sticker}
+                                    </span>
+                                ) : null}
+                                <span className="block max-w-[34vw] truncate">{categoryLabel(cat)}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : null}
 
             {loading ? <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-[var(--color-primary)]" /></div> : products.length === 0 ? <div className="flex flex-col items-center py-16 text-[var(--color-hint)]"><Search size={28} className="mb-2 opacity-40" /><p className="text-sm">{t.no_results}</p></div> : <div className="grid grid-cols-2 gap-3 pb-4">{products.map((p) => {
                 const bp = Number(p.base_price);
@@ -240,7 +311,7 @@ export default function TgHomePage() {
 
                 return <Link key={p.id} href={TELEGRAM_ROUTES.PRODUCT(p.id)} className="overflow-hidden rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)] transition-transform active:scale-[0.98]">
                     <div className="relative aspect-[3/4] bg-[var(--color-surface2)]">
-                        <img src={p.thumbnail || 'https://placehold.co/400x533/f5f5f5/ccc?text=No+Image'} alt={p.name} className="h-full w-full object-cover" />
+                        <img src={p.thumbnail || 'https://placehold.co/400x533/f5f5f5/ccc?text=No+Image'} alt={sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)} className="h-full w-full object-cover" />
                         {dis > 0 ? <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-[9px] font-black text-white">-{dis}%</span> : null}
                         <button onClick={(e) => toggleFav(e, p.id)} className={cn('absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-sm', favs.has(p.id) ? 'border-red-200 bg-white/92 text-red-500' : 'border-white/30 bg-[var(--color-surface)]/80 text-[var(--color-hint)]')}>
                             <Heart size={14} className={cn(favs.has(p.id) && 'fill-current text-red-500')} />
@@ -248,7 +319,7 @@ export default function TgHomePage() {
                     </div>
                     <div className="p-3">
                         <p className="truncate text-[10px] font-medium text-[var(--color-hint)]">{p.store_name}</p>
-                        <h3 className="mt-0.5 line-clamp-2 text-[13px] font-bold text-[var(--color-text)]">{p.name}</h3>
+                        <h3 className="mt-0.5 line-clamp-2 text-[13px] font-bold text-[var(--color-text)]">{sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)}</h3>
                         <p className="mt-1 text-[14px] font-black text-[var(--color-primary)]">{formatPrice(cur, 'UZS', language)}</p>
                         {dis > 0 ? <span className="text-[11px] text-[var(--color-hint)] line-through">{formatPrice(bp, 'UZS', language)}</span> : null}
                     </div>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Loader2, MessageCircleMore, Pencil, Plus, Send, Smile, UserRound } from 'lucide-react';
+import { ChevronLeft, Loader2, MessageCircleMore, Pencil, Plus, Send, Smile } from 'lucide-react';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/lib/apiClient';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
@@ -177,34 +177,23 @@ export default function TelegramSupportPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[var(--color-bg)]">
-            <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-header-bg)]/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+10px)] backdrop-blur-xl">
-                <div className="flex items-center gap-3">
+            <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-header-bg)]/95 px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+8px)] backdrop-blur-xl">
+                <div className="flex items-center gap-2.5">
                     <button
                         onClick={() => router.back()}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm transition-all active:scale-95"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm transition-all active:scale-95"
                     >
-                        <ChevronLeft size={18} />
+                        <ChevronLeft size={17} />
                     </button>
                     <div className="min-w-0">
-                        <p className="text-[18px] font-black text-[var(--color-text)]">{copy.title}</p>
-                        <p className="truncate text-[12px] text-[var(--color-hint)]">{copy.subtitle}</p>
+                        <p className="text-[17px] font-black leading-tight text-[var(--color-text)]">{copy.title}</p>
+                        <p className="truncate text-[11px] leading-tight text-[var(--color-hint)]">{copy.subtitle}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-1 flex-col px-4 pb-[calc(env(safe-area-inset-bottom,0px)+14px)] pt-4">
-                <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_20px_50px_-32px_rgba(0,0,0,0.4)]">
-                    <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-4">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-primary)]/14 text-[var(--color-primary)]">
-                            <UserRound size={20} />
-                        </div>
-                        <div>
-                            <p className="text-[17px] font-black text-[var(--color-text)]">{copy.title}</p>
-                            <p className="text-[12px] text-[var(--color-hint)]">{copy.subtitle}</p>
-                        </div>
-                    </div>
-
-                    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg)] px-4 py-4">
+            <div className="flex flex-1 flex-col pb-[calc(env(safe-area-inset-bottom,0px)+14px)]">
+                <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg)] px-4 py-4">
                         {loading ? (
                             <div className="flex h-full min-h-[320px] items-center justify-center">
                                 <Loader2 className="h-6 w-6 animate-spin text-[var(--color-primary)]" />
@@ -223,10 +212,10 @@ export default function TelegramSupportPage() {
                                     const mine = message.sender_role === 'user';
                                     return (
                                         <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`relative max-w-[82%] rounded-[22px] px-4 py-3 ${
+                                            <div className={`relative max-w-[78%] rounded-[18px] px-3 py-2.5 ${
                                                 mine
-                                                    ? 'rounded-br-[8px] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]'
-                                                    : 'rounded-bl-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                                    ? 'rounded-br-[6px] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]'
+                                                    : 'rounded-bl-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
                                             }`}>
                                                 {mine ? (
                                                     <button
@@ -245,9 +234,9 @@ export default function TelegramSupportPage() {
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={message.body} alt="attachment" className="max-h-72 rounded-[16px] object-contain" />
                                                 ) : (
-                                                    <p className="whitespace-pre-wrap break-words text-[14px] leading-6">{message.body}</p>
+                                                    <p className="whitespace-pre-wrap break-words text-[13px] leading-5">{message.body}</p>
                                                 )}
-                                                <div className={`mt-2 text-right text-[11px] ${mine ? 'text-[var(--color-primary-contrast)]/70' : 'text-[var(--color-hint)]'}`}>
+                                                <div className={`mt-1.5 text-right text-[10px] ${mine ? 'text-[var(--color-primary-contrast)]/70' : 'text-[var(--color-hint)]'}`}>
                                                     {formatMessageTime(message.created_at, language)}
                                                 </div>
                                             </div>
@@ -256,87 +245,86 @@ export default function TelegramSupportPage() {
                                 })}
                             </div>
                         )}
-                    </div>
+                </div>
 
-                    <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-4 pt-3">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) void uploadFile(file);
-                            }}
-                        />
+                <div className="bg-[var(--color-bg)] px-4 pb-4 pt-3">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void uploadFile(file);
+                        }}
+                    />
 
-                        {stickersOpen ? (
-                            <div className="mb-3 grid grid-cols-6 gap-2 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
-                                {STICKERS.map((sticker) => (
-                                    <button
-                                        key={sticker}
-                                        type="button"
-                                        onClick={() => {
-                                            setDraft((prev) => `${prev}${sticker}`);
-                                            setStickersOpen(false);
-                                        }}
-                                        className="flex h-10 items-center justify-center rounded-xl text-xl transition hover:bg-[var(--color-surface)]"
-                                    >
-                                        {sticker}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
-
-                        {editingMessageId ? (
-                            <div className="mb-3 flex items-center justify-between rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2 text-[12px] text-[var(--color-hint)]">
-                                <span>{copy.edit}</span>
+                    {stickersOpen ? (
+                        <div className="mb-3 grid grid-cols-6 gap-2 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+                            {STICKERS.map((sticker) => (
                                 <button
+                                    key={sticker}
                                     type="button"
                                     onClick={() => {
-                                        setEditingMessageId(null);
-                                        setDraft('');
+                                        setDraft((prev) => `${prev}${sticker}`);
+                                        setStickersOpen(false);
                                     }}
-                                    className="font-semibold text-[var(--color-text)]"
+                                    className="flex h-10 items-center justify-center rounded-xl text-xl transition hover:bg-[var(--color-surface2)]"
                                 >
-                                    {copy.cancelEdit}
+                                    {sticker}
                                 </button>
-                            </div>
-                        ) : null}
+                            ))}
+                        </div>
+                    ) : null}
 
-                        <div className="flex items-end gap-2 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2">
+                    {editingMessageId ? (
+                        <div className="mb-3 flex items-center justify-between rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-[12px] text-[var(--color-hint)]">
+                            <span>{copy.edit}</span>
                             <button
                                 type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploadingFile}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--color-hint)] transition hover:bg-[var(--color-surface)]"
+                                onClick={() => {
+                                    setEditingMessageId(null);
+                                    setDraft('');
+                                }}
+                                className="font-semibold text-[var(--color-text)]"
                             >
-                                {uploadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-                            </button>
-                            <textarea
-                                ref={textareaRef}
-                                value={draft}
-                                onChange={(event) => setDraft(event.target.value)}
-                                placeholder={copy.placeholder}
-                                rows={1}
-                                className="min-h-[24px] flex-1 resize-none overflow-hidden bg-transparent py-2 text-[14px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-hint)]"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setStickersOpen((prev) => !prev)}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--color-hint)] transition hover:bg-[var(--color-surface)]"
-                            >
-                                <Smile className="h-5 w-5" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void sendMessage()}
-                                disabled={sending || (!draft.trim() && !editingMessageId)}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[0_12px_25px_-12px_rgba(26,229,80,0.6)] transition disabled:opacity-50"
-                            >
-                                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                {copy.cancelEdit}
                             </button>
                         </div>
+                    ) : null}
+
+                    <div className="flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_oklab,var(--color-surface2)_92%,var(--color-surface))] px-4 py-2.5">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--color-hint)]"
+                        >
+                            {uploadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+                        </button>
+                        <textarea
+                            ref={textareaRef}
+                            value={draft}
+                            onChange={(event) => setDraft(event.target.value)}
+                            placeholder={copy.placeholder}
+                            rows={1}
+                            className="min-h-[24px] flex-1 resize-none overflow-hidden bg-transparent py-2 text-[14px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-hint)]"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setStickersOpen((prev) => !prev)}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--color-hint)]"
+                        >
+                            <Smile className="h-5 w-5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void sendMessage()}
+                            disabled={sending || (!draft.trim() && !editingMessageId)}
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-none transition disabled:opacity-50"
+                        >
+                            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </button>
                     </div>
                 </div>
             </div>

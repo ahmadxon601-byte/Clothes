@@ -307,6 +307,13 @@ const RAW_WEB_TRANSLATIONS = {
             newPassword: 'Yangi parol',
             confirmPassword: 'Yangi parolni tasdiqlash',
             changePassword: 'O\'zgartirish',
+            nameTooShort: 'Ism kamida 2 ta harfdan iborat bo\'lishi kerak',
+            invalidEmail: 'Email manzil noto\'g\'ri',
+            updateFailed: 'Profilni yangilab bo\'lmadi',
+            genericError: 'Xatolik yuz berdi',
+            passwordsMismatch: 'Parollar mos kelmaydi',
+            passwordTooShort: 'Yangi parol kamida 6 ta belgidan iborat bo\'lishi kerak',
+            passwordChanged: 'Parol muvaffaqiyatli o\'zgartirildi',
         },
         supportChat: {
             title: 'Yordam markazi',
@@ -585,6 +592,13 @@ const RAW_WEB_TRANSLATIONS = {
             newPassword: 'New password',
             confirmPassword: 'Confirm new password',
             changePassword: 'Change password',
+            nameTooShort: 'Name must be at least 2 characters long',
+            invalidEmail: 'Invalid email address',
+            updateFailed: 'Failed to update profile',
+            genericError: 'Something went wrong',
+            passwordsMismatch: 'Passwords do not match',
+            passwordTooShort: 'New password must be at least 6 characters long',
+            passwordChanged: 'Password changed successfully',
         },
         supportChat: {
             title: 'Help Center',
@@ -833,7 +847,83 @@ const RAW_WEB_TRANSLATIONS = {
 } as const;
 
 const CATEGORY_LABELS = repairTextTree(RAW_CATEGORY_LABELS);
-const WEB_TRANSLATIONS = repairTextTree(RAW_WEB_TRANSLATIONS);
+const REPAIRED_WEB_TRANSLATIONS = repairTextTree(RAW_WEB_TRANSLATIONS);
+
+const RU_PROFILE_PAGE_FIXES = {
+    title: 'Ваш профиль',
+    guestDesc: 'Войдите или зарегистрируйтесь, чтобы просматривать профиль и открыть магазин.',
+    login: 'Войти',
+    register: 'Зарегистрироваться',
+    badge: 'Профиль',
+    accountSuffix: 'аккаунт',
+    ready: 'Профиль готов к покупкам и избранному.',
+    edit: 'Редактировать',
+    email: 'Email',
+    role: 'Роль',
+    accessKey: 'Ключ доступа',
+    accessKeyHint: 'Для входа через Telegram-бота или на другом устройстве',
+    notifications: 'Уведомления',
+    myStore: 'Мой магазин',
+    approved: 'Одобрено',
+    manage: 'Управлять',
+    pendingTitle: 'Заявка на магазин ожидается',
+    pendingDesc: 'Дождитесь подтверждения администратора.',
+    openStore: 'Открыть магазин',
+    openStoreDesc: 'Откройте свой магазин на платформе Qulaymarket',
+    favorites: 'Избранное',
+    favoritesDesc: 'Сохраненные товары',
+    products: 'Мои товары',
+    productsDesc: 'Управление товарами',
+    support: 'Центр помощи',
+    supportDesc: 'Связаться с поддержкой',
+    editProfileTitle: 'Редактирование профиля',
+    profileTab: 'Данные профиля',
+    passwordTab: 'Пароль',
+    name: 'Имя',
+    cancel: 'Отмена',
+    save: 'Сохранить',
+    currentPassword: 'Текущий пароль',
+    newPassword: 'Новый пароль',
+    confirmPassword: 'Подтвердите новый пароль',
+    changePassword: 'Изменить пароль',
+    nameTooShort: 'Имя должно содержать минимум 2 буквы',
+    invalidEmail: 'Неверный email',
+    updateFailed: 'Не удалось обновить профиль',
+    genericError: 'Произошла ошибка',
+    passwordsMismatch: 'Пароли не совпадают',
+    passwordTooShort: 'Новый пароль должен быть не короче 6 символов',
+    passwordChanged: 'Пароль успешно изменён',
+} as const;
+
+const RU_SUPPORT_CHAT_FIXES = {
+    title: 'Центр помощи',
+    subtitle: 'Чат с поддержкой администратора',
+    empty: 'Напишите в поддержку, и ответ появится здесь.',
+    placeholder: 'Напишите сообщение...',
+    loginTitle: 'Войдите, чтобы открыть чат поддержки',
+    loginAction: 'Войти',
+    loadError: 'Не удалось загрузить чат поддержки',
+    sendError: 'Не удалось отправить сообщение',
+    uploadError: 'Не удалось загрузить файл',
+    edit: 'Редактировать',
+    save: 'Сохранить',
+    cancelEdit: 'Отмена',
+} as const;
+
+const WEB_TRANSLATIONS = {
+    ...REPAIRED_WEB_TRANSLATIONS,
+    ru: {
+        ...REPAIRED_WEB_TRANSLATIONS.ru,
+        profilePage: {
+            ...REPAIRED_WEB_TRANSLATIONS.ru.profilePage,
+            ...RU_PROFILE_PAGE_FIXES,
+        },
+        supportChat: {
+            ...REPAIRED_WEB_TRANSLATIONS.ru.supportChat,
+            ...RU_SUPPORT_CHAT_FIXES,
+        },
+    },
+} as const;
 
 export function useWebI18n() {
     const language = (useSettingsStore((s) => s.settings.language) || 'uz') as WebLanguage;
