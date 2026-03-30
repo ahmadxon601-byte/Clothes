@@ -6,6 +6,7 @@ import { ChevronRight, Bookmark, Settings, LogOut, Store, Package, Loader2, Chec
 import { useTelegram } from '../../../src/telegram/useTelegram';
 import { clearApiToken, getApiToken, setApiToken, telegramWebAppAuth } from '../../../src/lib/apiClient';
 import { clearTelegramLoggedOut, isTelegramLoggedOutByUser, markTelegramLoggedOut } from '../../../src/lib/telegramAuthState';
+import { formatPhoneNumber } from '../../../src/shared/lib/phoneFormat';
 import { TELEGRAM_ROUTES } from '../../../src/shared/config/constants';
 import { useTranslation } from '../../../src/shared/lib/i18n';
 import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
@@ -205,7 +206,7 @@ export default function TelegramProfilePage() {
                     <div className="mt-3 flex flex-wrap justify-center gap-2">
                         {me.phone && (
                             <span className="px-3 py-1.5 bg-[var(--color-surface2)] border border-[var(--color-border)] rounded-full text-[12px] font-medium text-[var(--color-text)]">
-                                {me.phone}
+                                {formatPhoneNumber(me.phone)}
                             </span>
                         )}
                         {username && (

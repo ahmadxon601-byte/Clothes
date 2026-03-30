@@ -8,6 +8,7 @@ import { cn } from '../../../src/shared/lib/utils';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
+import { formatPhoneNumber } from '../../../src/shared/lib/phoneFormat';
 
 type FormState = {
     storeName: string;
@@ -37,12 +38,6 @@ type FormErrors = {
 
 const DEFAULT_LAT = 41.0011;
 const DEFAULT_LNG = 71.6681;
-
-function sanitizePhoneInput(value: string) {
-    const hasLeadingPlus = value.trim().startsWith('+');
-    const digits = value.replace(/\D/g, '').slice(0, 15);
-    return hasLeadingPlus ? `+${digits}` : digits;
-}
 
 const MapPickerLeaflet = dynamic(
     () => import('../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
@@ -422,11 +417,11 @@ export default function OpenStorePage() {
                                 <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.phone}</span>
                                 <input
                                     value={form.phone}
-                                    onChange={(e) => onChange('phone', sanitizePhoneInput(e.target.value))}
+                                    onChange={(e) => onChange('phone', formatPhoneNumber(e.target.value))}
                                     type="tel"
                                     inputMode="tel"
                                     autoComplete="tel"
-                                    pattern="[+0-9]*"
+                                    pattern="[+0-9 ]*"
                                     className={cn(
                                         "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
                                         formErrors.phone ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',

@@ -10,6 +10,7 @@ import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
 import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 import { useSettingsStore } from '../../../src/features/settings/model';
+import { formatPhoneNumber } from '../../../src/shared/lib/phoneFormat';
 
 async function loadWithRetry<T>(loader: () => Promise<T>, retries = 2, delayMs = 400): Promise<T> {
     let lastError: unknown;
@@ -66,12 +67,6 @@ function parseAddress(raw: string): { text: string; lat: number | null; lng: num
     const idx = raw.toLowerCase().indexOf('coordinates:');
     const text = idx > 0 ? raw.slice(0, idx).trim() : '';
     return { text, lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-}
-
-function sanitizePhoneInput(value: string) {
-    const hasLeadingPlus = value.trim().startsWith('+');
-    const digits = value.replace(/\D/g, '').slice(0, 15);
-    return hasLeadingPlus ? `+${digits}` : digits;
 }
 
 function isLocalUploadUrl(url: string) {
@@ -204,7 +199,7 @@ export default function MyStorePage() {
         setForm({
             name: store.name,
             description: store.description ? parseAddress(store.description).text : '',
-            phone: store.phone ?? '',
+            phone: formatPhoneNumber(store.phone ?? ''),
             address: store.address ?? '',
         });
         setError('');
@@ -425,7 +420,7 @@ export default function MyStorePage() {
                                         <div className="bg-white p-4 dark:bg-[#1a1a1a]">
                                             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{storeText.phone ?? 'Telefon'}</p>
                                             <p className="mt-1 flex items-center gap-1.5 text-[14px] font-semibold text-[#111111] dark:text-white">
-                                                <Phone size={13} className="text-[#00a645]" />{store.phone}
+                                                <Phone size={13} className="text-[#00a645]" />{formatPhoneNumber(store.phone)}
                                             </p>
                                         </div>
                                     )}
@@ -632,11 +627,11 @@ export default function MyStorePage() {
                                     <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{storeText.phone ?? 'Telefon'}</span>
                                     <input
                                         value={form.phone}
-                                        onChange={(e) => setForm((p) => ({ ...p, phone: sanitizePhoneInput(e.target.value) }))}
+                                        onChange={(e) => setForm((p) => ({ ...p, phone: formatPhoneNumber(e.target.value) }))}
                                         type="tel"
                                         inputMode="tel"
                                         autoComplete="tel"
-                                        pattern="[+0-9]*"
+                                        pattern="[+0-9 ]*"
                                         className="h-11 rounded-xl border border-black/12 px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:border-white/10 dark:bg-[#111111] dark:text-white"
                                         disabled={saving}
                                     />

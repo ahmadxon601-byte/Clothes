@@ -10,6 +10,7 @@ import { useWebI18n } from '../../../../src/shared/lib/webI18n';
 import { useTranslatedLabelMap } from '../../../../src/shared/hooks/useTranslatedLabelMap';
 import { sanitizeProductLabel } from '../../../../src/shared/lib/webProductText';
 import { formatPrice } from '../../../../src/shared/lib/formatPrice';
+import { formatPhoneNumber, phoneHref } from '../../../../src/shared/lib/phoneFormat';
 
 const MapDisplay = dynamic(
   () => import('../../../../src/shared/ui/MapDisplay').then((m) => m.MapDisplay),
@@ -158,13 +159,13 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
               <div className="flex flex-wrap gap-3">
                 {store.phone ? (
                   <a
-                    href={`tel:${store.phone}`}
+                    href={`tel:${phoneHref(store.phone)}`}
                     className="inline-flex h-12 items-center gap-3 rounded-[18px] border border-black/8 bg-transparent px-4 text-[15px] font-bold text-[#111111] transition-all hover:border-[#00c853]/40 hover:text-[#008d3a] dark:border-white/10 dark:text-white"
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00c853]/10 text-[#00a645]">
                       <Phone size={15} />
                     </span>
-                    {store.phone}
+                    {formatPhoneNumber(store.phone)}
                   </a>
                 ) : null}
 

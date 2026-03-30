@@ -11,6 +11,7 @@ import { Input } from '../../../../src/shared/ui/Input';
 import { useToast } from '../../../../src/shared/ui/useToast';
 import { validators } from '../../../../src/shared/lib/validators';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { formatPhoneNumber } from '../../../../src/shared/lib/phoneFormat';
 
 const MapPickerLeaflet = dynamic(
     () => import('../../../../src/shared/ui/MapPickerLeaflet').then((m) => m.MapPickerLeaflet),
@@ -122,7 +123,7 @@ export default function StoreApplyPage() {
                         placeholder="+998 90 000 00 00"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                        onChange={(e) => setFormData(p => ({ ...p, phone: formatPhoneNumber(e.target.value) }))}
                         disabled={loading}
                     />
                 </div>

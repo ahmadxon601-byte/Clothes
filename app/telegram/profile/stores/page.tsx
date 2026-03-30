@@ -11,6 +11,7 @@ import { useSSERefetch } from '../../../../src/shared/hooks/useSSERefetch';
 import { InlineMapPicker } from '../../../../src/shared/ui/InlineMapPicker';
 import { ConfirmDialog } from '../../../../src/shared/ui/ConfirmDialog';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
+import { formatPhoneNumber } from '../../../../src/shared/lib/phoneFormat';
 
 interface MyStore {
     id: string;
@@ -215,7 +216,7 @@ export default function ProfileStoresPage() {
         setEditStore(store);
         setEditName(store.name);
         setEditDesc(store.description ?? '');
-        setEditPhone(store.phone ?? '');
+        setEditPhone(formatPhoneNumber(store.phone ?? ''));
         setEditAddress(store.address ?? '');
         setEditAddressLabel(displayAddress(store.address));
         setEditImg(store.image_url);
@@ -371,7 +372,7 @@ export default function ProfileStoresPage() {
                             {applyErrors.name && <p className="mt-1 text-[12px] text-red-500">{t.store_name_required}</p>}
                         </div>
                         <textarea value={applyDesc} onChange={e => setApplyDesc(e.target.value)} placeholder={t.description} rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        <input value={applyPhone} onChange={e => setApplyPhone(e.target.value)} placeholder={t.phone} className={`${inputCls} border-[var(--color-border)]`} />
+                        <input value={applyPhone} onChange={e => setApplyPhone(formatPhoneNumber(e.target.value))} placeholder={t.phone} type="tel" inputMode="tel" autoComplete="tel" pattern="[+0-9 ]*" className={`${inputCls} border-[var(--color-border)]`} />
 
                         {/* Embedded map */}
                         <div className="space-y-2">
@@ -447,7 +448,7 @@ export default function ProfileStoresPage() {
                             {editErrors.name && <p className="mt-1 text-[12px] text-red-500">{t.store_name_required}</p>}
                         </div>
                         <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder={t.description} rows={3} className="w-full rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none focus:border-[var(--color-primary)] resize-none" />
-                        <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder={t.phone} className={`${inputCls} border-[var(--color-border)]`} />
+                        <input value={editPhone} onChange={e => setEditPhone(formatPhoneNumber(e.target.value))} placeholder={t.phone} type="tel" inputMode="tel" autoComplete="tel" pattern="[+0-9 ]*" className={`${inputCls} border-[var(--color-border)]`} />
 
                         {/* Embedded map */}
                         <div className="space-y-2">
