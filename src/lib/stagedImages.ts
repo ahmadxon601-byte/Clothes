@@ -35,12 +35,26 @@ function normalizeImages(images: Array<string | StagedImage>): StagedImage[] {
     .sort((a, b) => a.sort_order - b.sort_order || a.url.localeCompare(b.url));
 }
 
+function isLocalUpload(url: string) {
+  return url.startsWith("/uploads/");
+}
+
 export async function saveStagedImages(
   kind: EntityKind,
   entityId: string,
   images: Array<string | StagedImage>
 ) {
   const normalized = normalizeImages(images);
+  const previous = await readStagedFile(kind, entityId);
+  if (previous) {
+    const nextSet = new Set(normalized.map((image) => image.url));
+    const removedLocalUploads = previous.images.filter(
+      (image) => isLocalUpload(image.url) && !nextSet.has(image.url)
+    );
+    if (removedLocalUploads.length > 0) {
+      await deleteLocalUploads(removedLocalUploads);
+    }
+  }
   await mkdir(stagedDir(kind), { recursive: true });
   await writeFile(
     stagedFile(kind, entityId),
@@ -55,7 +69,7 @@ export async function saveStagedImages(
 async function deleteLocalUploads(images: StagedImage[]) {
   await Promise.all(
     images.map(async (image) => {
-      if (!image.url.startsWith("/uploads/")) return;
+      if (!isLocalUpload(image.url)) return;
       const relativePath = image.url.replace(/^\/+/, "");
       const absolutePath = path.join(process.cwd(), "public", relativePath);
       try {

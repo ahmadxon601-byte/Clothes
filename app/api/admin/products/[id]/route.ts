@@ -61,6 +61,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         base_price?: number;
         category_id?: string | null;
         images?: Array<{ url: string; sort_order: number }>;
+        images_changed?: boolean;
         variants?: Array<{ size?: string; color?: string; price: number; stock: number }>;
       } | null;
     };
@@ -110,9 +111,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           applyVals
         );
 
-        if (pending.images !== undefined) {
+        const shouldApplyImageChange = pending.images_changed === true || pending.images !== undefined;
+        if (shouldApplyImageChange) {
+          const stagedImages = await readStagedImages("product", id);
+          const nextImages = stagedImages.length > 0 ? stagedImages : (pending.images ?? []);
           await db.query("DELETE FROM product_images WHERE product_id = $1", [id]);
-          for (const img of pending.images) {
+          for (const img of nextImages) {
             await db.query(
               "INSERT INTO product_images (product_id, url, sort_order) VALUES ($1, $2, $3)",
               [id, img.url, img.sort_order]
@@ -138,6 +142,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         }
 
         await db.query("COMMIT");
+        await deleteStagedImages("product", id);
 
         emitAdminEvent({ type: "products", action: "updated" });
         logAction({

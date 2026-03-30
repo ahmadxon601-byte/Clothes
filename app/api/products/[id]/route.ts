@@ -4,7 +4,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
-import { deleteStagedImages, readStagedImages } from "@/src/lib/stagedImages";
+import { deleteStagedImages, readStagedImages, saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
 type Params = { params: Promise<{ id: string }> };
@@ -177,10 +177,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
       const pendingPayload: Record<string, unknown> & {
         name?: string;
         base_price?: number;
+        images_changed?: boolean;
       } = {
         ...Object.fromEntries(Object.entries(rest).filter(([, val]) => val !== undefined && val !== null)),
         ...(Object.entries(rest).some(([, val]) => val === null) ? Object.fromEntries(Object.entries(rest).filter(([, val]) => val === null)) : {}),
-        ...(images !== undefined ? { images } : {}),
+        ...(images !== undefined ? { images_changed: true } : {}),
         ...(variants !== undefined ? { variants } : {}),
       };
 
@@ -191,6 +192,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
          WHERE id = $2`,
         [JSON.stringify(pendingPayload), id]
       );
+      if (images !== undefined) {
+        await saveStagedImages("product", id, images);
+      }
 
       emitAdminEvent({ type: "products", action: "updated" });
       await notifyAdminsViaTelegram({

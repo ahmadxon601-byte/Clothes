@@ -71,6 +71,22 @@ const authHeader = () => ({
   Authorization: `Bearer ${getToken()}`,
 });
 
+const isLocalUploadUrl = (url: string) => url.startsWith('/uploads/');
+
+const deleteUploadedImage = async (url: string) => {
+  if (!isLocalUploadUrl(url)) return;
+  const token = getToken();
+  if (!token) return;
+  await fetch('/api/upload', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ url }),
+  }).catch(() => {});
+};
+
 export default function MyProductsPage() {
   const { user, loading } = useWebAuth();
   const { w } = useWebI18n();
@@ -181,6 +197,7 @@ export default function MyProductsPage() {
     return String(Math.round((1 - c / b) * 100));
   };
   const [formImages, setFormImages] = useState<string[]>([]);
+  const [temporaryUploadUrls, setTemporaryUploadUrls] = useState<string[]>([]);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [formError, setFormError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
@@ -365,6 +382,7 @@ export default function MyProductsPage() {
     setParentCategoryId(defaultParent?.id ?? '');
     setForm({ name: '', base_price: '', discount: '', current_price: '', stock: '1', description: '', category_id: defaultSubcategory?.id ?? defaultParent?.id ?? '', store_id: stores[0]?.id ?? '' });
     setFormImages([]);
+    setTemporaryUploadUrls([]);
     setFormError('');
     setFormErrors({});
     setSuccessMessage('');
@@ -392,6 +410,7 @@ export default function MyProductsPage() {
       store_id: p.store_id,
     });
     setFormImages(p.thumbnail ? [p.thumbnail] : []);
+    setTemporaryUploadUrls([]);
     setFormError('');
     setFormErrors({});
     setSuccessMessage('');
@@ -478,12 +497,27 @@ export default function MyProductsPage() {
       }
 
       setFormImages((prev) => [...prev, ...urls]);
+      setTemporaryUploadUrls((prev) => [...prev, ...urls.filter(isLocalUploadUrl)]);
     } catch (e) {
       setFormErrors((prev) => ({ ...prev, images: true }));
       setFormError(e instanceof Error ? e.message : 'Rasm yuklashda xatolik');
     } finally {
       setUploadingImg(false);
     }
+  };
+
+  const removeFormImage = async (index: number) => {
+    const target = formImages[index];
+    setFormImages((prev) => prev.filter((_, j) => j !== index));
+    if (!target || !temporaryUploadUrls.includes(target)) return;
+    await deleteUploadedImage(target);
+    setTemporaryUploadUrls((prev) => prev.filter((url) => url !== target));
+  };
+
+  const cleanupTemporaryUploads = async () => {
+    const uniqueUrls = [...new Set(temporaryUploadUrls)];
+    await Promise.all(uniqueUrls.map((url) => deleteUploadedImage(url)));
+    setTemporaryUploadUrls([]);
   };
 
   const handleSave = async () => {
@@ -536,6 +570,7 @@ export default function MyProductsPage() {
       }
       setCreateOpen(false);
       setEditProduct(null);
+      setTemporaryUploadUrls([]);
       setSuccessMessage(editProduct ? "Ariza yuborildi. Ko'rib chiqilmoqda." : "Mahsulot adminga ko'rib chiqish uchun yuborildi.");
       loadProducts();
     } catch (e) {
@@ -856,7 +891,7 @@ export default function MyProductsPage() {
                   {editProduct ? p.editTitle : p.createTitle}
                 </h2>
                 <button
-                  onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); setCategoryMenuOpen(false); }}
+                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); setCategoryMenuOpen(false); }}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/[0.03] text-[#6b7280] transition-all hover:rotate-90 hover:text-[#111111] dark:bg-white/[0.03] dark:text-[#9ca3af] dark:hover:text-white"
                 >
                   <X size={16} />
@@ -1043,7 +1078,7 @@ export default function MyProductsPage() {
                         <img src={url} alt="" className="h-full w-full object-cover" />
                         <button
                           type="button"
-                          onClick={() => setFormImages((prev) => prev.filter((_, j) => j !== i))}
+                          onClick={() => void removeFormImage(i)}
                           className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
                         >
                           <X size={10} />
@@ -1082,7 +1117,7 @@ export default function MyProductsPage() {
               {formError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => { setCreateOpen(false); setEditProduct(null); setFormImages([]); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }}
+                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }}
                   className="flex-1 h-12 rounded-full border border-white/10 bg-black/[0.03] text-[13px] font-black text-[#111111] transition-colors hover:bg-black/[0.05] dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
                 >
                   {p.cancel}

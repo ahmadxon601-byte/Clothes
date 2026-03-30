@@ -74,6 +74,10 @@ function sanitizePhoneInput(value: string) {
     return hasLeadingPlus ? `+${digits}` : digits;
 }
 
+function isLocalUploadUrl(url: string) {
+    return url.startsWith('/uploads/');
+}
+
 export default function MyStorePage() {
     const router = useRouter();
     const { user, loading: authLoading, refreshStore } = useWebAuth();
@@ -140,6 +144,7 @@ export default function MyStorePage() {
     const [success, setSuccess] = useState('');
     const [form, setForm] = useState({ name: '', description: '', phone: '', address: '' });
     const [formImage, setFormImage] = useState<string | null>(null);
+    const [temporaryUploadUrl, setTemporaryUploadUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
     const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
         open: false,
@@ -156,6 +161,20 @@ export default function MyStorePage() {
     }, [editingStore, deleteStore]);
 
     const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
+
+    const deleteUploadedImage = useCallback(async (url: string | null) => {
+        if (!url || !isLocalUploadUrl(url)) return;
+        const token = getToken();
+        if (!token) return;
+        await fetch('/api/upload', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ url }),
+        }).catch(() => {});
+    }, []);
 
     const fetchAll = useCallback(async () => {
         const token = getToken();
@@ -192,6 +211,7 @@ export default function MyStorePage() {
         setSuccess('');
         setFormErrors({});
         setFormImage(store.image_url ?? null);
+        setTemporaryUploadUrl(null);
         setEditingStore(store);
     };
 
@@ -233,7 +253,11 @@ export default function MyStorePage() {
                 throw new Error('Rasm URL topilmadi');
             }
 
+            if (temporaryUploadUrl && temporaryUploadUrl !== url) {
+                await deleteUploadedImage(temporaryUploadUrl);
+            }
             setFormImage(url);
+            setTemporaryUploadUrl(isLocalUploadUrl(url) ? url : null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Rasm yuklashda xatolik');
         } finally {
@@ -268,6 +292,7 @@ export default function MyStorePage() {
             await Promise.all([fetchAll(), refreshStore()]);
             setEditingStore(null);
             setFormImage(null);
+            setTemporaryUploadUrl(null);
             setSuccess("Ariza yuborildi. Ko'rib chiqilmoqda.");
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
@@ -530,7 +555,7 @@ export default function MyStorePage() {
             {editingStore && (
                 <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
                     <div className="relative w-full max-w-[480px] rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a] max-h-[90vh] overflow-y-auto">
-                        <button onClick={() => setEditingStore(null)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-[#6b7280] hover:text-[#111111] dark:border-white/10 dark:text-[#9ca3af] dark:hover:text-white">
+                        <button onClick={() => { void deleteUploadedImage(temporaryUploadUrl); setTemporaryUploadUrl(null); setEditingStore(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-[#6b7280] hover:text-[#111111] dark:border-white/10 dark:text-[#9ca3af] dark:hover:text-white">
                             <X size={16} />
                         </button>
                         <div className="p-7">
@@ -569,7 +594,14 @@ export default function MyStorePage() {
                                         {formImage && (
                                             <button
                                                 type="button"
-                                                onClick={() => setFormImage(null)}
+                                                onClick={() => {
+                                                    const tempUrl = temporaryUploadUrl;
+                                                    setFormImage(null);
+                                                    setTemporaryUploadUrl(null);
+                                                    if (tempUrl) {
+                                                        void deleteUploadedImage(tempUrl);
+                                                    }
+                                                }}
                                                 className="inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 text-[12px] font-bold text-red-600 transition-colors hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                                             >
                                                 <Trash2 size={14} />
@@ -632,7 +664,7 @@ export default function MyStorePage() {
                                 </label>
                                 {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={() => { setEditingStore(null); setFormImage(null); }} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">{storeText.cancel ?? 'Bekor'}</button>
+                                    <button type="button" onClick={() => { void deleteUploadedImage(temporaryUploadUrl); setTemporaryUploadUrl(null); setEditingStore(null); setFormImage(null); }} className="flex-1 h-11 rounded-full border border-black/10 text-[12px] font-bold text-[#111111] dark:border-white/10 dark:text-white">{storeText.cancel ?? 'Bekor'}</button>
                                     <button type="submit" disabled={saving} className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] disabled:opacity-60">
                                         {saving && <Loader2 size={13} className="animate-spin" />}
                                         {storeText.save ?? 'Saqlash'}

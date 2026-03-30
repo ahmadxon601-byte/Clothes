@@ -71,6 +71,8 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+const isLocalUploadUrl = (url: string) => url.startsWith('/uploads/');
+
 async function uploadImage(file: File): Promise<string> {
   const token = getApiToken();
   const fd = new FormData();
@@ -83,6 +85,17 @@ async function uploadImage(file: File): Promise<string> {
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? 'Upload failed');
   return (json.data?.url ?? json.url) as string;
+}
+
+async function deleteUploadedImage(url: string): Promise<void> {
+  if (!isLocalUploadUrl(url)) return;
+  const token = getApiToken();
+  if (!token) return;
+  await fetch('/api/upload', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ url }),
+  }).catch(() => {});
 }
 
 export default function ProfileProductsPage() {
@@ -121,6 +134,7 @@ export default function ProfileProductsPage() {
     store_id: '',
   });
   const [formImages, setFormImages] = useState<string[]>([]);
+  const [temporaryUploadUrls, setTemporaryUploadUrls] = useState<string[]>([]);
   const [parentCategoryId, setParentCategoryId] = useState('');
 
   const parentCategories = useMemo(
@@ -273,6 +287,7 @@ export default function ProfileProductsPage() {
       store_id: stores[0]?.id ?? '',
     });
     setFormImages([]);
+    setTemporaryUploadUrls([]);
     setFormError('');
     setSuccessMessage('');
     setFormErrors({});
@@ -318,6 +333,7 @@ export default function ProfileProductsPage() {
 
   const openEdit = async (product: MyProduct) => {
     setEditProduct(product);
+    setTemporaryUploadUrls([]);
     setFormError('');
     setFormErrors({});
     setParentCategoryMenuOpen(false);
@@ -363,11 +379,26 @@ export default function ProfileProductsPage() {
     try {
       const uploaded = await Promise.all(Array.from(files).map((file) => uploadImage(file)));
       setFormImages((prev) => [...prev, ...uploaded]);
+      setTemporaryUploadUrls((prev) => [...prev, ...uploaded.filter(isLocalUploadUrl)]);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : t.error_occurred);
     } finally {
       setUploadingImg(false);
     }
+  };
+
+  const removeFormImage = async (index: number) => {
+    const target = formImages[index];
+    setFormImages((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    if (!target || !temporaryUploadUrls.includes(target)) return;
+    await deleteUploadedImage(target);
+    setTemporaryUploadUrls((prev) => prev.filter((url) => url !== target));
+  };
+
+  const cleanupTemporaryUploads = async () => {
+    const uniqueUrls = [...new Set(temporaryUploadUrls)];
+    await Promise.all(uniqueUrls.map((url) => deleteUploadedImage(url)));
+    setTemporaryUploadUrls([]);
   };
 
   const validate = () => {
@@ -410,6 +441,7 @@ export default function ProfileProductsPage() {
       await fetchAll();
       setView('list');
       setEditProduct(null);
+      setTemporaryUploadUrls([]);
       resetForm();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : t.error_occurred);
@@ -471,7 +503,7 @@ export default function ProfileProductsPage() {
           onCancel={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
         />
         <div className="px-4 pb-8">
-          <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="mb-5 flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
+          <button onClick={() => { void cleanupTemporaryUploads(); setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="mb-5 flex items-center gap-2 text-[14px] font-medium text-[var(--color-hint)]">
             <ArrowLeft size={18} /> {t.back}
           </button>
           <h2 className="mb-5 text-[20px] font-bold text-[var(--color-text)]">
@@ -572,7 +604,7 @@ export default function ProfileProductsPage() {
                 {formImages.map((url, index) => (
                   <div key={index} className="relative h-20 w-20 overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
                     <img src={url} alt="" className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => setFormImages((prev) => prev.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                    <button type="button" onClick={() => void removeFormImage(index)} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
                       <X size={10} />
                     </button>
                   </div>
@@ -594,7 +626,7 @@ export default function ProfileProductsPage() {
             {formError && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-[12px] font-semibold text-red-400">{formError}</p>}
 
             <div className="mt-6 flex gap-3">
-              <button onClick={() => { setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="h-12 flex-1 rounded-full border border-white/10 bg-white/[0.03] text-[13px] font-black text-white">
+              <button onClick={() => { void cleanupTemporaryUploads(); setView('list'); setEditProduct(null); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }} className="h-12 flex-1 rounded-full border border-white/10 bg-white/[0.03] text-[13px] font-black text-white">
                 {t.cancel}
               </button>
               <button onClick={handleSave} disabled={saving} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[13px] font-black text-[#052e16] disabled:opacity-60">
