@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useWebAuth } from '../../context/WebAuthContext';
 import { cn } from '../lib/utils';
+import { useTranslation } from '../lib/i18n';
 
 type Props = {
     open: boolean;
@@ -13,6 +14,7 @@ type Props = {
 
 export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
     const { login, register, loginByKey } = useWebAuth();
+    const { t } = useTranslation();
     const [tab, setTab] = useState<'login' | 'register' | 'key'>(defaultTab);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -50,10 +52,10 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
             if (tab === 'login') {
                 await login(email.trim(), password);
             } else if (tab === 'register') {
-                if (name.trim().length < 2) { setError("Ism kamida 2 ta harf bo'lishi kerak"); setLoading(false); return; }
+                if (name.trim().length < 2) { setError(t.auth_register_name_error); setLoading(false); return; }
                 await register(name.trim(), email.trim(), password);
             } else {
-                if (accessKey.trim().length !== 8) { setError("Kalit so'z 8 ta belgidan iborat bo'lishi kerak"); setLoading(false); return; }
+                if (accessKey.trim().length !== 8) { setError(t.auth_key_length_error); setLoading(false); return; }
                 await loginByKey(accessKey.trim());
             }
             onClose();
@@ -80,25 +82,25 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
 
                 <div className="p-7">
                     <h2 className="font-[family-name:var(--font-playfair)] text-[26px] font-black text-[#111111] dark:text-white">
-                        {tab === 'login' ? 'Kirish' : tab === 'register' ? "Ro'yxatdan o'tish" : "Kalit so'z"}
+                        {tab === 'login' ? t.auth_login : tab === 'register' ? t.auth_register : t.auth_key}
                     </h2>
                     <p className="mt-1 text-[13px] text-[#6b7280]">
-                        {tab === 'login' ? "Hisobingizga kiring" : tab === 'register' ? "Yangi hisob yarating" : "Telegram profilingizdagi kalit so'zni kiriting"}
+                        {tab === 'login' ? t.auth_login_desc : tab === 'register' ? t.auth_register_desc : t.auth_key_desc}
                     </p>
 
                     <div className="mt-5 flex gap-1 rounded-xl bg-[#f3f4f6] p-1 dark:bg-white/10">
-                        {(['login', 'register', 'key'] as const).map((t) => (
+                        {(['login', 'register', 'key'] as const).map((tabOption) => (
                             <button
-                                key={t}
-                                onClick={() => { setTab(t); setError(''); }}
+                                key={tabOption}
+                                onClick={() => { setTab(tabOption); setError(''); }}
                                 className={cn(
                                     'flex-1 rounded-lg py-2 text-[12px] font-bold uppercase tracking-[0.1em] transition-all',
-                                    tab === t
+                                    tab === tabOption
                                         ? 'bg-white text-[#111111] shadow-sm dark:bg-[#111111] dark:text-white'
                                         : 'text-[#6b7280] hover:text-[#111111] dark:hover:text-white',
                                 )}
                             >
-                                {t === 'login' ? 'Kirish' : t === 'register' ? "Ro'yxat" : '🔑 Kalit'}
+                                {tabOption === 'login' ? t.auth_login : tabOption === 'register' ? t.auth_register : `${'\u{1F511}'} ${t.auth_key}`}
                             </button>
                         ))}
                     </div>
@@ -106,11 +108,11 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                     <form onSubmit={handleSubmit} className="mt-5 grid gap-3">
                         {tab === 'register' && (
                             <label className="grid gap-1.5">
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Ism</span>
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{t.auth_name}</span>
                                 <input
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="Ism Familiya"
+                                    placeholder={t.auth_full_name_placeholder}
                                     disabled={loading}
                                     className="h-11 rounded-xl border border-black/12 bg-white px-3 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
                                 />
@@ -118,7 +120,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                         )}
                         {tab !== 'key' && (
                             <label className="grid gap-1.5">
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Email</span>
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{t.auth_email}</span>
                                 <input
                                     type="email"
                                     value={email}
@@ -131,7 +133,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                         )}
                         {tab !== 'key' && (
                             <label className="grid gap-1.5">
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Parol</span>
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{t.auth_password}</span>
                                 <div className="relative">
                                     <input
                                         type={showPass ? 'text' : 'password'}
@@ -153,7 +155,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                         )}
                         {tab === 'key' && (
                             <label className="grid gap-1.5">
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">Kalit so&apos;z</span>
+                                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">{t.auth_key}</span>
                                 <input
                                     value={accessKey}
                                     onChange={(e) => setAccessKey(e.target.value.toUpperCase())}
@@ -162,7 +164,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                                     disabled={loading}
                                     className="h-11 rounded-xl border border-black/12 bg-white px-3 text-[14px] tracking-[0.2em] font-mono outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
                                 />
-                                <span className="text-[11px] text-[#6b7280]">Telegram yoki desktop profilingizdagi 8 ta belgidan iborat kalit</span>
+                                <span className="text-[11px] text-[#6b7280]">{t.auth_key_hint}</span>
                             </label>
                         )}
 
@@ -178,7 +180,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                             className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#13ec37] text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading && <Loader2 size={14} className="animate-spin" />}
-                            {tab === 'login' ? 'Kirish' : tab === 'register' ? "Ro'yxatdan o'tish" : 'Kirish'}
+                            {tab === 'login' ? t.auth_login : tab === 'register' ? t.auth_register : t.auth_login}
                         </button>
                     </form>
                 </div>

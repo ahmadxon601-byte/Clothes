@@ -143,7 +143,7 @@ export default function ClothingPage() {
   return (
     <section className="mx-auto max-w-[1440px] px-6 md:px-10 py-12 md:py-16">
       <div className="mb-8">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">Barcha mahsulotlar</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{t.all_products_badge}</p>
         <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">{t.products_page_title}</h1>
       </div>
 
@@ -263,7 +263,7 @@ export default function ClothingPage() {
                       'rounded-full border px-3 py-2 text-[12px] font-bold transition-all',
                       minDiscount === String(value)
                         ? 'border-[#13ec37] bg-[#13ec37] text-white'
-                        : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white'
+                    : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                     )}
                   >
                     {value}%+
@@ -286,7 +286,7 @@ export default function ClothingPage() {
         <div className="mb-8 flex flex-wrap gap-2 pb-1">
           <button
             onClick={() => { setActiveParentCategory(''); setActiveSubcategory(''); }}
-            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === '' && activeSubcategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === '' && activeSubcategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
           >
             {t.all}
           </button>
@@ -298,7 +298,7 @@ export default function ClothingPage() {
                 setActiveParentCategory(nextParent);
                 setActiveSubcategory('');
               }}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
             >
               {cat.sticker ? (
                 <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[16px] leading-none ${activeParentCategory === cat.id ? 'bg-white/16 dark:bg-black/10' : 'bg-[#f3f4f6] dark:bg-white/10'}`}>
@@ -316,7 +316,7 @@ export default function ClothingPage() {
             <button
               key={cat.id}
               onClick={() => setActiveSubcategory(activeSubcategory === cat.id ? '' : cat.id)}
-              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeSubcategory === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37] shadow' : 'bg-white border-black/10 text-[#6b7280] hover:border-black/20 hover:text-[#111111] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af]'}`}
+              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeSubcategory === cat.id ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
             >
               {categoryLabel(cat)}
             </button>
