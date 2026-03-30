@@ -14,13 +14,6 @@ import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
 
 type SortType = 'newest' | 'popular' | 'price_asc' | 'price_desc';
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const SORT_OPTIONS: { value: SortType; label: string }[] = [
-    { value: 'newest', label: 'Yangi' },
-    { value: 'popular', label: 'Mashhur' },
-    { value: 'price_asc', label: 'Narx ↑' },
-    { value: 'price_desc', label: 'Narx ↓' },
-];
-
 function ProductsPageContent() {
     const { t, language } = useTranslation();
     const searchParams = useSearchParams();
@@ -48,6 +41,12 @@ function ProductsPageContent() {
         (maxPrice ? 1 : 0) +
         (sizeFilter ? 1 : 0) +
         (onSale ? 1 : 0);
+    const sortOptions: { value: SortType; label: string }[] = [
+        { value: 'newest', label: t.sort_newest },
+        { value: 'popular', label: t.sort_popular },
+        { value: 'price_asc', label: t.sort_price_asc },
+        { value: 'price_desc', label: t.sort_price_desc },
+    ];
     const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
     const localizedCategory = (cat: ApiCategory) => language === 'ru' ? (cat.name_ru || cat.name) : language === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name);
 
@@ -135,8 +134,8 @@ function ProductsPageContent() {
                         className={cn(
                             'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
                             filterOpen || activeFilterCount > 0
-                                ? 'bg-[#13ec37] border-[#13ec37] text-white'
-                                : 'bg-white dark:bg-[#1a1a1a] border-black/8 dark:border-white/8 text-[#9ca3af] hover:border-[#00c853]/40'
+                                ? 'bg-[#13ec37] border-[#13ec37] text-[#052e14] shadow-[0_12px_28px_-16px_rgba(19,236,55,0.95)]'
+                                : 'bg-white dark:bg-[#1a1a1a] border-black/8 dark:border-white/8 text-[#9ca3af] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#00a63e] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                         )}
                     >
                         <SlidersHorizontal size={18} />
@@ -153,14 +152,14 @@ function ProductsPageContent() {
                     <div className="mb-4 bg-white dark:bg-[#1a1a1a] rounded-[20px] border border-black/8 dark:border-white/8 p-5 space-y-5">
                         {/* Sort */}
                         <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Saralash</p>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.sort}</p>
                             <div className="flex flex-wrap gap-2">
-                                {SORT_OPTIONS.map(opt => (
+                                {sortOptions.map(opt => (
                                     <button key={opt.value} onClick={() => setSort(opt.value)}
                                         className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all',
                                             sort === opt.value
-                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
-                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                                ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow-[0_12px_28px_-18px_rgba(19,236,55,0.95)]'
+                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                                         )}>
                                         {opt.label}
                                     </button>
@@ -170,7 +169,7 @@ function ProductsPageContent() {
 
                         {/* Price range */}
                         <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">Narx oralig&apos;i</p>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.price_range}</p>
                             <div className="flex gap-3">
                                 <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder={t.min}
                                     type="number"
@@ -183,14 +182,14 @@ function ProductsPageContent() {
 
                         {/* Size */}
                         <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">O&apos;lcham</p>
+                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.size}</p>
                             <div className="flex flex-wrap gap-2">
                                 {SIZES.map(s => (
                                     <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
                                         className={cn('w-11 h-11 rounded-xl text-[13px] font-bold border transition-all',
                                             sizeFilter === s
-                                                ? 'bg-[#13ec37] text-white border-[#13ec37]'
-                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                                ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow-[0_12px_28px_-18px_rgba(19,236,55,0.95)]'
+                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                                         )}>
                                         {s}
                                     </button>
@@ -201,7 +200,7 @@ function ProductsPageContent() {
                         {/* On sale + clear */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <p className="text-[14px] font-semibold text-[#111111] dark:text-white">Faqat aksiyada</p>
+                                <p className="text-[14px] font-semibold text-[#111111] dark:text-white">{t.on_sale_only}</p>
                                 <button onClick={() => setOnSale(o => !o)}
                                     className={cn('w-11 h-6 rounded-full border transition-all relative',
                                         onSale ? 'bg-[#13ec37] border-[#13ec37]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
@@ -213,7 +212,7 @@ function ProductsPageContent() {
                             {activeFilterCount > 0 && (
                                 <button onClick={clearFilters}
                                     className="px-4 py-1.5 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all">
-                                    Tozalash
+                                    {t.clear_filters}
                                 </button>
                             )}
                         </div>
@@ -224,7 +223,7 @@ function ProductsPageContent() {
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
                     <button onClick={() => { setActiveParentCat(''); setActiveSubCat(''); }}
                         className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                            !activeParentCat && !activeSubCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                            !activeParentCat && !activeSubCat ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                         )}>{t.all}</button>
                     {parentCategories.map(cat => (
                         <button key={cat.id} onClick={() => {
@@ -233,7 +232,7 @@ function ProductsPageContent() {
                             setActiveSubCat('');
                         }}
                             className={cn('shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                                activeParentCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                activeParentCat === cat.id ? 'bg-[#111111] dark:bg-white text-white dark:text-[#111111] border-transparent' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                             )}>
                             {cat.sticker ? (
                                 <span className={cn('flex h-7 w-7 items-center justify-center rounded-full text-[16px] leading-none',
@@ -251,7 +250,7 @@ function ProductsPageContent() {
                         {subcategories.map(cat => (
                             <button key={cat.id} onClick={() => setActiveSubCat(activeSubCat === cat.id ? '' : cat.id)}
                                 className={cn('shrink-0 px-4 py-1.5 rounded-full text-[12px] font-semibold border transition-all',
-                                    activeSubCat === cat.id ? 'bg-[#13ec37] text-white border-[#13ec37]' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/40'
+                                    activeSubCat === cat.id ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow-[0_12px_28px_-18px_rgba(19,236,55,0.95)]' : 'bg-white dark:bg-[#1a1a1a] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                                 )}>
                                 {localizedCategory(cat)}
                             </button>
