@@ -504,12 +504,6 @@ export default function WebsiteHomePage() {
                         <p className="mt-3 max-w-[40ch] text-[13px] leading-6 text-[#5f6571] dark:text-white/70 sm:mt-5 sm:text-[15px] sm:leading-8">
                             {heroDescription}
                         </p>
-                        <div
-                            className="mt-5 hidden w-fit rounded-[22px] border border-black/5 bg-white/80 px-4 py-3 shadow-[0_16px_40px_-28px_rgba(17,24,39,0.35)] backdrop-blur dark:border-white/10 dark:bg-white/6 md:block"
-                        >
-                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#10be33]">{heroCopy.secondary}</p>
-                            <p className="mt-1 text-[13px] font-semibold text-[#111111] dark:text-white">{sectionCopy.categoryTitle}</p>
-                        </div>
                     </div>
 
                     <div className="relative z-[1] flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">
