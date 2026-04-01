@@ -3,7 +3,7 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
-import { generateAccessKey } from "@/src/lib/accessKey";
+import { ensureUserAccessKey } from "@/src/lib/accessKeyService";
 import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
 
 export async function GET(req: NextRequest) {
@@ -24,11 +24,9 @@ export async function GET(req: NextRequest) {
 
     const user = result.rows[0];
 
-    // Lazily generate access_key for existing users
-    if (accessKeySupported && !user.access_key) {
-      const key = generateAccessKey();
-      await query("UPDATE users SET access_key = $1 WHERE id = $2", [key, user.id]);
-      user.access_key = key;
+    // Lazily generate and normalize access_key for existing users
+    if (accessKeySupported) {
+      user.access_key = await ensureUserAccessKey(user.id, user.access_key);
     }
 
     return ok(user);

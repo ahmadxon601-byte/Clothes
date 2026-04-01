@@ -5,6 +5,7 @@ import { X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useWebAuth } from '../../context/WebAuthContext';
 import { cn } from '../lib/utils';
 import { useTranslation } from '../lib/i18n';
+import { getPasswordValidationIssue } from '../lib/validators';
 
 type Props = {
     open: boolean;
@@ -24,6 +25,20 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const overlayRef = useRef<HTMLDivElement>(null);
+
+    const getPasswordErrorMessage = (value: string) => {
+        const issue = getPasswordValidationIssue(value);
+        if (!issue) return '';
+
+        const issueMessages = {
+            min_length: t.auth_register_password_min_length_error,
+            lowercase: t.auth_register_password_lowercase_error,
+            uppercase: t.auth_register_password_uppercase_error,
+            number: t.auth_register_password_number_error,
+        } as const;
+
+        return issueMessages[issue];
+    };
 
     useEffect(() => {
         if (open) {
@@ -53,6 +68,8 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                 await login(email.trim(), password);
             } else if (tab === 'register') {
                 if (name.trim().length < 2) { setError(t.auth_register_name_error); setLoading(false); return; }
+                const passwordError = getPasswordErrorMessage(password);
+                if (passwordError) { setError(passwordError); setLoading(false); return; }
                 await register(name.trim(), email.trim(), password);
             } else {
                 if (accessKey.trim().length !== 8) { setError(t.auth_key_length_error); setLoading(false); return; }
@@ -138,9 +155,18 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                                     <input
                                         type={showPass ? 'text' : 'password'}
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) => {
+                                            const nextValue = e.target.value;
+                                            setPassword(nextValue);
+                                            if (tab === 'register') {
+                                                setError(getPasswordErrorMessage(nextValue));
+                                            } else if (error) {
+                                                setError('');
+                                            }
+                                        }}
                                         placeholder="••••••••"
                                         disabled={loading}
+                                        autoComplete={tab === 'register' ? 'new-password' : 'current-password'}
                                         className="h-11 w-full rounded-xl border border-black/12 bg-white px-3 pr-10 text-[14px] outline-none transition-all focus:border-[#00c853] disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white"
                                     />
                                     <button
@@ -151,6 +177,11 @@ export function AuthModal({ open, onClose, defaultTab = 'login' }: Props) {
                                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
+                                {tab === 'register' && (
+                                    <span className="text-[11px] text-[#6b7280] dark:text-[#9ca3af]">
+                                        {t.auth_password_hint}
+                                    </span>
+                                )}
                             </label>
                         )}
                         {tab === 'key' && (

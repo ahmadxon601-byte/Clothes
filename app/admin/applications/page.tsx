@@ -22,6 +22,7 @@ import {
 } from '../../../src/features/admin/components/DataViews';
 import { ReasonDialog } from '../../../src/features/admin/components/ReasonDialog';
 import { useApplications, useStoreMutation, useUpdateApplication } from '../../../src/features/admin/components/hooks';
+import { resolveAssetUrl } from '../../../src/shared/lib/utils';
 import { useToast } from '../../../src/shared/ui/useToast';
 
 export default function ApplicationsPage() {
@@ -115,6 +116,7 @@ export default function ApplicationsPage() {
     return changes;
   };
   const viewRequest = requests.find((item) => item.id === viewRequestId) ?? null;
+  const viewRequestImage = resolveAssetUrl(viewRequest?.image_url ?? viewRequest?.current_store_image_url ?? null);
   const toggleStore = (item: NonNullable<typeof query.data>['requests'][number]) => {
     if (!item.store_id || item.store_is_active == null) return;
     storeMutation.mutate(
@@ -338,11 +340,11 @@ export default function ApplicationsPage() {
                 </div>
                 <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
                   <p className='mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-muted)]'>Yangi ma'lumotlar</p>
-                  {viewRequest.image_url ? (
+                  {viewRequestImage ? (
                     <img
-                      src={viewRequest.image_url}
+                      src={viewRequestImage}
                       alt={viewRequest.store_name || "Do'kon rasmi"}
-                      className='mb-3 h-40 w-full rounded-2xl object-contain'
+                      className='mb-3 h-40 w-full rounded-2xl bg-[var(--admin-card)] object-contain'
                     />
                   ) : null}
                   <div className='space-y-2 text-sm'>
@@ -355,11 +357,11 @@ export default function ApplicationsPage() {
               </div>
             ) : (
               <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
-                {viewRequest.image_url ? (
+                {viewRequestImage ? (
                   <img
-                    src={viewRequest.image_url}
+                    src={viewRequestImage}
                     alt={viewRequest.store_name || "Do'kon rasmi"}
-                    className='mb-3 h-40 w-full rounded-2xl object-contain'
+                    className='mb-3 h-40 w-full rounded-2xl bg-[var(--admin-card)] object-contain'
                   />
                 ) : null}
                 <div className='space-y-2 text-sm'>

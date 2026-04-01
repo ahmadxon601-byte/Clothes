@@ -25,6 +25,7 @@ export const applicationSchema = z.object({
   current_store_description: z.string().nullish(),
   current_store_phone: z.string().nullish(),
   current_store_address: z.string().nullish(),
+  current_store_image_url: z.string().nullish(),
   image_url: z.string().nullish(),
   status: z.string().default('pending'),
   created_at: z.string(),
@@ -134,18 +135,12 @@ export const adminUserSchema = z.object({
   role: z.string(),
 });
 
-export const bannerProductSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  price: z.number().nullish(),
-});
-
 export const bannerSchema = z.object({
   id: z.string(),
   title: z.string(),
   is_active: z.boolean().default(true),
-  product_ids: z.array(z.string()).default([]),
-  products: z.array(bannerProductSchema).default([]),
+  show_on_home: z.boolean().default(true),
+  image_url: z.string().nullish(),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -170,5 +165,4 @@ export type Order = z.infer<typeof orderSchema>;
 export type Stats = z.infer<typeof statsSchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type Banner = z.infer<typeof bannerSchema>;
-export type BannerProduct = z.infer<typeof bannerProductSchema>;
 export type AuditLog = z.infer<typeof auditLogSchema>;

@@ -3,6 +3,7 @@ import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
 import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
+import { normalizeAccessKey } from "@/src/lib/accessKeyService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,11 +11,13 @@ export async function POST(req: NextRequest) {
     const { key } = await req.json();
     if (!key || typeof key !== "string") return fail("Kalit so'z kiritilmadi", 422);
 
-    const normalized = key.trim().toUpperCase();
+    const normalized = normalizeAccessKey(key);
     if (normalized.length !== 8) return fail("Kalit so'z noto'g'ri", 422);
 
     const result = await query(
-      "SELECT id, name, email, role, phone, telegram_id, created_at, access_key FROM users WHERE access_key = $1",
+      `SELECT id, name, email, role, phone, telegram_id, created_at, access_key
+       FROM users
+       WHERE upper(regexp_replace(coalesce(access_key, ''), '[^A-Za-z0-9]', '', 'g')) = $1`,
       [normalized]
     );
 

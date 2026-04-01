@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import type L from 'leaflet';
 
 type Props = { lat: number; lng: number; height?: number; label?: string };
 
@@ -13,48 +12,59 @@ export function MapDisplay({ lat, lng, height = 150, label }: Props) {
 
     useEffect(() => {
         if (!containerRef.current) return;
+        let disposed = false;
+        let timer = 0;
 
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        });
+        void import('leaflet').then((leafletModule) => {
+            if (disposed || !containerRef.current) return;
 
-        if (!mapRef.current) {
-            const map = L.map(containerRef.current, {
-                center: [lat, lng],
-                zoom: 15,
-                zoomControl: true,
-                scrollWheelZoom: true,
-                dragging: true,
-                doubleClickZoom: true,
-                attributionControl: true,
+            const Leaflet = leafletModule.default;
+
+            delete (Leaflet.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+            Leaflet.Icon.Default.mergeOptions({
+                iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+                iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors',
-            }).addTo(map);
+            if (!mapRef.current) {
+                const map = Leaflet.map(containerRef.current, {
+                    center: [lat, lng],
+                    zoom: 15,
+                    zoomControl: true,
+                    scrollWheelZoom: true,
+                    dragging: true,
+                    doubleClickZoom: true,
+                    attributionControl: true,
+                });
 
-            const marker = L.marker([lat, lng]).addTo(map);
-            if (label) marker.bindPopup(label);
+                Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors',
+                }).addTo(map);
 
-            mapRef.current = map;
-            markerRef.current = marker;
-        } else {
-            mapRef.current.setView([lat, lng], mapRef.current.getZoom(), { animate: false });
-            markerRef.current?.setLatLng([lat, lng]);
-            if (label && markerRef.current) {
-                markerRef.current.bindPopup(label);
+                const marker = Leaflet.marker([lat, lng]).addTo(map);
+                if (label) marker.bindPopup(label);
+
+                mapRef.current = map;
+                markerRef.current = marker;
+            } else {
+                mapRef.current.setView([lat, lng], mapRef.current.getZoom(), { animate: false });
+                markerRef.current?.setLatLng([lat, lng]);
+                if (label && markerRef.current) {
+                    markerRef.current.bindPopup(label);
+                }
             }
-        }
 
-        const timer = window.setTimeout(() => {
-            mapRef.current?.invalidateSize();
-        }, 0);
+            timer = window.setTimeout(() => {
+                mapRef.current?.invalidateSize();
+            }, 0);
+        }).catch(() => {
+            // Keep the fallback container visible if Leaflet fails to load.
+        });
 
         return () => {
             window.clearTimeout(timer);
+            disposed = true;
         };
     }, [lat, lng, label]);
 

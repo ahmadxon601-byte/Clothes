@@ -9,7 +9,6 @@ import {
   Bell,
   Boxes,
   ChartLine,
-  FileClock,
   Files,
   Globe,
   LayoutDashboard,
@@ -56,7 +55,6 @@ const moreNav: NavItem[] = [
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
   { href: '/admin/support', labelKey: 'nav.support', icon: MessageCircleMore },
   { href: '/admin/daily-deals', labelKey: 'nav.dailyDeals', icon: Bell },
-  { href: '/admin/audit-logs', labelKey: 'nav.auditLogs', icon: FileClock },
   { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 

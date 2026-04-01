@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ChevronLeft, MapPin, Package, Store } from 'lucide-react';
+import { ChevronLeft, Heart, Loader2, MapPin, Package, Store } from 'lucide-react';
 import { RichTextContent } from '../../../../src/shared/ui/RichTextContent';
 import { getVariantMeta, getDepartmentBySlug } from '../../../../src/shared/lib/productCategoryMeta';
 import { useTranslation } from '../../../../src/shared/lib/i18n';
@@ -47,6 +47,11 @@ interface ProductDetail {
   store_name: string;
   store_address?: string | null;
   store_description?: string | null;
+  location?: {
+    latitude?: number | string | null;
+    longitude?: number | string | null;
+    address?: string | null;
+  } | null;
   images: ProductImage[];
   variants: ProductVariant[];
 }
@@ -83,6 +88,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [translatedName, setTranslatedName] = useState('');
   const [translatedDescription, setTranslatedDescription] = useState('');
   const [translatedSimilar, setTranslatedSimilar] = useState<Record<string, string>>({});
+  const [isFav, setIsFav] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
   const variants = useMemo(() => product?.variants ?? [], [product?.variants]);
   const images = useMemo(
     () => (product?.images?.length ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
@@ -112,9 +119,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     lng: storeLngFromAddress,
   } = parseAddressCoords(product?.store_address);
   const { lat: storeLatFromDescription, lng: storeLngFromDescription } = parseAddressCoords(product?.store_description);
-  const storeLat = storeLatFromAddress ?? storeLatFromDescription;
-  const storeLng = storeLngFromAddress ?? storeLngFromDescription;
+  const productLat = product?.location?.latitude == null ? null : Number(product.location.latitude);
+  const productLng = product?.location?.longitude == null ? null : Number(product.location.longitude);
+  const storeLat = storeLatFromAddress ?? storeLatFromDescription ?? (Number.isFinite(productLat) ? productLat : null);
+  const storeLng = storeLngFromAddress ?? storeLngFromDescription ?? (Number.isFinite(productLng) ? productLng : null);
+  const storeAddressLabel = storeAddressText || product?.location?.address || '';
+  const storeMapLabel = storeAddressText || product?.location?.address || product?.store_name || '';
   const variantLabel = getVariantMeta(getDepartmentBySlug(product?.category_slug ?? null)).label;
+  const viewsLabel = language === 'ru' ? 'просмотров' : language === 'en' ? 'views' : "ko'rish";
 
   useEffect(() => {
     fetch(`/api/products/${id}`)
@@ -149,6 +161,23 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       })
       .catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('marketplace_token');
+    if (!token || !product?.id) {
+      setIsFav(false);
+      return;
+    }
+
+    fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json) => {
+        const rows = json?.data ?? [];
+        setIsFav(Array.isArray(rows) && rows.some((item) => item?.product_id === product.id));
+      })
+      .catch(() => {});
+  }, [product?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,6 +238,33 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     };
   }, [language, similar]);
 
+  const handleFav = async () => {
+    if (typeof window === 'undefined' || !product) return;
+    const token = localStorage.getItem('marketplace_token');
+    if (!token) return;
+
+    setFavLoading(true);
+    try {
+      const res = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ product_id: product.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      const favorited = json?.data?.favorited ?? json?.favorited;
+      if (typeof favorited === 'boolean') {
+        setIsFav(favorited);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
@@ -264,6 +320,18 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="md:sticky md:top-28">
               <div className="overflow-hidden rounded-[26px] border-y border-black/8 bg-white md:rounded-[32px] md:border md:bg-[linear-gradient(180deg,#ffffff_0%,#f7faf8_100%)] md:p-5 md:shadow-[0_34px_70px_-42px_rgba(15,23,42,0.3)] dark:border-white/8 dark:bg-[#1a1a1a] md:dark:bg-[linear-gradient(180deg,#1a1a1a_0%,#121212_100%)]">
+                <button
+                  onClick={handleFav}
+                  disabled={favLoading}
+                  aria-label={t.favorites}
+                  className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white/92 text-[#111111] shadow-[0_16px_32px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm transition-all hover:bg-white disabled:cursor-not-allowed md:right-9 md:top-9 dark:border-white/20 dark:bg-[#111111]/78 dark:text-white dark:shadow-[0_16px_32px_-18px_rgba(0,0,0,0.75)] dark:hover:bg-[#1b1b1b]/88"
+                >
+                  {favLoading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Heart size={18} className={isFav ? 'fill-red-500 text-red-500' : ''} />
+                  )}
+                </button>
                 {images.length > 0 ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -404,10 +472,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold text-[#9ca3af]">{t.store}</p>
                   <p className="truncate text-[15px] font-bold text-[#111111] dark:text-white">{product.store_name}</p>
-                  {storeAddressText && (
+                  {storeAddressLabel && (
                     <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                       <MapPin size={12} className="shrink-0" />
-                      {storeAddressText}
+                      {storeAddressLabel}
                     </p>
                   )}
                 </div>
@@ -417,16 +485,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {storeLat !== null && storeLng !== null && (
                 <div className="overflow-hidden rounded-[22px] border border-black/8 bg-white p-1.5 dark:border-white/10 dark:bg-[#1a1a1a]">
                   <div className="overflow-hidden rounded-[18px]">
-                    <MapDisplay lat={storeLat} lng={storeLng} height={190} />
+                    <MapDisplay lat={storeLat} lng={storeLng} height={190} label={storeMapLabel} />
                   </div>
                 </div>
               )}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 break-words text-[12px] text-[#9ca3af] md:mt-5">
-              <span>{product.views} views</span>
-              <span>&middot;</span>
-              <span>SKU: {product.sku}</span>
+              <span>{product.views} {viewsLabel}</span>
             </div>
           </div>
         </div>

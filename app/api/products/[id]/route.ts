@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
 import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
+import { getProductViewSupport } from "@/src/lib/productViewSupport";
 import { deleteStagedImages, readStagedImages, saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 
@@ -14,6 +15,7 @@ const PRODUCT_DETAIL_SQL = `
     p.*,
     c.id   AS category_id,   c.name AS category_name, c.slug AS category_slug,
     st.id  AS store_id,      st.name AS store_name,
+    st.address AS store_address, st.description AS store_description,
     COALESCE(
       JSON_AGG(DISTINCT jsonb_build_object(
         'id', pi.id, 'url', pi.url, 'sort_order', pi.sort_order
@@ -42,8 +44,64 @@ const PRODUCT_DETAIL_SQL = `
   LEFT JOIN product_locations pl ON pl.product_id = p.id
   WHERE p.id = $1
   GROUP BY p.id, c.id, c.name, c.slug, st.id, st.name,
+           st.address, st.description,
            pl.id, pl.latitude, pl.longitude, pl.address
 `;
+
+const PRODUCT_VIEWER_COOKIE = "product_viewer_id";
+
+function buildProductResponse(product: Record<string, unknown>, status = 200): NextResponse {
+  return NextResponse.json({ success: true, data: { product } }, { status });
+}
+
+async function incrementProductViews(
+  id: string,
+  reviewFilterSql: string,
+  reviewFilterParams: unknown[],
+) {
+  await query(
+    `UPDATE products
+     SET views = views + 1
+     WHERE id = $1
+       AND is_active = TRUE
+       ${reviewFilterSql}`,
+    [id, ...reviewFilterParams]
+  );
+}
+
+async function registerUniqueView(req: NextRequest, id: string, viewerId: string | null) {
+  const productViewSupport = await getProductViewSupport();
+  if (!productViewSupport.hasProductViewsTable) {
+    return { shouldSetCookie: false, viewerId: null as string | null, incremented: true };
+  }
+
+  if (viewerId) {
+    const insertResult = await query(
+      `INSERT INTO product_views (product_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (product_id, user_id) WHERE user_id IS NOT NULL DO NOTHING
+       RETURNING id`,
+      [id, viewerId]
+    );
+    return { shouldSetCookie: false, viewerId: null as string | null, incremented: insertResult.rows.length > 0 };
+  }
+
+  const cookieViewerId = req.cookies.get(PRODUCT_VIEWER_COOKIE)?.value?.trim();
+  const anonymousViewerId = cookieViewerId || crypto.randomUUID();
+  const insertResult = await query(
+    `INSERT INTO product_views (product_id, viewer_key)
+     VALUES ($1, $2)
+     ON CONFLICT (product_id, viewer_key) WHERE viewer_key IS NOT NULL DO NOTHING
+     RETURNING id`,
+    [id, anonymousViewerId]
+  );
+
+  return {
+    shouldSetCookie: !cookieViewerId,
+    viewerId: anonymousViewerId,
+    incremented: insertResult.rows.length > 0,
+  };
+}
 
 // ── GET /api/products/[id] ────────────────────────────────────────────────────
 export async function GET(req: NextRequest, { params }: Params) {
@@ -51,13 +109,14 @@ export async function GET(req: NextRequest, { params }: Params) {
     const { id } = await params;
     const viewer = getUser(req);
     const reviewSupport = await getProductReviewSupport();
+    const reviewFilterSql = reviewSupport.hasReviewStatus ? "AND review_status = 'approved'" : "";
 
     if (!viewer) {
       const visibleResult = await query(
         `SELECT id FROM products
          WHERE id = $1
            AND is_active = TRUE
-           ${reviewSupport.hasReviewStatus ? "AND review_status = 'approved'" : ""}`,
+           ${reviewFilterSql}`,
         [id]
       );
       if (visibleResult.rows.length === 0) return fail("Product not found", 404);
@@ -68,7 +127,7 @@ export async function GET(req: NextRequest, { params }: Params) {
          LEFT JOIN stores st ON st.id = p.store_id
          WHERE p.id = $1
            AND (
-             (p.is_active = TRUE ${reviewSupport.hasReviewStatus ? "AND p.review_status = 'approved'" : ""})
+             (p.is_active = TRUE ${reviewFilterSql})
              OR st.owner_id = $2
            )`,
         [id, viewer.userId]
@@ -76,13 +135,10 @@ export async function GET(req: NextRequest, { params }: Params) {
       if (visibleResult.rows.length === 0) return fail("Product not found", 404);
     }
 
-    query(
-      `UPDATE products SET views = views + 1
-       WHERE id = $1
-         AND is_active = TRUE
-         ${reviewSupport.hasReviewStatus ? "AND review_status = 'approved'" : ""}`,
-      [id]
-    ).catch(() => {});
+    const uniqueView = await registerUniqueView(req, id, viewer?.userId ?? null);
+    if (uniqueView.incremented) {
+      await incrementProductViews(id, reviewFilterSql, []);
+    }
 
     const result = await query(PRODUCT_DETAIL_SQL, [id]);
     if (result.rows.length === 0) return fail("Product not found", 404);
@@ -97,7 +153,18 @@ export async function GET(req: NextRequest, { params }: Params) {
       }));
     }
 
-    return ok({ product });
+    const response = buildProductResponse(product);
+    if (uniqueView.shouldSetCookie && uniqueView.viewerId) {
+      response.cookies.set(PRODUCT_VIEWER_COOKIE, uniqueView.viewerId, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 365,
+        path: "/",
+      });
+    }
+
+    return response;
   } catch (e) {
     console.error("[product GET]", e);
     return fail("Internal server error", 500);

@@ -8,7 +8,8 @@ import { emitAdminEvent } from "@/src/lib/events";
 const bannerSchema = z.object({
   title: z.string().min(1).max(255),
   is_active: z.boolean().optional().default(true),
-  product_ids: z.array(z.string().uuid()).max(10, "Maximum 10 products per banner"),
+  show_on_home: z.boolean().optional().default(true),
+  image_url: z.string().trim().nullish(),
 });
 
 // ── GET /api/admin/banners ────────────────────────────────────────────────────
@@ -23,12 +24,7 @@ export async function GET(req: NextRequest) {
 
     const { rows } = await query(
       `SELECT
-         b.id, b.title, b.is_active, b.product_ids, b.created_at, b.updated_at,
-         COALESCE(
-           (SELECT json_agg(json_build_object('id', p.id, 'name', p.name, 'price', p.base_price))
-            FROM products p WHERE p.id = ANY(b.product_ids)),
-           '[]'
-         ) AS products
+         b.id, b.title, b.is_active, b.show_on_home, b.image_url, b.created_at, b.updated_at
        FROM banners b
        ORDER BY b.created_at DESC
        LIMIT $1 OFFSET $2`,
@@ -55,13 +51,13 @@ export async function POST(req: NextRequest) {
     const parsed = bannerSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const { title, is_active, product_ids } = parsed.data;
+    const { title, is_active, show_on_home, image_url } = parsed.data;
 
     const { rows } = await query(
-      `INSERT INTO banners (title, is_active, product_ids)
-       VALUES ($1, $2, $3::uuid[])
-       RETURNING id, title, is_active, product_ids, created_at, updated_at`,
-      [title, is_active, product_ids]
+      `INSERT INTO banners (title, is_active, show_on_home, image_url, product_ids)
+       VALUES ($1, $2, $3, $4, $5::uuid[])
+       RETURNING id, title, is_active, show_on_home, image_url, created_at, updated_at`,
+      [title, is_active, show_on_home, image_url || null, []]
     );
 
     const banner = rows[0];

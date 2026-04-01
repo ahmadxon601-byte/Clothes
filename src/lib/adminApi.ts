@@ -114,6 +114,8 @@ export const adminApi = {
     request('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
   promoteToAdmin: (id: string, login: string, password: string) =>
     request(`/api/admin/users/${id}/promote`, { method: 'POST', body: JSON.stringify({ login, password }) }),
+  createAdmin: (login: string, password: string) =>
+    request('/api/admin/users', { method: 'POST', body: JSON.stringify({ name: login, password, role: 'admin' }) }),
 
   getStats: () => request<Stats>('/api/admin/stats', {}, statsSchema),
   getApplications: (params: QueryParams) => request<{ requests: Application[]; pagination: Pagination }>('/api/admin/seller-requests?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('requests', applicationSchema)),
@@ -139,9 +141,9 @@ export const adminApi = {
   updateOrderStatus: (id: string, status: string) => request('/api/admin/orders', { method: 'PATCH', body: JSON.stringify({ id, status }) }),
 
   getBanners: (params: QueryParams) => request<{ banners: Banner[]; pagination: Pagination }>('/api/admin/banners?' + new URLSearchParams(params as Record<string, string>).toString(), {}, paged('banners', bannerSchema)),
-  createBanner: (payload: { title: string; is_active: boolean; product_ids: string[] }) =>
+  createBanner: (payload: { title: string; is_active: boolean; show_on_home?: boolean; image_url?: string | null }) =>
     request<{ banner: Banner }>('/api/admin/banners', { method: 'POST', body: JSON.stringify(payload) }),
-  updateBanner: (id: string, payload: { title?: string; is_active?: boolean; product_ids?: string[] }) =>
+  updateBanner: (id: string, payload: { title?: string; is_active?: boolean; show_on_home?: boolean; image_url?: string | null }) =>
     request<{ banner: Banner }>(`/api/admin/banners/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteBanner: (id: string) =>
     request<{ message: string }>(`/api/admin/banners/${id}`, { method: 'DELETE' }),
@@ -162,7 +164,3 @@ export const adminApi = {
 };
 
 export type { AdminUser, Application, AuditLog, Banner, Order, Pagination, Product, Stats, StoreItem, User };
-
-
-
-

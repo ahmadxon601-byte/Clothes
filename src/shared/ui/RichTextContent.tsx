@@ -8,7 +8,7 @@ export function RichTextContent({ html, className = '' }: { html: string; classN
 
   return (
     <div
-      className={className}
+      className={`max-w-full break-words [overflow-wrap:anywhere] [&_li]:break-words [&_ol]:max-w-full [&_p]:max-w-full [&_ul]:max-w-full ${className}`}
       dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );

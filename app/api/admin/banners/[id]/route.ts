@@ -10,7 +10,8 @@ type Params = { params: Promise<{ id: string }> };
 const updateSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   is_active: z.boolean().optional(),
-  product_ids: z.array(z.string().uuid()).max(10, "Maximum 10 products per banner").optional(),
+  show_on_home: z.boolean().optional(),
+  image_url: z.string().trim().nullish(),
 });
 
 // ── PUT /api/admin/banners/[id] ───────────────────────────────────────────────
@@ -34,9 +35,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
       vals.push(parsed.data.is_active);
       fields.push(`is_active = $${vals.length}`);
     }
-    if (parsed.data.product_ids !== undefined) {
-      vals.push(parsed.data.product_ids);
-      fields.push(`product_ids = $${vals.length}::uuid[]`);
+    if (parsed.data.show_on_home !== undefined) {
+      vals.push(parsed.data.show_on_home);
+      fields.push(`show_on_home = $${vals.length}`);
+    }
+    if (parsed.data.image_url !== undefined) {
+      vals.push(parsed.data.image_url || null);
+      fields.push(`image_url = $${vals.length}`);
     }
     if (fields.length === 0) return fail("No fields to update", 422);
 
@@ -46,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { rows } = await query(
       `UPDATE banners SET ${fields.join(", ")}
        WHERE id = $${vals.length}
-       RETURNING id, title, is_active, product_ids, created_at, updated_at`,
+       RETURNING id, title, is_active, show_on_home, image_url, created_at, updated_at`,
       vals
     );
 

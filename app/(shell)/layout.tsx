@@ -141,6 +141,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         ] as const;
 
         type FooterItem = {
+            key?: string;
             label: string;
             href?: string;
             onClick?: () => void;
@@ -156,6 +157,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             {
                 title: w.footer.categories,
                 items: footerCategories.map((category) => ({
+                    key: category.id,
                     href: `/products?category=${category.id}`,
                     label: settings.language === 'ru'
                         ? (category.name_ru || category.name)
@@ -525,12 +527,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                     <div className="mt-4 space-y-3">
                                         {group.items.map((item) =>
                                             item.href ? (
-                                                <Link key={`${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">
+                                                <Link key={item.key || item.href || `${group.title}-${item.label}`} href={item.href} className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white">
                                                     {item.label}
                                                 </Link>
                                             ) : (
                                                 <button
-                                                    key={`${group.title}-${item.label}`}
+                                                    key={item.key || `${group.title}-${item.label}`}
                                                     type="button"
                                                     onClick={item.onClick}
                                                     className="block text-[14px] text-[#6b7280] transition-colors hover:text-[#111111] dark:text-[#9ca3af] dark:hover:text-white"

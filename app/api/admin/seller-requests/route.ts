@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, requireRole, paginate, AuthError } from "@/src/lib/auth";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
+import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
 import { readFirstStagedImage } from "@/src/lib/stagedImages";
 
 // ── GET /api/admin/seller-requests ────────────────────────────────────────────
@@ -10,6 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     requireRole(req, "admin");
     const support = await getSellerRequestSupport();
+    const storeSupport = await getStoreColumnSupport();
 
     const s = req.nextUrl.searchParams;
     const statusParam = s.get("status");
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
               st.description AS current_store_description,
               st.phone AS current_store_phone,
               st.address AS current_store_address,
+              ${storeSupport.hasStoreImageUrl ? "st.image_url AS current_store_image_url," : "NULL::text AS current_store_image_url,"}
               sr.admin_note, sr.created_at, sr.updated_at, sr.image_url,
               u.name AS user_name, u.email AS user_email
        FROM seller_requests sr
@@ -61,6 +64,7 @@ export async function GET(req: NextRequest) {
         ...row,
         image_url:
           (await readFirstStagedImage("seller-request", String(row.id))) ??
+          row.current_store_image_url ??
           row.image_url ??
           null,
       }))

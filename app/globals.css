@@ -222,10 +222,42 @@
         -webkit-tap-highlight-color: transparent;
     }
 
+    input,
+    textarea,
+    select {
+        color-scheme: light dark;
+    }
+
     /* Hide browser-native password reveal icons (Edge/IE), keep custom eye toggle only. */
     input[type="password"]::-ms-reveal,
     input[type="password"]::-ms-clear {
         display: none;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--color-text);
+        caret-color: var(--color-text);
+        box-shadow: 0 0 0 1000px var(--color-surface) inset;
+        transition: background-color 9999s ease-in-out 0s;
     }
 }
 

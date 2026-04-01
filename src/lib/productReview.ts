@@ -19,14 +19,50 @@ export async function getProductReviewSupport(): Promise<ReviewSupport> {
     return cached.value;
   }
 
-  const result = await query(
+  let result = await query(
     `SELECT column_name
      FROM information_schema.columns
      WHERE table_name = 'products'
        AND column_name IN ('review_status', 'review_note', 'pending_update_payload')`
   );
 
-  const columns = new Set(result.rows.map((row) => String(row.column_name)));
+  let columns = new Set(result.rows.map((row) => String(row.column_name)));
+
+  if (!columns.has("review_status")) {
+    await query(
+      `ALTER TABLE products
+         ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) NOT NULL DEFAULT 'approved'
+           CHECK (review_status IN ('pending', 'approved', 'rejected'))`
+    );
+  }
+
+  if (!columns.has("review_note")) {
+    await query(
+      `ALTER TABLE products
+         ADD COLUMN IF NOT EXISTS review_note TEXT`
+    );
+  }
+
+  if (!columns.has("pending_update_payload")) {
+    await query(
+      `ALTER TABLE products
+         ADD COLUMN IF NOT EXISTS pending_update_payload JSONB`
+    );
+  }
+
+  await query(
+    `CREATE INDEX IF NOT EXISTS idx_products_review_status
+       ON products(review_status)`
+  );
+
+  result = await query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_name = 'products'
+       AND column_name IN ('review_status', 'review_note', 'pending_update_payload')`
+  );
+
+  columns = new Set(result.rows.map((row) => String(row.column_name)));
   const value = {
     hasReviewStatus: columns.has("review_status"),
     hasReviewNote: columns.has("review_note"),

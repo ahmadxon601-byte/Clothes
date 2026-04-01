@@ -79,10 +79,20 @@ export async function GET(req: NextRequest) {
 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   password: z.string().min(6),
   role: z.enum(["user", "seller", "admin"]).default("user"),
 });
+
+function makeAdminEmail(login: string): string {
+  const normalized = login
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+
+  return `${normalized || "admin"}@admin.local`;
+}
 
 // ── POST /api/admin/users ─────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
@@ -92,7 +102,20 @@ export async function POST(req: NextRequest) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const { name, email, password, role } = parsed.data;
+    const { name, password, role } = parsed.data;
+    const email = parsed.data.email?.trim() || (role === "admin" ? makeAdminEmail(name) : "");
+    if (!email) return fail("Email majburiy", 422);
+
+    if (role === "admin") {
+      const existingAdmin = await query(
+        "SELECT id FROM users WHERE role = 'admin' AND (name = $1 OR email = $2) LIMIT 1",
+        [name, email]
+      );
+      if (existingAdmin.rows.length > 0) {
+        return fail("Bu admin login allaqachon band", 409);
+      }
+    }
+
     const hash = await bcrypt.hash(password, 10);
 
     const result = await query(

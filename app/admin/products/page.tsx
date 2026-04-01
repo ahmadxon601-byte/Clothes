@@ -25,6 +25,7 @@ import { useProductMutation, useProducts } from '../../../src/features/admin/com
 import { useToast } from '../../../src/shared/ui/useToast';
 import { RichTextContent } from '../../../src/shared/ui/RichTextContent';
 import { stripRichText } from '../../../src/shared/lib/richText';
+import { resolveAssetUrl } from '../../../src/shared/lib/utils';
 
 function discount(oldPrice?: number | null, price?: number) {
   if (!oldPrice || !price || oldPrice <= price) return 0;
@@ -163,6 +164,14 @@ export default function ProductsPage() {
   const { showToast } = useToast();
 
   const appliedFilters = useMemo(() => [search ? `Search: ${search}` : '', status ? `Status: ${status}` : ''].filter(Boolean), [search, status]);
+  const viewProductPreview = viewProduct
+    ? resolveAssetUrl(
+        viewProduct.thumbnail ||
+        viewProduct.current_images?.[0]?.url ||
+        viewProduct.pending_update_payload?.images?.[0]?.url ||
+        null
+      )
+    : null;
 
   return (
     <AdminShell
@@ -344,7 +353,7 @@ export default function ProductsPage() {
       {/* View modal */}
       {viewProduct && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm'>
-          <div className='admin-card relative w-full max-w-sm p-6'>
+          <div className='admin-card relative w-full max-w-sm overflow-hidden p-6'>
             <button
               onClick={() => setViewProduct(null)}
               className='absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70'
@@ -352,16 +361,16 @@ export default function ProductsPage() {
             >
               <X size={14} />
             </button>
-            {viewProduct.thumbnail && (
-              <img src={viewProduct.thumbnail} alt={viewProduct.name} className='mb-4 h-32 w-full rounded-xl object-cover' />
+            {viewProductPreview && (
+              <img src={viewProductPreview} alt={viewProduct.name} className='mb-4 h-40 w-full rounded-xl bg-[var(--admin-pill)] object-contain' />
             )}
             <h2 className='mb-4 text-base font-bold'>{viewProduct.name}</h2>
             <div className='space-y-2 text-sm'>
-              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>SKU</span><span className='font-semibold'>{viewProduct.sku || '—'}</span></div>
-              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Narx</span><span className='font-semibold'>{(viewProduct.price ?? viewProduct.base_price ?? 0).toLocaleString()} UZS</span></div>
-              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Do&apos;kon</span><span className='font-semibold'>{viewProduct.store_name || '—'}</span></div>
-              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Kategoriya</span><span className='font-semibold'>{viewProduct.category_name || '—'}</span></div>
-              <div className='flex justify-between'><span className='text-[var(--admin-muted)]'>Ko&apos;rishlar</span><span className='font-semibold'>{viewProduct.views}</span></div>
+              <div className='flex justify-between gap-4'><span className='shrink-0 text-[var(--admin-muted)]'>SKU</span><span className='min-w-0 break-words text-right font-semibold [overflow-wrap:anywhere]'>{viewProduct.sku || '—'}</span></div>
+              <div className='flex justify-between gap-4'><span className='shrink-0 text-[var(--admin-muted)]'>Narx</span><span className='min-w-0 break-words text-right font-semibold [overflow-wrap:anywhere]'>{(viewProduct.price ?? viewProduct.base_price ?? 0).toLocaleString()} UZS</span></div>
+              <div className='flex justify-between gap-4'><span className='shrink-0 text-[var(--admin-muted)]'>Do&apos;kon</span><span className='min-w-0 break-words text-right font-semibold [overflow-wrap:anywhere]'>{viewProduct.store_name || '—'}</span></div>
+              <div className='flex justify-between gap-4'><span className='shrink-0 text-[var(--admin-muted)]'>Kategoriya</span><span className='min-w-0 break-words text-right font-semibold [overflow-wrap:anywhere]'>{viewProduct.category_name || '—'}</span></div>
+              <div className='flex justify-between gap-4'><span className='shrink-0 text-[var(--admin-muted)]'>Ko&apos;rishlar</span><span className='min-w-0 break-words text-right font-semibold [overflow-wrap:anywhere]'>{viewProduct.views}</span></div>
               {viewProduct.description ? (
                 <div className='pt-2'>
                   <p className='mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-muted)]'>Tavsif</p>

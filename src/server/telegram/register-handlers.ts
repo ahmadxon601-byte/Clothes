@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard, Keyboard } from "grammy";
 import { getMarketplaceUrl } from "./get-marketplace-url";
 import { query } from "../../lib/db";
 import { emitAdminEvent } from "../../lib/events";
-import { generateAccessKey } from "../../lib/accessKey";
+import { ensureUserAccessKey, normalizeAccessKey } from "../../lib/accessKeyService";
 import { hasAccessKeyColumn } from "../../lib/accessKeySupport";
 
 export const registerTelegramHandlers = (bot: Bot): void => {
@@ -94,16 +94,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
     try {
       if (accessKeySupported) {
-        const existing = await query(
-          "SELECT access_key FROM users WHERE telegram_id = $1 OR email = $2 LIMIT 1",
-          [telegramId, placeholderEmail]
-        );
-        const accessKey =
-          existing.rows.length > 0 && existing.rows[0].access_key
-            ? existing.rows[0].access_key
-            : generateAccessKey();
-
-        await query(
+        const upsertResult = await query(
           `INSERT INTO users (name, email, password_hash, telegram_id, phone, access_key)
            VALUES ($1, $2, 'TELEGRAM_AUTH_ONLY', $3, $4, $5)
            ON CONFLICT (telegram_id) WHERE telegram_id IS NOT NULL
@@ -111,9 +102,11 @@ export const registerTelegramHandlers = (bot: Bot): void => {
              name = EXCLUDED.name,
              phone = EXCLUDED.phone,
              access_key = COALESCE(users.access_key, EXCLUDED.access_key),
-             updated_at = NOW()`,
-          [name, placeholderEmail, telegramId, phone, accessKey]
+             updated_at = NOW()
+           RETURNING id, access_key`,
+          [name, placeholderEmail, telegramId, phone, null]
         );
+        await ensureUserAccessKey(upsertResult.rows[0].id, upsertResult.rows[0].access_key);
       } else {
         await query(
           `INSERT INTO users (name, email, password_hash, telegram_id, phone)
@@ -145,7 +138,7 @@ export const registerTelegramHandlers = (bot: Bot): void => {
   });
 
   bot.on("message:text", async (ctx) => {
-    const text = ctx.message.text.trim().toUpperCase();
+    const text = normalizeAccessKey(ctx.message.text);
     const telegramId = ctx.from?.id;
 
     if (text.startsWith("/")) return;
@@ -174,7 +167,9 @@ export const registerTelegramHandlers = (bot: Bot): void => {
 
     try {
       const result = await query(
-        "SELECT id, name FROM users WHERE access_key = $1",
+        `SELECT id, name
+         FROM users
+         WHERE upper(regexp_replace(coalesce(access_key, ''), '[^A-Za-z0-9]', '', 'g')) = $1`,
         [text]
       );
 

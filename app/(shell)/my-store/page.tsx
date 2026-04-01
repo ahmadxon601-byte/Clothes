@@ -378,9 +378,9 @@ export default function MyStorePage() {
                                             <img
                                                 src={store.image_url}
                                                 alt={store.name}
-                                                className="absolute inset-0 h-full w-full object-contain"
+                                                className="absolute inset-0 h-full w-full object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(249,255,251,0.88)_0%,rgba(238,248,255,0.8)_45%,rgba(245,247,255,0.84)_100%)] dark:bg-black/45" />
+                                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(249,255,251,0.48)_0%,rgba(238,248,255,0.34)_45%,rgba(245,247,255,0.42)_100%)] dark:bg-none dark:[background-color:rgba(0,0,0,0.58)]" />
                                         </>
                                     )}
                                     <div className="absolute -left-10 -top-10 h-36 w-36 rounded-full bg-[#00c853]/15 blur-3xl" />

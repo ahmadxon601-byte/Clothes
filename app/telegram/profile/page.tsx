@@ -36,6 +36,7 @@ export default function TelegramProfilePage() {
     const [keyCopied, setKeyCopied] = useState(false);
     const [authResolved, setAuthResolved] = useState(false);
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+    const [loginError, setLoginError] = useState('');
 
     // Detect desktop (no Telegram WebApp initData after SDK is given time to load)
     useEffect(() => {
@@ -60,8 +61,11 @@ export default function TelegramProfilePage() {
             }
             // Always refresh token from Telegram initData to get latest role
             telegramWebAppAuth(initData)
-                .then(newToken => { setApiToken(newToken); setToken(newToken); })
-                .catch(() => setToken(getApiToken()))
+                .then(newToken => { setApiToken(newToken); setToken(newToken); setLoginError(''); })
+                .catch((error: unknown) => {
+                    setToken(getApiToken());
+                    setLoginError(error instanceof Error ? error.message : "Telegram orqali kirib bo'lmadi");
+                })
                 .finally(() => setAuthResolved(true));
         } else {
             setToken(getApiToken());
@@ -83,15 +87,25 @@ export default function TelegramProfilePage() {
 
     const handleLogin = async () => {
         const initData = WebApp?.initData;
-        if (!initData) return;
+        if (!initData) {
+            setLoginError("Telegram WebApp ma'lumotlari topilmadi. Ilovani bot ichidan oching.");
+            return;
+        }
         setLoggingIn(true);
+        setLoginError('');
         try {
             const newToken = await telegramWebAppAuth(initData);
             clearTelegramLoggedOut();
             setApiToken(newToken);
             setToken(newToken);
-        } catch {
-            // ignore
+            const meRes = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${newToken}` } });
+            const meJson = await meRes.json().catch(() => null);
+            if (!meRes.ok) {
+                throw new Error(meJson?.error ?? "Profilni yuklab bo'lmadi");
+            }
+            setMe(meJson?.data ?? meJson ?? null);
+        } catch (error) {
+            setLoginError(error instanceof Error ? error.message : "Telegram orqali kirib bo'lmadi");
         } finally {
             setLoggingIn(false);
         }
@@ -162,6 +176,11 @@ export default function TelegramProfilePage() {
                     {loggingIn ? <Loader2 size={18} className="animate-spin" /> : null}
                     {t.login_via_telegram}
                 </button>
+                {loginError ? (
+                    <p className="mt-3 max-w-xs text-center text-[12px] leading-5 text-[var(--color-hint)]">
+                        {loginError}
+                    </p>
+                ) : null}
             </div>
         );
     }

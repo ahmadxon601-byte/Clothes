@@ -216,6 +216,7 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const { t } = useAdminI18n();
   const { showToast } = useToast();
   const qc = useQueryClient();
+  const [mode, setMode] = useState<'existing' | 'new'>('new');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [selectedName, setSelectedName] = useState('');
@@ -242,8 +243,20 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
     onError: (e: Error) => showToast({ message: e.message, type: 'error' }),
   });
 
+  const createAdmin = useMutation({
+    mutationFn: () => adminApi.createAdmin(login, password),
+    onSuccess: () => {
+      showToast({ message: t('settings.promoteSuccess'), type: 'success' });
+      qc.invalidateQueries({ queryKey: ['admin', 'admins'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      handleClose();
+    },
+    onError: (e: Error) => showToast({ message: e.message, type: 'error' }),
+  });
+
   function handleClose() {
     onClose();
+    setMode('new');
     setSelectedId('');
     setSelectedName('');
     setLogin('');
@@ -259,15 +272,33 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
       <div className='admin-card w-full max-w-md p-6'>
         <div className='mb-5 flex items-center justify-between'>
           <h2 className='text-base font-semibold'>{t('settings.addAdmin')}</h2>
-          {/* Step indicator */}
-          <div className='flex items-center gap-1.5 text-xs text-[var(--admin-muted)]'>
-            <span className={step === 'select' ? 'font-bold text-[var(--admin-accent)]' : ''}>1. Foydalanuvchi</span>
-            <span>→</span>
-            <span className={step === 'credentials' ? 'font-bold text-[var(--admin-accent)]' : ''}>2. Kirish ma&apos;lumotlari</span>
-          </div>
+          {mode === 'existing' && (
+            <div className='flex items-center gap-1.5 text-xs text-[var(--admin-muted)]'>
+              <span className={step === 'select' ? 'font-bold text-[var(--admin-accent)]' : ''}>1. Foydalanuvchi</span>
+              <span>→</span>
+              <span className={step === 'credentials' ? 'font-bold text-[var(--admin-accent)]' : ''}>2. Kirish ma&apos;lumotlari</span>
+            </div>
+          )}
         </div>
 
-        {step === 'select' ? (
+        <div className='mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-[var(--admin-pill)] p-1'>
+          <button
+            type='button'
+            onClick={() => { setMode('new'); setStep('credentials'); setSelectedId(''); setSelectedName(''); }}
+            className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${mode === 'new' ? 'bg-[var(--admin-card)] text-[var(--admin-text)] shadow-sm' : 'text-[var(--admin-muted)]'}`}
+          >
+            Yangi admin
+          </button>
+          <button
+            type='button'
+            onClick={() => { setMode('existing'); setStep('select'); }}
+            className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${mode === 'existing' ? 'bg-[var(--admin-card)] text-[var(--admin-text)] shadow-sm' : 'text-[var(--admin-muted)]'}`}
+          >
+            Mavjud user
+          </button>
+        </div>
+
+        {mode === 'existing' && step === 'select' ? (
           <>
             {/* Search */}
             <div className='relative mb-3'>
@@ -328,16 +359,23 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
           </>
         ) : (
           <>
-            {/* Selected user badge */}
-            <div className='mb-4 flex items-center gap-2 rounded-xl bg-[var(--admin-pill)] px-4 py-2.5'>
-              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-accent)]/20 text-xs font-bold text-[var(--admin-accent)]'>
-                {selectedName.charAt(0).toUpperCase()}
+            {mode === 'existing' && (
+              <div className='mb-4 flex items-center gap-2 rounded-xl bg-[var(--admin-pill)] px-4 py-2.5'>
+                <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-accent)]/20 text-xs font-bold text-[var(--admin-accent)]'>
+                  {selectedName.charAt(0).toUpperCase()}
+                </div>
+                <span className='text-sm font-semibold'>{selectedName}</span>
+                <button onClick={() => setStep('select')} className='ml-auto text-xs text-[var(--admin-muted)] hover:text-[var(--admin-fg)]'>
+                  O&apos;zgartirish
+                </button>
               </div>
-              <span className='text-sm font-semibold'>{selectedName}</span>
-              <button onClick={() => setStep('select')} className='ml-auto text-xs text-[var(--admin-muted)] hover:text-[var(--admin-fg)]'>
-                O&apos;zgartirish
-              </button>
-            </div>
+            )}
+
+            {mode === 'new' && (
+              <div className='mb-4 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3 text-xs text-[var(--admin-muted)]'>
+                Yangi admin foydalanuvchi login va parol bilan yaratiladi. Login admin panelga kirish uchun ishlatiladi.
+              </div>
+            )}
 
             <div className='space-y-3'>
               <div>
@@ -363,15 +401,27 @@ function AddAdminDialog({ open, onClose }: { open: boolean; onClose: () => void 
             </div>
 
             <div className='mt-5 flex justify-end gap-3'>
-              <button onClick={() => setStep('select')} className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'>
-                ← Orqaga
-              </button>
+              {mode === 'existing' ? (
+                <button onClick={() => setStep('select')} className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'>
+                  ← Orqaga
+                </button>
+              ) : (
+                <button onClick={handleClose} className='rounded-full border border-[var(--admin-border)] px-5 py-2 text-xs font-semibold'>
+                  {t('common.reject')}
+                </button>
+              )}
               <button
-                disabled={login.length < 2 || password.length < 6 || promote.isPending}
-                onClick={() => promote.mutate()}
+                disabled={login.length < 2 || password.length < 6 || promote.isPending || createAdmin.isPending || (mode === 'existing' && !selectedId)}
+                onClick={() => {
+                  if (mode === 'existing') {
+                    promote.mutate();
+                  } else {
+                    createAdmin.mutate();
+                  }
+                }}
                 className='rounded-full bg-[var(--admin-accent)] px-5 py-2 text-xs font-semibold text-white disabled:opacity-50'
               >
-                {promote.isPending ? t('common.loading') : t('settings.addAdmin')}
+                {promote.isPending || createAdmin.isPending ? t('common.loading') : t('settings.addAdmin')}
               </button>
             </div>
           </>

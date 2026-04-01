@@ -4,14 +4,22 @@ import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
 import { ok, fail } from "@/src/lib/auth";
-import { generateAccessKey } from "@/src/lib/accessKey";
 import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
+import { ensureUserAccessKey } from "@/src/lib/accessKeyService";
+import { getPasswordValidationIssue } from "@/src/shared/lib/validators";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
-  password: z.string().min(6).max(100),
+  password: z.string().min(8).max(100),
 });
+
+const passwordErrors = {
+  min_length: "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+  lowercase: "Parolda kamida 1 ta kichik harf bo'lishi kerak",
+  uppercase: "Parolda kamida 1 ta katta harf bo'lishi kerak",
+  number: "Parolda kamida 1 ta raqam bo'lishi kerak",
+} as const;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +30,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email, password } = parsed.data;
+    const passwordIssue = getPasswordValidationIssue(password);
+    if (passwordIssue) {
+      return fail(passwordErrors[passwordIssue], 422);
+    }
 
     const existing = await query("SELECT id FROM users WHERE email = $1", [
       email,
@@ -32,13 +44,12 @@ export async function POST(req: NextRequest) {
 
     const hash = await bcrypt.hash(password, 10);
     const accessKeySupported = await hasAccessKeyColumn();
-    const accessKey = accessKeySupported ? generateAccessKey() : null;
     const result = accessKeySupported
       ? await query(
           `INSERT INTO users (name, email, password_hash, access_key)
            VALUES ($1, $2, $3, $4)
            RETURNING id, name, email, role, created_at, access_key`,
-          [name, email, hash, accessKey]
+          [name, email, hash, null]
         )
       : await query(
           `INSERT INTO users (name, email, password_hash)
@@ -48,6 +59,9 @@ export async function POST(req: NextRequest) {
         );
 
     const user = result.rows[0];
+    if (accessKeySupported) {
+      user.access_key = await ensureUserAccessKey(user.id, user.access_key);
+    }
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
 
     return ok({ user, token }, 201);
