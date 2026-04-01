@@ -100,8 +100,8 @@ const SECTION_COPY = repairTextTree({
         partnerTitleA: 'Biz bilan birga',
         partnerTitleB: 'biznesingizni',
         partnerTitleC: 'rivojlantiring',
-        partnerDesc: 'Qulaymarket platformasida o?z do?koningizni oching, mahsulotlaringizni ko?proq xaridorga ko?rsating va savdoni tezroq yo?lga qo?ying.',
-        partnerCta: 'Do?kon ochish',
+        partnerDesc: 'Qulaymarket platformasida o\'z do\'koningizni oching, mahsulotlaringizni ko\'proq xaridorga ko\'rsating va savdoni tezroq yo\'lga qo\'ying.',
+        partnerCta: 'Do\'kon ochish',
     },
     en: {
         categoryTitle: 'Categories',

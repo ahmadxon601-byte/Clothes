@@ -12,8 +12,7 @@ import { formatPrice } from '../../../src/shared/lib/formatPrice';
 import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
 import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
 
-type SortType = 'newest' | 'popular' | 'price_asc' | 'price_desc';
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
 function ProductsPageContent() {
     const { t, language } = useTranslation();
     const searchParams = useSearchParams();
@@ -27,58 +26,46 @@ function ProductsPageContent() {
     const subcategories = useMemo(() => categories.filter(cat => cat.parent_id === activeParentCat), [categories, activeParentCat]);
 
     const [filterOpen, setFilterOpen] = useState(false);
-    const [sort, setSort] = useState<SortType>('newest');
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
-    const [sizeFilter, setSizeFilter] = useState('');
-    const [onSale, setOnSale] = useState(false);
+    const [minDiscount, setMinDiscount] = useState('');
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const activeFilterCount =
-        (sort !== 'newest' ? 1 : 0) +
         (minPrice ? 1 : 0) +
         (maxPrice ? 1 : 0) +
-        (sizeFilter ? 1 : 0) +
-        (onSale ? 1 : 0);
-    const sortOptions: { value: SortType; label: string }[] = [
-        { value: 'newest', label: t.sort_newest },
-        { value: 'popular', label: t.sort_popular },
-        { value: 'price_asc', label: t.sort_price_asc },
-        { value: 'price_desc', label: t.sort_price_desc },
-    ];
+        (minDiscount ? 1 : 0);
     const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
     const localizedCategory = (cat: ApiCategory) => language === 'ru' ? (cat.name_ru || cat.name) : language === 'en' ? (cat.name_en || cat.name) : (cat.name_uz || cat.name);
 
     const loadProducts = useCallback((params: {
-        search: string; category: string; sort: SortType;
-        minPrice: string; maxPrice: string; sizeFilter: string; onSale: boolean;
+        search: string; category: string;
+        minPrice: string; maxPrice: string; minDiscount: string;
     }) => {
         setLoading(true);
         fetchProducts({
             limit: 100,
             search: params.search || undefined,
             category: params.category || undefined,
-            sort: params.sort,
             min_price: params.minPrice ? Number(params.minPrice) : undefined,
             max_price: params.maxPrice ? Number(params.maxPrice) : undefined,
-            on_sale: params.onSale || undefined,
-            size: params.sizeFilter || undefined,
+            min_discount: params.minDiscount ? Number(params.minDiscount) : undefined,
         }).then(r => setProducts(r.products))
-          .catch(() => {})
-          .finally(() => setLoading(false));
+            .catch(() => { })
+            .finally(() => setLoading(false));
     }, []);
 
     const triggerFetch = useCallback((immediate = false) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        const go = () => loadProducts({ search, category: activeSubCat || (subcategories.length === 0 ? activeParentCat : ''), sort, minPrice, maxPrice, sizeFilter, onSale });
+        const go = () => loadProducts({ search, category: activeSubCat || (subcategories.length === 0 ? activeParentCat : ''), minPrice, maxPrice, minDiscount });
         if (immediate) go();
         else debounceRef.current = setTimeout(go, 400);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, activeParentCat, activeSubCat, subcategories.length, sort, minPrice, maxPrice, sizeFilter, onSale, loadProducts]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, activeParentCat, activeSubCat, subcategories.length, minPrice, maxPrice, minDiscount, loadProducts]);
 
     useEffect(() => {
-        fetchCategories().then(setCategories).catch(() => {});
+        fetchCategories().then(setCategories).catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -105,7 +92,7 @@ function ProductsPageContent() {
     useSSERefetch(['products', 'stores'], () => triggerFetch(true));
 
     const clearFilters = () => {
-        setSort('newest'); setMinPrice(''); setMaxPrice(''); setSizeFilter(''); setOnSale(false);
+        setMinPrice(''); setMaxPrice(''); setMinDiscount('');
     };
 
     return (
@@ -149,72 +136,97 @@ function ProductsPageContent() {
 
                 {/* Filter dropdown */}
                 {filterOpen && (
-                    <div className="mb-4 bg-white dark:bg-[#1a1a1a] rounded-[20px] border border-black/8 dark:border-white/8 p-5 space-y-5">
-                        {/* Sort */}
-                        <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.sort}</p>
-                            <div className="flex flex-wrap gap-2">
-                                {sortOptions.map(opt => (
-                                    <button key={opt.value} onClick={() => setSort(opt.value)}
-                                        className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all',
-                                            sort === opt.value
-                                                ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow-[0_12px_28px_-18px_rgba(19,236,55,0.95)]'
-                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
-                                        )}>
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Price range */}
-                        <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.price_range}</p>
-                            <div className="flex gap-3">
-                                <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder={t.min}
-                                    type="number"
-                                    className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-                                <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder={t.max}
-                                    type="number"
-                                    className="flex-1 h-10 bg-[#f8f9fb] dark:bg-[#0f0f0f] border border-black/8 dark:border-white/8 rounded-xl px-3 text-[13px] text-[#111111] dark:text-white outline-none focus:ring-2 ring-[#00c853]/20" />
-                            </div>
-                        </div>
-
-                        {/* Size */}
-                        <div>
-                            <p className="text-[11px] font-bold text-[#9ca3af] uppercase tracking-widest mb-2">{t.size}</p>
-                            <div className="flex flex-wrap gap-2">
-                                {SIZES.map(s => (
-                                    <button key={s} onClick={() => setSizeFilter(sizeFilter === s ? '' : s)}
-                                        className={cn('w-11 h-11 rounded-xl text-[13px] font-bold border transition-all',
-                                            sizeFilter === s
-                                                ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow-[0_12px_28px_-18px_rgba(19,236,55,0.95)]'
-                                                : 'bg-[#f8f9fb] dark:bg-[#0f0f0f] text-[#111111] dark:text-white border-black/8 dark:border-white/8 hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
-                                        )}>
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* On sale + clear */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <p className="text-[14px] font-semibold text-[#111111] dark:text-white">{t.on_sale_only}</p>
-                                <button onClick={() => setOnSale(o => !o)}
-                                    className={cn('w-11 h-6 rounded-full border transition-all relative',
-                                        onSale ? 'bg-[#13ec37] border-[#13ec37]' : 'bg-[#f3f4f6] dark:bg-[#2a2a2a] border-black/8 dark:border-white/8'
-                                    )}>
-                                    <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all',
-                                        onSale ? 'left-[calc(100%-22px)]' : 'left-0.5')} />
-                                </button>
+                    <div className="mb-6 overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_20px_44px_-34px_rgba(17,24,39,0.35)] dark:border-white/8 dark:bg-[#1a1a1a]">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 px-4 py-4 dark:border-white/8 sm:px-5">
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9ca3af]">Filterlar</p>
+                                <p className="mt-1 text-[14px] font-semibold text-[#111111] dark:text-white">
+                                    {activeFilterCount > 0 ? `${activeFilterCount} ta filter tanlangan` : 'Mahsulotlarni aniqroq toping'}
+                                </p>
                             </div>
                             {activeFilterCount > 0 && (
-                                <button onClick={clearFilters}
-                                    className="px-4 py-1.5 rounded-full border border-red-400/30 text-red-500 text-[13px] font-semibold bg-red-500/5 hover:bg-red-500/10 transition-all">
+                                <button
+                                    onClick={clearFilters}
+                                    className="inline-flex h-10 items-center rounded-full border border-red-400/30 bg-red-500/5 px-4 text-[13px] font-semibold text-red-500 transition-all hover:bg-red-500/10"
+                                >
                                     {t.clear_filters}
                                 </button>
                             )}
+                        </div>
+
+                        {activeFilterCount > 0 && (
+                            <div className="flex flex-wrap gap-2 border-b border-black/6 px-4 py-3 dark:border-white/8 sm:px-5">
+                                {minPrice && (
+                                    <button type="button" onClick={() => setMinPrice('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                                        {t.min}: {minPrice}<X size={12} />
+                                    </button>
+                                )}
+                                {maxPrice && (
+                                    <button type="button" onClick={() => setMaxPrice('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                                        {t.max}: {maxPrice}<X size={12} />
+                                    </button>
+                                )}
+                                {minDiscount && (
+                                    <button type="button" onClick={() => setMinDiscount('')} className="inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:bg-white/8 dark:text-white">
+                                        {minDiscount}%+<X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1.1fr_1fr]">
+                            <div className="rounded-[24px] border border-black/8 bg-[#fbfcfe] p-4 dark:border-white/8 dark:bg-[#101010]">
+                                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#9ca3af]">{t.price_range}</p>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <label className="rounded-[18px] border border-black/8 bg-white px-3 py-2.5 dark:border-white/8 dark:bg-[#1a1a1a]">
+                                        <span className="text-[11px] font-semibold text-[#9ca3af]">{t.min}</span>
+                                        <input
+                                            value={minPrice}
+                                            onChange={e => setMinPrice(e.target.value)}
+                                            placeholder="0"
+                                            type="number"
+                                            className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
+                                        />
+                                    </label>
+                                    <label className="rounded-[18px] border border-black/8 bg-white px-3 py-2.5 dark:border-white/8 dark:bg-[#1a1a1a]">
+                                        <span className="text-[11px] font-semibold text-[#9ca3af]">{t.max}</span>
+                                        <input
+                                            value={maxPrice}
+                                            onChange={e => setMaxPrice(e.target.value)}
+                                            placeholder="∞"
+                                            type="number"
+                                            className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="rounded-[24px] border border-black/8 bg-[#fbfcfe] p-4 dark:border-white/8 dark:bg-[#101010]">
+                                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#9ca3af]">{t.minimum_discount}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {[10, 20, 30, 50].map((value) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setMinDiscount(minDiscount === String(value) ? '' : String(value))}
+                                            className={cn(
+                                                'rounded-full border px-3 py-2 text-[12px] font-bold transition-all',
+                                                minDiscount === String(value)
+                                                    ? 'border-[#13ec37] bg-[#13ec37] text-white'
+                                                    : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
+                                            )}
+                                        >
+                                            {value}%+
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="mt-3 flex items-center gap-2">
+                                    <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
+                                        type="number" min="1" max="99" placeholder="20"
+                                        className="h-11 w-24 rounded-[16px] border border-black/8 bg-white px-3 text-[13px] font-semibold text-[#111111] outline-none focus:ring-2 ring-[#00c853]/20 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white" />
+                                    <span className="text-[13px] text-[#9ca3af]">% va undan ko&apos;p</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -42,7 +42,8 @@ Thumbs.db
 coverage/
 
 # ── Runtime uploads / local data ──────────────────────────────────────────────
-public/uploads/
+public/uploads/*
+!public/uploads/.gitkeep
 .local-postgres/data_dev/
 
 # ── Claude Code (local-only settings) ────────────────────────────────────────
