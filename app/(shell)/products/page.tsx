@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Search, X, SlidersHorizontal, Package, Loader2 } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Package, Loader2, Heart } from 'lucide-react';
 import { fetchProducts, fetchCategories, type ApiProduct, type ApiCategory } from '../../../src/lib/apiClient';
 import { cn } from '../../../src/shared/lib/utils';
 import { useSSERefetch } from '../../../src/shared/hooks/useSSERefetch';
@@ -11,10 +11,16 @@ import { useTranslation } from '../../../src/shared/lib/i18n';
 import { formatPrice } from '../../../src/shared/lib/formatPrice';
 import { useTranslatedLabelMap } from '../../../src/shared/hooks/useTranslatedLabelMap';
 import { sanitizeProductLabel } from '../../../src/shared/lib/webProductText';
+import { useWebAuth } from '../../../src/context/WebAuthContext';
+import { AuthModal } from '../../../src/shared/ui/AuthModal';
 
+function getToken() {
+    return typeof window !== 'undefined' ? localStorage.getItem('marketplace_token') : null;
+}
 
 function ProductsPageContent() {
     const { t, language } = useTranslation();
+    const { user, loading: authLoading } = useWebAuth();
     const searchParams = useSearchParams();
     const [products, setProducts] = useState<ApiProduct[]>([]);
     const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -29,6 +35,16 @@ function ProductsPageContent() {
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
     const [minDiscount, setMinDiscount] = useState('');
+    const [favIds, setFavIds] = useState<Set<string>>(() => {
+        try {
+            const cached = typeof window !== 'undefined' ? localStorage.getItem('fav_ids_cache') : null;
+            return cached ? new Set<string>(JSON.parse(cached)) : new Set<string>();
+        } catch {
+            return new Set<string>();
+        }
+    });
+    const [toggling, setToggling] = useState<Set<string>>(new Set());
+    const [authModal, setAuthModal] = useState(false);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -69,6 +85,27 @@ function ProductsPageContent() {
     }, []);
 
     useEffect(() => {
+        if (authLoading) return;
+        const token = getToken();
+        if (!token) {
+            setFavIds(new Set());
+            return;
+        }
+
+        fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } })
+            .then((r) => r.json().catch(() => ({})))
+            .then((json) => {
+                const rows: Array<{ product_id?: string }> = json?.data ?? json ?? [];
+                const ids = rows.map((row) => row.product_id).filter(Boolean) as string[];
+                setFavIds(new Set(ids));
+                try {
+                    localStorage.setItem('fav_ids_cache', JSON.stringify(ids));
+                } catch { }
+            })
+            .catch(() => { });
+    }, [authLoading, user]);
+
+    useEffect(() => {
         const categoryFromQuery = searchParams.get('category');
         if (!categoryFromQuery || categories.length === 0) return;
 
@@ -91,12 +128,66 @@ function ProductsPageContent() {
 
     useSSERefetch(['products', 'stores'], () => triggerFetch(true));
 
+    const toggleFav = useCallback(async (e: React.MouseEvent, productId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user) {
+            setAuthModal(true);
+            return;
+        }
+
+        const token = getToken();
+        if (!token) return;
+
+        setToggling((prev) => {
+            const next = new Set(prev);
+            next.add(productId);
+            return next;
+        });
+
+        try {
+            const res = await fetch('/api/favorites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ product_id: productId }),
+            });
+
+            if (!res.ok) return;
+
+            const json = await res.json().catch(() => ({}));
+            const favorited = json?.data?.favorited ?? json?.favorited;
+            if (typeof favorited === 'boolean') {
+                setFavIds((prev) => {
+                    const next = new Set(prev);
+                    favorited ? next.add(productId) : next.delete(productId);
+                    try {
+                        localStorage.setItem('fav_ids_cache', JSON.stringify([...next]));
+                    } catch { }
+                    return next;
+                });
+            }
+        } catch {
+            // ignore
+        } finally {
+            setToggling((prev) => {
+                const next = new Set(prev);
+                next.delete(productId);
+                return next;
+            });
+        }
+    }, [user]);
+
     const clearFilters = () => {
         setMinPrice(''); setMaxPrice(''); setMinDiscount('');
     };
 
     return (
         <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
+            <AuthModal open={authModal} onClose={() => setAuthModal(false)} defaultTab="login" />
             <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
                 <h1 className="text-[24px] font-black text-[#111111] dark:text-white mb-5">{t.products_page_title}</h1>
 
@@ -288,7 +379,23 @@ function ProductsPageContent() {
                                 href={`/product/${p.id}`}
                                 className="group overflow-hidden rounded-[20px] border border-black/8 bg-white dark:border-white/8 dark:bg-[#1a1a1a] transition-all hover:-translate-y-0.5 hover:shadow-lg"
                             >
-                                <div className="aspect-[3/4] w-full overflow-hidden bg-[#f3f4f6] dark:bg-[#111111]">
+                                <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f3f4f6] dark:bg-[#111111]">
+                                    <button
+                                        type="button"
+                                        aria-label={t.favorites}
+                                        onClick={(event) => toggleFav(event, p.id)}
+                                        disabled={toggling.has(p.id)}
+                                        className={cn(
+                                            'absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/8 bg-white/92 text-[#111111] shadow-sm backdrop-blur transition-all',
+                                            'dark:border-white/10 dark:bg-[#111111]/88 dark:text-white',
+                                            toggling.has(p.id) && 'cursor-wait opacity-70',
+                                        )}
+                                    >
+                                        <Heart
+                                            size={16}
+                                            className={cn(favIds.has(p.id) && 'fill-red-500 text-red-500')}
+                                        />
+                                    </button>
                                     {p.thumbnail ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={p.thumbnail} alt={sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />

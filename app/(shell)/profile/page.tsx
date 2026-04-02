@@ -358,13 +358,13 @@ export default function SiteProfilePage() {
                     </div>
                 )}
                 {storePending && (
-                    <div className="flex items-center gap-3 rounded-3xl border border-orange-200 bg-orange-50 p-5">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                    <div className="flex items-center gap-3 rounded-3xl border border-orange-200 bg-orange-50 p-5 dark:border-orange-500/20 dark:bg-[#24180d]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/12 dark:text-orange-300">
                             <Clock size={18} />
                         </div>
                         <div>
-                            <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-white">{p.pendingTitle}</h2>
-                            <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
+                            <h2 className="text-[17px] font-extrabold text-[#111111] dark:text-[#fff4dd]">{p.pendingTitle}</h2>
+                            <p className="text-[12px] text-[#6b7280] dark:text-[#d6b98d]">
                                 {p.pendingDesc}
                                 {storeStatus?.status === 'pending' && storeStatus.request.store_name ? ` · ${storeStatus.request.store_name}` : ''}
                             </p>

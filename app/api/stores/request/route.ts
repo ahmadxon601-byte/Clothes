@@ -18,6 +18,21 @@ const schema = z.object({
   image_urls: z.array(z.string().trim().min(1)).min(1).max(10).optional(),
 });
 
+function isNonCriticalStagedImageError(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return (
+    code === "EROFS" ||
+    code === "ENOSPC" ||
+    message.includes("EROFS") ||
+    message.includes("read-only file system")
+  );
+}
+
 // ── POST /api/stores/request  (auth required) ─────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -82,7 +97,7 @@ export async function POST(req: NextRequest) {
             owner_name,
             phone ?? null,
             address ?? null,
-            null,
+            normalizedImages[0] ?? null,
           ]
         );
         requestId = insertResult.rows[0]?.id ?? "";
@@ -117,7 +132,7 @@ export async function POST(req: NextRequest) {
             owner_name,
             phone ?? null,
             address ?? null,
-            null,
+            normalizedImages[0] ?? null,
           ]
         );
         requestId = insertResult.rows[0]?.id ?? "";
@@ -141,7 +156,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (requestId) {
-      await saveStagedImages("seller-request", requestId, normalizedImages);
+      try {
+        await saveStagedImages("seller-request", requestId, normalizedImages);
+      } catch (error) {
+        if (!isNonCriticalStagedImageError(error)) {
+          throw error;
+        }
+        console.warn("[stores/request POST] staged image persistence skipped:", error);
+      }
     }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });

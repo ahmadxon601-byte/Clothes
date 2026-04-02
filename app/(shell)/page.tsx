@@ -508,23 +508,19 @@ export default function WebsiteHomePage() {
 
                     <div className="relative z-[1] flex min-h-[220px] min-w-0 items-center justify-center pt-0 sm:min-h-[280px] sm:pt-3 md:min-h-[380px] md:justify-end lg:min-h-[460px]">
                         <div className="absolute inset-x-[8%] top-[16%] h-[62%] rounded-full bg-[#13ec37]/15 blur-[56px] sm:blur-[70px]" />
-                        <div className="pointer-events-none absolute right-[10%] top-[4%] hidden rounded-full border border-white/60 bg-white/85 px-4 py-3 text-left shadow-[0_18px_40px_-28px_rgba(17,24,39,0.32)] backdrop-blur dark:border-white/10 dark:bg-[#161616]/85 sm:block">
-                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#10be33]">{partnerCopy.premiumCollection}</p>
-                            <p className="mt-1 text-[13px] font-semibold text-[#111111] dark:text-white">{heroFloatingTitle}</p>
-                        </div>
                         <Link
                             href={heroProduct ? `/product/${heroProduct.id}` : WEB_LINKS.PRODUCTS}
-                            className="group relative block w-full max-w-[320px] overflow-hidden rounded-[22px] bg-[#151819] p-2 shadow-[0_32px_80px_-30px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_40px_90px_-32px_rgba(0,0,0,0.7)] sm:max-w-[420px] sm:rotate-[3deg] sm:p-3 md:max-w-[470px] md:rotate-[4deg] lg:max-w-[560px] lg:rotate-[6deg]"
+                            className="group relative block w-full max-w-[320px] overflow-visible rounded-[22px] transition-transform duration-300 hover:-translate-y-1 sm:max-w-[420px] sm:rotate-[3deg] md:max-w-[470px] md:rotate-[4deg] lg:max-w-[560px] lg:rotate-[6deg]"
                         >
                             <img
                                 src={imageFor(heroProduct, 2)}
                                 alt={displayName(heroProduct) || 'Hero product'}
-                                className="aspect-[1.02] w-full rounded-[18px] object-cover transition-transform duration-500 group-hover:scale-[1.03] sm:aspect-[1.1] sm:rounded-[22px]"
+                                className="aspect-[1.02] w-full rounded-[20px] object-cover transition-transform duration-500 group-hover:scale-[1.03] sm:aspect-[1.1] sm:rounded-[24px]"
                             />
-                            <div className="absolute bottom-2 left-2 right-2 rounded-[16px] bg-white/92 px-3 py-2 shadow-[0_18px_50px_-28px_rgba(17,24,39,0.4)] backdrop-blur sm:right-auto sm:max-w-[80%] sm:rounded-[22px] sm:px-4 sm:py-3 md:bottom-4 md:left-0 dark:bg-[#161616]/90">
-                                <p className="line-clamp-2 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#10be33] sm:text-[10px] sm:tracking-[0.15em]">{heroFloatingTitle}</p>
-                                <p className="mt-1 line-clamp-2 text-[13px] font-bold text-[#111111] dark:text-white sm:text-[14px]">{displayName(heroProduct) || partnerCopy.premiumCollection}</p>
-                                <p className="mt-1 text-[12px] font-black text-[#10be33] sm:text-[13px]">
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b-[20px] bg-gradient-to-t from-black/72 via-black/28 to-transparent px-3 pb-3 pt-10 sm:rounded-b-[24px] sm:px-4 sm:pb-4 sm:pt-14">
+                                <p className="line-clamp-2 text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#7df08f] sm:text-[10px] sm:tracking-[0.15em]">{heroFloatingTitle}</p>
+                                <p className="mt-1 line-clamp-2 text-[13px] font-bold text-white sm:text-[14px]">{displayName(heroProduct) || partnerCopy.premiumCollection}</p>
+                                <p className="mt-1 text-[12px] font-black text-[#8bff9f] sm:text-[13px]">
                                     {formatPrice(
                                         heroProduct?.sale_price != null && Number(heroProduct.sale_price) < Number(heroProduct.base_price)
                                             ? Number(heroProduct.sale_price)

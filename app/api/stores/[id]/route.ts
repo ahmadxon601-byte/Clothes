@@ -9,6 +9,21 @@ import { saveStagedImages } from "@/src/lib/stagedImages";
 
 type Params = { params: Promise<{ id: string }> };
 
+function isNonCriticalStagedImageError(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return (
+    code === "EROFS" ||
+    code === "ENOSPC" ||
+    message.includes("EROFS") ||
+    message.includes("read-only file system")
+  );
+}
+
 // ── GET /api/stores/[id] ──────────────────────────────────────────────────────
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
@@ -117,21 +132,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
            (user_id, store_name, store_description, owner_name, phone, address, image_url, request_type, target_store_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'store_update', $8)
          RETURNING id`,
-        [
-          jwtUser.userId,
-          parsed.data.name ?? storeResult.rows[0].name,
-          parsed.data.description ?? null,
-          storeResult.rows[0].owner_name,
-          parsed.data.phone ?? null,
-          parsed.data.address ?? null,
-          null,
-          id,
-        ]
-      );
-      if (insertResult.rows[0]?.id && parsed.data.image_url) {
-        await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
-      }
-    } else {
+          [
+            jwtUser.userId,
+            parsed.data.name ?? storeResult.rows[0].name,
+            parsed.data.description ?? null,
+            storeResult.rows[0].owner_name,
+            parsed.data.phone ?? null,
+            parsed.data.address ?? null,
+            parsed.data.image_url ?? null,
+            id,
+          ]
+        );
+        if (insertResult.rows[0]?.id && parsed.data.image_url) {
+          try {
+            await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
+          } catch (error) {
+            if (!isNonCriticalStagedImageError(error)) {
+              throw error;
+            }
+            console.warn("[store PATCH] staged image persistence skipped:", error);
+          }
+        }
+      } else {
       const insertResult = await query(
         `INSERT INTO seller_requests
            (user_id, store_name, store_description, owner_name, phone, address, request_type, target_store_id)
@@ -146,11 +168,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           parsed.data.address ?? null,
           id,
         ]
-      );
-      if (insertResult.rows[0]?.id && parsed.data.image_url) {
-        await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
+        );
+        if (insertResult.rows[0]?.id && parsed.data.image_url) {
+          try {
+            await saveStagedImages("seller-request", insertResult.rows[0].id, [parsed.data.image_url]);
+          } catch (error) {
+            if (!isNonCriticalStagedImageError(error)) {
+              throw error;
+            }
+            console.warn("[store PATCH] staged image persistence skipped:", error);
+          }
+        }
       }
-    }
 
     emitAdminEvent({ type: "seller_requests", action: "created" });
     return ok({ message: "Store update request submitted for admin approval" });
