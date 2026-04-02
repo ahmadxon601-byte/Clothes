@@ -4,10 +4,9 @@
   "private": true,
   "description": "Marketplace WebApp + Telegram bot stack",
   "scripts": {
-    "predev": "node scripts/predev.mjs",
     "prebuild": "node scripts/clean-next.mjs",
-    "dev": "node scripts/predev.mjs && next dev --hostname 127.0.0.1 --port 3010",
-    "dev:admin": "node scripts/predev.mjs && next dev --hostname 127.0.0.1 --port 3020",
+    "dev": "node scripts/run-next-dev.mjs 3010 .next-dev",
+    "dev:admin": "node scripts/run-next-dev.mjs 3020 .next-admin",
     "build": "next build",
     "postbuild": "node scripts/fix-build-css.mjs",
     "start": "node .next/standalone/server.js",

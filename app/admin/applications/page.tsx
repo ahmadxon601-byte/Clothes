@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, Filter, Search, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAdminI18n } from '../../../src/context/AdminI18nContext';
 import { AdminShell } from '../../../src/features/admin/AdminShell';
 import {
@@ -33,6 +33,7 @@ export default function ApplicationsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [viewRequestId, setViewRequestId] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const query = useApplications({ page, limit: 12, status, search });
@@ -117,6 +118,25 @@ export default function ApplicationsPage() {
   };
   const viewRequest = requests.find((item) => item.id === viewRequestId) ?? null;
   const viewRequestImage = resolveAssetUrl(viewRequest?.image_url ?? viewRequest?.current_store_image_url ?? null);
+
+  useEffect(() => {
+    if (!previewImageUrl) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPreviewImageUrl(null);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [previewImageUrl]);
   const toggleStore = (item: NonNullable<typeof query.data>['requests'][number]) => {
     if (!item.store_id || item.store_is_active == null) return;
     storeMutation.mutate(
@@ -341,11 +361,17 @@ export default function ApplicationsPage() {
                 <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
                   <p className='mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[var(--admin-muted)]'>Yangi ma'lumotlar</p>
                   {viewRequestImage ? (
-                    <img
-                      src={viewRequestImage}
-                      alt={viewRequest.store_name || "Do'kon rasmi"}
-                      className='mb-3 h-40 w-full rounded-2xl bg-[var(--admin-card)] object-contain'
-                    />
+                    <button
+                      type='button'
+                      onClick={() => setPreviewImageUrl(viewRequestImage)}
+                      className='mb-3 block w-full overflow-hidden rounded-2xl border border-transparent bg-[var(--admin-card)] shadow-none transition-colors hover:translate-y-0 hover:border-[var(--admin-border)] hover:bg-[var(--admin-pill)] hover:shadow-none'
+                    >
+                      <img
+                        src={viewRequestImage}
+                        alt={viewRequest.store_name || "Do'kon rasmi"}
+                        className='h-40 w-full object-contain'
+                      />
+                    </button>
                   ) : null}
                   <div className='space-y-2 text-sm'>
                     <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Nomi</span><span className='text-right font-semibold'>{viewRequest.store_name || '-'}</span></div>
@@ -358,11 +384,17 @@ export default function ApplicationsPage() {
             ) : (
               <div className='rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
                 {viewRequestImage ? (
-                  <img
-                    src={viewRequestImage}
-                    alt={viewRequest.store_name || "Do'kon rasmi"}
-                    className='mb-3 h-40 w-full rounded-2xl bg-[var(--admin-card)] object-contain'
-                  />
+                  <button
+                    type='button'
+                    onClick={() => setPreviewImageUrl(viewRequestImage)}
+                    className='mb-3 block w-full overflow-hidden rounded-2xl border border-transparent bg-[var(--admin-card)] shadow-none transition-colors hover:translate-y-0 hover:border-[var(--admin-border)] hover:bg-[var(--admin-pill)] hover:shadow-none'
+                  >
+                    <img
+                      src={viewRequestImage}
+                      alt={viewRequest.store_name || "Do'kon rasmi"}
+                      className='h-40 w-full object-contain'
+                    />
+                  </button>
                 ) : null}
                 <div className='space-y-2 text-sm'>
                   <div className='flex justify-between gap-4'><span className='text-[var(--admin-muted)]'>Nomi</span><span className='text-right font-semibold'>{viewRequest.store_name || '-'}</span></div>
@@ -375,6 +407,25 @@ export default function ApplicationsPage() {
           </div>
         </div>
       )}
+
+      {previewImageUrl ? (
+        <div className='fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm' onClick={() => setPreviewImageUrl(null)}>
+          <button
+            type='button'
+            onClick={() => setPreviewImageUrl(null)}
+            className='absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/15'
+            aria-label='Close image preview'
+          >
+            <X size={18} />
+          </button>
+          <img
+            src={previewImageUrl}
+            alt='Image preview'
+            className='max-h-[92vh] max-w-[92vw] rounded-2xl object-contain shadow-[0_30px_80px_rgba(0,0,0,0.45)]'
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      ) : null}
 
       <ReasonDialog
         open={Boolean(rejectId)}

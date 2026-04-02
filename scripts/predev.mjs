@@ -4,7 +4,8 @@ import { join } from "node:path";
 
 const PORT = 3010;
 const isWindows = process.platform === "win32";
-const nextDir = join(process.cwd(), ".next");
+const nextDirName = process.env.NEXT_DIST_DIR?.trim() || ".next";
+const nextDir = join(process.cwd(), nextDirName);
 
 function getListeningPids(port) {
   try {
@@ -43,16 +44,39 @@ function stopPids(pids) {
   }
 }
 
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function clearNextDir() {
+  if (!existsSync(nextDir)) {
+    console.log(`[predev] no ${nextDirName} directory to clear`);
+    return;
+  }
+
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    try {
+      rmSync(nextDir, { recursive: true, force: true });
+      console.log(`[predev] cleared ${nextDirName} to avoid stale manifest errors`);
+      return;
+    } catch (error) {
+      lastError = error;
+      sleep(250 * attempt);
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`failed to clear ${nextDirName}: ${message}`);
+}
+
 try {
   const pids = getListeningPids(PORT);
   if (pids.length) stopPids(pids);
-  if (existsSync(nextDir)) {
-    rmSync(nextDir, { recursive: true, force: true });
-    console.log("[predev] cleared .next to avoid stale manifest errors");
-  } else {
-    console.log("[predev] no .next directory to clear");
-  }
+  clearNextDir();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[predev] non-fatal setup issue: ${message}`);
+  console.error(`[predev] setup failed: ${message}`);
+  process.exit(1);
 }

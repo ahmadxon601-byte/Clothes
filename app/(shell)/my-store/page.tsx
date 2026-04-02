@@ -288,7 +288,7 @@ export default function MyStorePage() {
             setEditingStore(null);
             setFormImage(null);
             setTemporaryUploadUrl(null);
-            setSuccess("Ariza yuborildi. Ko'rib chiqilmoqda.");
+            setSuccess(w.myStore.updateSubmitted);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
         } finally {
@@ -400,13 +400,13 @@ export default function MyStorePage() {
                                         <div className="flex flex-wrap gap-2">
                                             <button
                                                 onClick={() => openEdit(store)}
-                                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 text-[12px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/10 dark:text-white"
+                                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#13ec37]/35 bg-[rgba(8,24,16,0.52)] px-3.5 text-[12px] font-bold text-[#ecfff1] shadow-[0_10px_24px_-14px_rgba(0,0,0,0.48)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[#13ec37]/55 hover:bg-[rgba(8,24,16,0.68)] hover:text-white hover:shadow-[0_14px_28px_-16px_rgba(0,0,0,0.55)] dark:border-[#13ec37]/30 dark:bg-[rgba(8,24,16,0.6)] dark:text-[#f3fff6]"
                                             >
                                                 <Edit3 size={13} /> {storeText.edit ?? 'Tahrirlash'}
                                             </button>
                                             <button
                                                 onClick={() => setDeleteStore(store)}
-                                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3.5 text-[12px] font-bold text-red-600 transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-400/35 bg-[rgba(58,12,18,0.58)] px-3.5 text-[12px] font-bold text-[#ffe9ec] shadow-[0_10px_24px_-14px_rgba(0,0,0,0.48)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-red-400/55 hover:bg-[rgba(88,17,28,0.72)] hover:text-white hover:shadow-[0_14px_28px_-16px_rgba(0,0,0,0.55)] dark:border-red-400/30 dark:bg-[rgba(58,12,18,0.64)] dark:text-[#fff1f3]"
                                             >
                                                 <Trash2 size={13} /> {storeText.delete ?? "O'chirish"}
                                             </button>
@@ -539,7 +539,7 @@ export default function MyStorePage() {
                     </div>
                     <Link
                         href="/open-store"
-                        className="inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)]"
+                        className="inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:-translate-y-0.5 hover:bg-[#19f140]"
                     >
                         {w.myStore.submit} <ArrowRight size={14} />
                     </Link>
@@ -549,10 +549,11 @@ export default function MyStorePage() {
             {/* Edit Modal */}
             {editingStore && (
                 <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="relative w-full max-w-[480px] rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a] max-h-[90vh] overflow-y-auto">
+                    <div className="relative w-full max-w-[480px] overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
                         <button onClick={() => { void deleteUploadedImage(temporaryUploadUrl); setTemporaryUploadUrl(null); setEditingStore(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-[#6b7280] hover:text-[#111111] dark:border-white/10 dark:text-[#9ca3af] dark:hover:text-white">
                             <X size={16} />
                         </button>
+                        <div className="pretty-scrollbar max-h-[90vh] overflow-y-auto pr-1">
                         <div className="p-7">
                             <h2 className="text-[22px] font-black text-[#111111] dark:text-white">{storeText.editTitle ?? "Do'konni Tahrirlash"}</h2>
                             <p className="mt-0.5 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{editingStore.name}</p>
@@ -666,6 +667,7 @@ export default function MyStorePage() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
                         </div>
                     </div>
                 </div>

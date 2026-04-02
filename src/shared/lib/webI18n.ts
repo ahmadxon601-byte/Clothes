@@ -201,6 +201,7 @@ const RAW_WEB_TRANSLATIONS = {
             submitting: 'Yuborilmoqda...',
             fillRequired: 'Iltimos, majburiy maydonlarni to\'ldiring va xaritadan manzil tanlang.',
             fillRequiredFields: 'Majburiy maydonlar:',
+            fieldRequired: '{field} ni to\'ldiring',
             imageRequired: 'Kamida 1 ta do\'kon rasmi yuklang.',
             accepted: 'Arizangiz qabul qilindi. Tez orada siz bilan bog\'lanamiz.',
             pending: 'Sizda allaqachon pending ariza bor. Iltimos, tasdiqlanishini kuting.',
@@ -235,6 +236,7 @@ const RAW_WEB_TRANSLATIONS = {
             addTitle: 'Yangi Do\'kon Qo\'shish',
             addDesc: 'Qo\'shimcha do\'kon ochish uchun ariza yuboring.',
             submit: 'Ariza Yuborish',
+            updateSubmitted: 'Ariza yuborildi. Ko\'rib chiqilmoqda.',
         },
         myProducts: {
             authTitle: 'Kirish kerak',
@@ -486,6 +488,7 @@ const RAW_WEB_TRANSLATIONS = {
             submitting: 'Submitting...',
             fillRequired: 'Please complete required fields and choose address on map.',
             fillRequiredFields: 'Required fields:',
+            fieldRequired: 'Please fill in {field}',
             imageRequired: 'Upload at least 1 store image.',
             accepted: 'Application submitted. We will contact you soon.',
             pending: 'You already have a pending application.',
@@ -520,6 +523,7 @@ const RAW_WEB_TRANSLATIONS = {
             addTitle: 'Add New Store',
             addDesc: 'Submit an application to open another store.',
             submit: 'Submit Application',
+            updateSubmitted: 'Application submitted. It is under review.',
         },
         myProducts: {
             authTitle: 'Sign in required',
@@ -770,6 +774,8 @@ const RAW_WEB_TRANSLATIONS = {
             submit: 'Отправить заявку',
             submitting: 'Отправка...',
             fillRequired: 'Заполните обязательные поля и выберите адрес на карте.',
+            fillRequiredFields: 'Обязательные поля:',
+            fieldRequired: 'Заполните поле "{field}"',
             accepted: 'Заявка отправлена. Мы скоро свяжемся с вами.',
             pending: 'У вас уже есть заявка в ожидании.',
             submitError: 'Не удалось отправить заявку.',
@@ -790,6 +796,7 @@ const RAW_WEB_TRANSLATIONS = {
             addTitle: 'Добавить новый магазин',
             addDesc: 'Отправьте заявку, чтобы открыть еще один магазин.',
             submit: 'Отправить заявку',
+            updateSubmitted: 'Заявка отправлена. Она рассматривается.',
         },
         profilePage: {
             title: 'Ð’Ð°Ñˆ Ð¿Ñ€Ð¾Ñ„Ð¸Ð»ÑŒ',

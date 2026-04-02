@@ -65,11 +65,17 @@ function parseCoords(input: string) {
     return { lat: Number(match[1]), lng: Number(match[2]) };
 }
 
+function fieldRequiredMessage(template: string | undefined, label: string) {
+    if (!template) return `${label}`;
+    return template.replace('{field}', label);
+}
+
 export default function OpenStorePage() {
     const router = useRouter();
     const { w } = useWebI18n();
     const openStoreText = w.openStore as typeof w.openStore & {
         fillRequiredFields?: string;
+        fieldRequired?: string;
         imageRequired?: string;
     };
     const { user, loading: authLoading, refreshStore } = useWebAuth();
@@ -379,7 +385,7 @@ export default function OpenStorePage() {
             </div>
 
             <div className="mx-auto mt-8 w-full max-w-[900px] px-6 md:mt-10 md:px-10">
-                <form onSubmit={onSubmit} className="rounded-[28px] border border-black/10 bg-white p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.25)] md:p-7 dark:border-white/10 dark:bg-[#1a1a1a]">
+                <form noValidate onSubmit={onSubmit} className="rounded-[28px] border border-black/10 bg-white p-5 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.25)] md:p-7 dark:border-white/10 dark:bg-[#1a1a1a]">
                     <h2 className="text-[22px] font-black text-[#111111] dark:text-white">{w.openStore.formTitle}</h2>
                     <p className="mt-1 text-[13px] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.formDesc}</p>
 
@@ -393,10 +399,13 @@ export default function OpenStorePage() {
                                     "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
                                     formErrors.storeName ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',
                                 )}
-                                placeholder={w.openStore.storeNamePlaceholder}
-                                disabled={loading}
-                            />
-                        </label>
+                                 placeholder={w.openStore.storeNamePlaceholder}
+                                 disabled={loading}
+                             />
+                             {formErrors.storeName ? (
+                                 <p className="text-[12px] font-medium text-red-500">{fieldRequiredMessage(openStoreText.fieldRequired, w.openStore.storeName)}</p>
+                             ) : null}
+                         </label>
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <label className="grid gap-1.5">
@@ -404,7 +413,6 @@ export default function OpenStorePage() {
                                 <input
                                     value={form.ownerName}
                                     onChange={(e) => onChange('ownerName', e.target.value)}
-                                    required
                                     className={cn(
                                         "h-11 rounded-xl border px-3 text-[14px] outline-none transition-all focus:border-[#00c853] dark:bg-[#111111] dark:text-white",
                                         formErrors.ownerName ? 'border-red-500 bg-red-50/40 dark:border-red-500 dark:bg-red-500/10' : 'border-black/12 dark:border-white/10',
@@ -412,6 +420,9 @@ export default function OpenStorePage() {
                                     placeholder={w.openStore.ownerNamePlaceholder}
                                     disabled={loading}
                                 />
+                                {formErrors.ownerName ? (
+                                    <p className="text-[12px] font-medium text-red-500">{fieldRequiredMessage(openStoreText.fieldRequired, w.openStore.ownerName)}</p>
+                                ) : null}
                             </label>
                             <label className="grid gap-1.5">
                                 <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.phone}</span>
@@ -429,6 +440,9 @@ export default function OpenStorePage() {
                                     placeholder={w.openStore.phonePlaceholder}
                                     disabled={loading}
                                 />
+                                {formErrors.phone ? (
+                                    <p className="text-[12px] font-medium text-red-500">{fieldRequiredMessage(openStoreText.fieldRequired, w.openStore.phone)}</p>
+                                ) : null}
                             </label>
                         </div>
 
@@ -498,6 +512,9 @@ export default function OpenStorePage() {
                             <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                                 {w.openStore.pickedCoords}: {map.markerLat.toFixed(6)}, {map.markerLng.toFixed(6)}
                             </p>
+                            {formErrors.address ? (
+                                <p className="text-[12px] font-medium text-red-500">{fieldRequiredMessage(openStoreText.fieldRequired, w.openStore.addressMap)}</p>
+                            ) : null}
                         </label>
 
                         <label className="grid gap-1.5">
@@ -544,6 +561,9 @@ export default function OpenStorePage() {
                                 </span>
                             </button>
                             <p className="text-[12px] text-[#6b7280] dark:text-[#9ca3af]">{w.openStore.imagesHint}</p>
+                            {formErrors.images ? (
+                                <p className="text-[12px] font-medium text-red-500">{fieldRequiredMessage(openStoreText.fieldRequired, w.openStore.storeImages)}</p>
+                            ) : null}
                             {form.images.length > 0 && (
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                     {form.images.map((image, index) => (
@@ -579,7 +599,7 @@ export default function OpenStorePage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all hover:shadow-[0_16px_34px_-14px_rgba(0,200,83,0.9)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-[#13ec37] px-6 text-[12px] font-black uppercase tracking-[0.12em] text-[#06200f] transition-all disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {loading ? w.openStore.submitting : w.openStore.submit}
                         <ArrowRight size={14} />
