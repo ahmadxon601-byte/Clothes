@@ -7,6 +7,7 @@ import { getTelegramWebApp, safeTelegramCall } from './webApp';
 export function BackButtonSync() {
     const router = useRouter();
     const pathname = usePathname();
+    const currentPath = pathname ?? '/';
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -16,7 +17,7 @@ export function BackButtonSync() {
             const backButton = webApp?.BackButton;
             if (!backButton) return;
 
-            const isMainRoute = ['/', '/favorites', '/profile', '/settings'].includes(pathname);
+            const isMainRoute = ['/', '/favorites', '/profile', '/settings'].includes(currentPath);
 
             if (isMainRoute) {
                 safeTelegramCall('BackButton.hide', () => backButton.hide?.());
@@ -36,7 +37,7 @@ export function BackButtonSync() {
         } catch (e) {
             console.warn('Back button sync error:', e);
         }
-    }, [pathname, router]);
+    }, [currentPath, router]);
 
     return null;
 }

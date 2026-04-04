@@ -167,6 +167,7 @@ function MobileBottomNav({ onMore }: { onMore: () => void }) {
 
 export function AdminShell({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
   const pathname = usePathname();
+  const currentPath = pathname ?? '';
   const router = useRouter();
   const { user, loading, logout } = useAdminAuth();
   useAdminSSE();
@@ -175,7 +176,7 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const isSupportRoute = pathname.includes('/support');
+  const isSupportRoute = currentPath.includes('/support');
   const supportUnreadQuery = useQuery({
     queryKey: ['admin', 'support', 'nav-unread'],
     queryFn: async () => {
@@ -195,12 +196,12 @@ export function AdminShell({ title, children, actions }: { title: string; childr
   }, [loading, router, user]);
 
   const subtitle = useMemo(() => {
-    if (pathname.includes('/products')) return t('dashboard.subtitle');
-    if (pathname.includes('/applications')) return t('applications.subtitle');
-    if (pathname.includes('/shops')) return t('stores.title');
-    if (pathname.includes('/support')) return t('nav.support');
+    if (currentPath.includes('/products')) return t('dashboard.subtitle');
+    if (currentPath.includes('/applications')) return t('applications.subtitle');
+    if (currentPath.includes('/shops')) return t('stores.title');
+    if (currentPath.includes('/support')) return t('nav.support');
     return t('login.subtitle');
-  }, [pathname, t]);
+  }, [currentPath, t]);
 
   if (loading) {
     return (

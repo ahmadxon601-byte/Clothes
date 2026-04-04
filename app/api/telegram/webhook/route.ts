@@ -13,13 +13,18 @@ const getWebhookHandler = (): WebhookHandler | null => {
     return cachedWebhookHandler;
   }
 
+  const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (process.env.NODE_ENV === "production" && !secretToken) {
+    throw new Error("TELEGRAM_WEBHOOK_SECRET is required in production");
+  }
+
   const bot = getWebhookBot();
   if (!bot) {
     return null;
   }
 
   cachedWebhookHandler = webhookCallback(bot, "std/http", {
-    secretToken: process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || undefined
+    secretToken: secretToken || undefined
   });
 
   return cachedWebhookHandler;

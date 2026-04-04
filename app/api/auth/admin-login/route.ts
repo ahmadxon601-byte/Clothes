@@ -3,8 +3,9 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
-import { ok, fail } from "@/src/lib/auth";
+import { ok, fail, failWithHeaders } from "@/src/lib/auth";
 import { requireAllowedAdminTelegramUser } from "@/src/server/telegram/admin-webapp-auth";
+import { enforceRateLimit } from "@/src/lib/rateLimit";
 
 const schema = z.object({
   login: z.string().min(1),
@@ -14,6 +15,9 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    enforceRateLimit({ key: `admin-login:${ip}`, limit: 8, windowMs: 60_000 });
+
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
@@ -58,6 +62,12 @@ export async function POST(req: NextRequest) {
 
     return ok({ user: safeUser, token });
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith("RATE_LIMIT:")) {
+      const retryAfter = e.message.split(":")[1] || "60";
+      return failWithHeaders("Too many login attempts. Please try again later.", 429, {
+        "Retry-After": retryAfter,
+      });
+    }
     console.error("[admin-login]", e);
     return fail("Server xatosi", 500);
   }

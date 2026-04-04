@@ -214,7 +214,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
                         <nav className="hidden min-w-0 items-center justify-self-center gap-5 lg:flex xl:gap-9">
                             {links.map((link) => {
-                                const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+                                const currentPath = pathname ?? '/';
+                                const active = link.href === '/' ? currentPath === '/' : currentPath.startsWith(link.href);
                                 return (
                                     <Link
                                         key={`${link.href}-${link.label}`}
@@ -358,10 +359,11 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                             "col-span-2 border-t border-black/8 pt-2 lg:hidden dark:border-white/10",
                             isCompactMobileHeader && 'hidden',
                         )}>
-                            <nav className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
-                                {links.map((link) => {
-                                    const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
-                                    return (
+                                <nav className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
+                                    {links.map((link) => {
+                                        const currentPath = pathname ?? '/';
+                                        const active = link.href === '/' ? currentPath === '/' : currentPath.startsWith(link.href);
+                                        return (
                                         <Link
                                             key={`mobile-${link.href}-${link.label}`}
                                             href={link.href}

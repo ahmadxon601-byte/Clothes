@@ -1,4 +1,4 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { getTelegramAdminAccess } from "./admin-access";
 
 type TelegramInitUser = {
@@ -23,8 +23,17 @@ export function verifyTelegramWebAppInitData(initData: string, botToken: string)
   const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest();
   const computedHash = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
-  if (computedHash !== receivedHash) {
+  const expected = Buffer.from(computedHash, "hex");
+  const actual = Buffer.from(receivedHash, "hex");
+
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
     throw new Error("initData signature yaroqsiz");
+  }
+
+  const authDate = Number(params.get("auth_date") ?? "0");
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(authDate) || authDate <= 0 || now - authDate > 3600) {
+    throw new Error("initData muddati tugagan");
   }
 
   const userRaw = params.get("user");

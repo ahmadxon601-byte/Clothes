@@ -9,6 +9,12 @@ export const ok = (data: unknown, status = 200) =>
 export const fail = (error: string, status = 400) =>
   NextResponse.json({ success: false, error }, { status });
 
+export const failWithHeaders = (
+  error: string,
+  status = 400,
+  headers?: HeadersInit
+) => NextResponse.json({ success: false, error }, { status, headers });
+
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
 export function getUser(req: NextRequest): JwtPayload | null {

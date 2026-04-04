@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { query } from "@/src/lib/db";
 import { signToken } from "@/src/lib/jwt";
-import { ok, fail } from "@/src/lib/auth";
+import { ok, fail, failWithHeaders } from "@/src/lib/auth";
+import { enforceRateLimit } from "@/src/lib/rateLimit";
 
 /**
  * Telegram Mini App initData ni verifikatsiya qiladi.
@@ -36,8 +37,17 @@ function verifyInitData(initData: string, botToken: string): {
     .update(dataCheckString)
     .digest("hex");
 
-  if (computedHash !== receivedHash) {
+  const expected = Buffer.from(computedHash, "hex");
+  const actual = Buffer.from(receivedHash, "hex");
+
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
     throw new Error("initData signature yaroqsiz");
+  }
+
+  const authDate = Number(params.get("auth_date") ?? "0");
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(authDate) || authDate <= 0 || now - authDate > 3600) {
+    throw new Error("initData muddati tugagan");
   }
 
   const userRaw = params.get("user");
@@ -49,6 +59,9 @@ function verifyInitData(initData: string, botToken: string): {
 // ── POST /api/auth/telegram-webapp ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    enforceRateLimit({ key: `telegram-webapp:${ip}`, limit: 20, windowMs: 60_000 });
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) return fail("Bot token sozlanmagan", 500);
 
@@ -100,6 +113,12 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith("RATE_LIMIT:")) {
+      const retryAfter = e.message.split(":")[1] || "60";
+      return failWithHeaders("Too many authentication attempts. Please try again later.", 429, {
+        "Retry-After": retryAfter,
+      });
+    }
     console.error("[telegram-webapp auth]", e);
     return fail("Internal server error", 500);
   }

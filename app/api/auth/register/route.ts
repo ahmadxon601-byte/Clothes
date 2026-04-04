@@ -7,6 +7,7 @@ import { ok, fail } from "@/src/lib/auth";
 import { hasAccessKeyColumn } from "@/src/lib/accessKeySupport";
 import { ensureUserAccessKey } from "@/src/lib/accessKeyService";
 import { getPasswordValidationIssue } from "@/src/shared/lib/validators";
+import { enforceRateLimit } from "@/src/lib/rateLimit";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -23,6 +24,9 @@ const passwordErrors = {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    enforceRateLimit({ key: `register:${ip}`, limit: 5, windowMs: 60_000 });
+
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
@@ -66,6 +70,9 @@ export async function POST(req: NextRequest) {
 
     return ok({ user, token }, 201);
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith("RATE_LIMIT:")) {
+      return fail("Too many registration attempts. Please try again later.", 429);
+    }
     console.error("[register]", e);
     const errCode =
       typeof e === "object" && e !== null && "code" in e

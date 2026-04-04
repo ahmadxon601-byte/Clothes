@@ -106,7 +106,7 @@ function ProductsPageContent() {
     }, [authLoading, user]);
 
     useEffect(() => {
-        const categoryFromQuery = searchParams.get('category');
+        const categoryFromQuery = searchParams?.get('category');
         if (!categoryFromQuery || categories.length === 0) return;
 
         const target = categories.find((cat) => cat.id === categoryFromQuery);

@@ -23,7 +23,6 @@ export function InlineMapPicker({ onPick, height = 260 }: Props) {
             if (cancelled || !divRef.current || mapRef.current) return;
 
             // Fix default icon paths
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             delete (L.Icon.Default.prototype as any)._getIconUrl;
             L.Icon.Default.mergeOptions({
                 iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',

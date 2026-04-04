@@ -1,7 +1,17 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_dev_secret";
 const JWT_EXPIRES_IN = "7d";
+
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET?.trim();
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
+  return "fallback_dev_secret";
+}
 
 export type JwtPayload = {
   userId: string;
@@ -10,9 +20,9 @@ export type JwtPayload = {
 };
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function verifyToken(token: string): JwtPayload {
-  return jwt.verify(token, JWT_SECRET) as JwtPayload;
+  return jwt.verify(token, getJwtSecret()) as JwtPayload;
 }
