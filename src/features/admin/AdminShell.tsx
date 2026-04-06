@@ -53,8 +53,9 @@ const moreNav: NavItem[] = [
   { href: '/admin/categories', labelKey: 'nav.categories', icon: Boxes },
   { href: '/admin/subcategories', labelKey: 'nav.subcategories', icon: Package },
   { href: '/admin/banners', labelKey: 'nav.banners', icon: Bell },
+  { href: '/admin/actions', labelKey: 'nav.actions', icon: Activity },
   { href: '/admin/support', labelKey: 'nav.support', icon: MessageCircleMore },
-  { href: '/admin/daily-deals', labelKey: 'nav.dailyDeals', icon: Bell },
+  { href: '/admin/promotions', labelKey: 'nav.dailyDeals', icon: Bell },
   { href: '/admin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 

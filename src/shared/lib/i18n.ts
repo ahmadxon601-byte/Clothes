@@ -168,6 +168,8 @@ const rawTranslations = {
         price_range: "Narx oralig'i (so'm)",
         size: "O'lcham",
         minimum_discount: 'Aksiya (kamida %)',
+        discount_filter_results_title: 'Barcha {discount}% lik tovarlar',
+        discount_filter_results_hint: "Barcha chegirmalarni ko'rish uchun filterdan qiymatni o'zgartiring yoki olib tashlang.",
         and_more: 'va undan ko‘p',
         clear_filters: 'Filtrlarni tozalash',
         stores_search_placeholder: "Do'kon qidirish...",

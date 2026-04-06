@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     const minPrice = s.get("min_price") ? Number(s.get("min_price")) : null;
     const maxPrice = s.get("max_price") ? Number(s.get("max_price")) : null;
     const minDiscount = s.get("min_discount") ? Number(s.get("min_discount")) : null;
+    const exactDiscount = s.get("exact_discount") ? Number(s.get("exact_discount")) : null;
     const sizeFilter = s.get("size")?.trim() || null;
     const createdFrom = s.get("created_from")?.trim() || null;
     const createdTo   = s.get("created_to")?.trim()   || null;
@@ -54,7 +55,16 @@ export async function GET(req: NextRequest) {
       params.push(maxPrice);
       conditions.push(`p.base_price <= $${params.length}`);
     }
-    if (minDiscount !== null && !isNaN(minDiscount) && minDiscount > 0) {
+    if (exactDiscount !== null && !isNaN(exactDiscount) && exactDiscount > 0) {
+      params.push(exactDiscount);
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM product_variants pv
+        WHERE pv.product_id = p.id
+          AND p.base_price > 0
+          AND ROUND((1.0 - pv.price::numeric / p.base_price) * 100) = $${params.length}
+      )`);
+    } else if (minDiscount !== null && !isNaN(minDiscount) && minDiscount > 0) {
       params.push(minDiscount);
       conditions.push(`EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND p.base_price > 0 AND (1.0 - pv.price::numeric / p.base_price) * 100 >= $${params.length})`);
     }
@@ -89,6 +99,9 @@ export async function GET(req: NextRequest) {
     const total = parseInt(countResult.rows[0].count);
 
     // data
+    const exactDiscountParamIndex =
+      exactDiscount !== null && !isNaN(exactDiscount) && exactDiscount > 0 ? params.length : null;
+
     params.push(limit, offset);
     const dataResult = await query(
       `SELECT
@@ -97,8 +110,15 @@ export async function GET(req: NextRequest) {
          st.id AS store_id, st.name AS store_name,
          (SELECT pi.url FROM product_images pi
           WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail,
-         (SELECT MIN(pv.price) FROM product_variants pv
-          WHERE pv.product_id = p.id) AS sale_price
+         ${
+           exactDiscountParamIndex
+             ? `(SELECT MIN(pv.price) FROM product_variants pv
+                 WHERE pv.product_id = p.id
+                   AND p.base_price > 0
+                   AND ROUND((1.0 - pv.price::numeric / p.base_price) * 100) = $${exactDiscountParamIndex}) AS sale_price`
+             : `(SELECT MIN(pv.price) FROM product_variants pv
+                 WHERE pv.product_id = p.id) AS sale_price`
+         }
        FROM products p
        LEFT JOIN categories c  ON c.id  = p.category_id
        JOIN  stores st          ON st.id = p.store_id

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Eye, Filter, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Product } from '../../../src/lib/adminApi';
@@ -177,9 +178,17 @@ export default function ProductsPage() {
     <AdminShell
       title={t('products.title')}
       actions={
-        <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
-          <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
-        </button>
+        <div className='flex items-center gap-2'>
+          <Link
+            href='/admin/promotions'
+            className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--admin-card)]'
+          >
+            {t('nav.dailyDeals')}
+          </Link>
+          <button onClick={() => setShowFilters(true)} className='rounded-full border border-[var(--admin-border)] bg-[var(--admin-pill)] px-3 py-2 text-xs font-semibold lg:hidden'>
+            <Filter className='mr-1 inline size-4' /> {t('applications.filter')}
+          </button>
+        </div>
       }
     >
       <AdminPageSection title={t('products.moderation')} description={t('products.moderationDesc')} />

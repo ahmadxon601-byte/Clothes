@@ -124,6 +124,7 @@ export async function fetchProducts(params?: {
     max_price?: number;
     on_sale?: boolean;
     min_discount?: number;
+    exact_discount?: number;
     size?: string;
     created_from?: string;
     created_to?: string;
@@ -139,6 +140,7 @@ export async function fetchProducts(params?: {
     if (params?.max_price != null) p.max_price = String(params.max_price);
     if (params?.on_sale) p.on_sale = '1';
     if (params?.min_discount != null) p.min_discount = String(params.min_discount);
+    if (params?.exact_discount != null) p.exact_discount = String(params.exact_discount);
     if (params?.size) p.size = params.size;
     if (params?.created_from) p.created_from = params.created_from;
     if (params?.created_to) p.created_to = params.created_to;

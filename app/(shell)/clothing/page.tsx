@@ -127,7 +127,6 @@ export default function ClothingPage() {
     const go = () => doFetch({ query, category: activeSubcategory || (subcategories.length === 0 ? activeParentCategory : ''), minPrice, maxPrice, minDiscount });
     if (immediate) go();
     else debounceRef.current = setTimeout(go, 400);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, activeParentCategory, activeSubcategory, subcategories.length, minPrice, maxPrice, minDiscount, doFetch]);
 
   useEffect(() => {
@@ -136,52 +135,51 @@ export default function ClothingPage() {
   }, [triggerFetch]);
 
   const clearFilters = () => {
-    setMinPrice(''); setMaxPrice('');
+    setMinPrice('');
+    setMaxPrice('');
     setMinDiscount('');
   };
 
   return (
-    <section className="mx-auto max-w-[1440px] px-6 md:px-10 py-12 md:py-16">
+    <section className="mx-auto max-w-[1440px] px-6 py-12 md:px-10 md:py-16">
       <div className="mb-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#00a645]">{t.all_products_badge}</p>
         <h1 className="mt-1.5 font-[family-name:var(--font-playfair)] text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-[#111111] dark:text-white">{t.products_page_title}</h1>
       </div>
 
-      {/* Search + filter */}
-      <div className="flex gap-2 mb-4">
-        <div className="relative flex-1 min-w-0">
+      <div className="mb-4 flex gap-2">
+        <div className="relative min-w-0 flex-1">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.placeholder_search}
-            className="h-11 w-full rounded-full border border-black/10 bg-white pl-10 pr-10 text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white focus:ring-2 ring-[#00c853]/20"
+            className="h-11 w-full rounded-full border border-black/10 bg-white pl-10 pr-10 text-[14px] text-[#111111] outline-none placeholder:text-[#9ca3af] ring-[#00c853]/20 focus:ring-2 dark:border-white/10 dark:bg-[#1a1a1a] dark:text-white"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-black/5 rounded-full">
+            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/5">
               <X size={13} className="text-[#9ca3af]" />
             </button>
           )}
         </div>
         <button
-          onClick={() => setFilterOpen(o => !o)}
+          onClick={() => setFilterOpen((open) => !open)}
           className={cn(
-            'relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all',
+            'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all',
             filterOpen || activeFilterCount > 0
-              ? 'bg-[#13ec37] border-[#13ec37] text-white'
-              : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-[#9ca3af] hover:border-[#00c853]/40'
+              ? 'border-[#13ec37] bg-[#13ec37] text-white'
+              : 'border-black/10 bg-white text-[#9ca3af] hover:border-[#00c853]/40 dark:border-white/10 dark:bg-[#1a1a1a]'
           )}
         >
           <SlidersHorizontal size={18} />
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
               {activeFilterCount}
             </span>
           )}
         </button>
       </div>
 
-      {/* Filter dropdown */}
       {filterOpen && (
         <div className="mb-6 overflow-hidden rounded-[28px] border border-black/8 bg-white shadow-[0_20px_44px_-34px_rgba(17,24,39,0.35)] dark:border-white/8 dark:bg-[#1a1a1a]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 px-4 py-4 dark:border-white/8 sm:px-5">
@@ -232,7 +230,7 @@ export default function ClothingPage() {
                   <span className="text-[11px] font-semibold text-[#9ca3af]">{t.min}</span>
                   <input
                     value={minPrice}
-                    onChange={e => setMinPrice(e.target.value)}
+                    onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="0"
                     type="number"
                     className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
@@ -242,8 +240,8 @@ export default function ClothingPage() {
                   <span className="text-[11px] font-semibold text-[#9ca3af]">{t.max}</span>
                   <input
                     value={maxPrice}
-                    onChange={e => setMaxPrice(e.target.value)}
-                    placeholder="∞"
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    placeholder="1000000"
                     type="number"
                     className="mt-1 w-full bg-transparent text-[14px] font-semibold text-[#111111] outline-none placeholder:text-[#c0c6d4] dark:text-white"
                   />
@@ -263,7 +261,7 @@ export default function ClothingPage() {
                       'rounded-full border px-3 py-2 text-[12px] font-bold transition-all',
                       minDiscount === String(value)
                         ? 'border-[#13ec37] bg-[#13ec37] text-white'
-                    : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
+                        : 'border-black/8 bg-white text-[#111111] hover:border-[#00c853]/40 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'
                     )}
                   >
                     {value}%+
@@ -271,9 +269,15 @@ export default function ClothingPage() {
                 ))}
               </div>
               <div className="mt-3 flex items-center gap-2">
-                <input value={minDiscount} onChange={e => setMinDiscount(e.target.value)}
-                  type="number" min="1" max="99" placeholder="20"
-                  className="h-11 w-24 rounded-[16px] border border-black/8 bg-white px-3 text-[13px] font-semibold text-[#111111] outline-none focus:ring-2 ring-[#00c853]/20 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white" />
+                <input
+                  value={minDiscount}
+                  onChange={(e) => setMinDiscount(e.target.value)}
+                  type="number"
+                  min="1"
+                  max="99"
+                  placeholder="20"
+                  className="h-11 w-24 rounded-[16px] border border-black/8 bg-white px-3 text-[13px] font-semibold text-[#111111] outline-none ring-[#00c853]/20 focus:ring-2 dark:border-white/8 dark:bg-[#1a1a1a] dark:text-white"
+                />
                 <span className="text-[13px] text-[#9ca3af]">% va undan ko&apos;p</span>
               </div>
             </div>
@@ -281,12 +285,11 @@ export default function ClothingPage() {
         </div>
       )}
 
-      {/* Category chips */}
       {categories.length > 0 && (
         <div className="mb-8 flex flex-wrap gap-2 pb-1">
           <button
             onClick={() => { setActiveParentCategory(''); setActiveSubcategory(''); }}
-            className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === '' && activeSubcategory === '' ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
+            className={`rounded-full border px-5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${activeParentCategory === '' && activeSubcategory === '' ? 'border-transparent bg-[#111111] text-white shadow dark:bg-white dark:text-[#111111]' : 'border-black/10 bg-white text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
           >
             {t.all}
           </button>
@@ -298,7 +301,7 @@ export default function ClothingPage() {
                 setActiveParentCategory(nextParent);
                 setActiveSubcategory('');
               }}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeParentCategory === cat.id ? 'bg-[#111111] text-white border-transparent shadow dark:bg-white dark:text-[#111111]' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${activeParentCategory === cat.id ? 'border-transparent bg-[#111111] text-white shadow dark:bg-white dark:text-[#111111]' : 'border-black/10 bg-white text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
             >
               {cat.sticker ? (
                 <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[16px] leading-none ${activeParentCategory === cat.id ? 'bg-white/16 dark:bg-black/10' : 'bg-[#f3f4f6] dark:bg-white/10'}`}>
@@ -310,13 +313,14 @@ export default function ClothingPage() {
           ))}
         </div>
       )}
+
       {activeParentCategory && subcategories.length > 0 && (
         <div className="mb-8 flex flex-wrap gap-2 pb-1">
           {subcategories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveSubcategory(activeSubcategory === cat.id ? '' : cat.id)}
-              className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${activeSubcategory === cat.id ? 'bg-[#13ec37] text-[#052e14] border-[#13ec37] shadow' : 'bg-white border-black/10 text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:bg-[#1a1a1a] dark:border-white/10 dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
+              className={`rounded-full border px-5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${activeSubcategory === cat.id ? 'border-[#13ec37] bg-[#13ec37] text-[#052e14] shadow' : 'border-black/10 bg-white text-[#6b7280] hover:border-[#00c853]/45 hover:bg-[#f1fff4] hover:text-[#008d3a] dark:border-white/10 dark:bg-[#1a1a1a] dark:text-[#9ca3af] dark:hover:bg-[#122117] dark:hover:text-[#84f89b]'}`}
             >
               {categoryLabel(cat)}
             </button>
@@ -352,13 +356,9 @@ export default function ClothingPage() {
                 )}
                 <button
                   type="button"
-                  onClick={(e) => toggleFav(e, product.id)}
+                  onClick={(event) => toggleFav(event, product.id)}
                   disabled={toggling.has(product.id)}
-                  className={`absolute right-3 top-3 z-10 rounded-full p-2.5 backdrop-blur-md border transition-all disabled:opacity-60 ${
-                    favIds.has(product.id)
-                      ? 'border-red-200 bg-white/92 text-red-500'
-                      : 'border-white/30 bg-white/15 text-white hover:bg-white/90 hover:text-[#111111]'
-                  }`}
+                  className={`absolute right-3 top-3 z-10 rounded-full border p-2.5 backdrop-blur-md transition-all disabled:opacity-60 ${favIds.has(product.id) ? 'border-red-200 bg-white/92 text-red-500' : 'border-white/30 bg-white/15 text-white hover:bg-white/90 hover:text-[#111111]'}`}
                 >
                   {toggling.has(product.id)
                     ? <Loader2 size={13} className="animate-spin" />
@@ -366,7 +366,7 @@ export default function ClothingPage() {
                   }
                 </button>
               </div>
-              <div className="px-1 pt-4 pb-1">
+              <div className="px-1 pb-1 pt-4">
                 {product.category_name && (
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9ca3af]">{product.category_name}</p>
                 )}
@@ -385,9 +385,9 @@ export default function ClothingPage() {
                           {formatPrice(cur, 'UZS', language)}
                         </span>
                         {hasDis && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className="mt-0.5 flex items-center gap-1.5">
                             <span className="text-[12px] text-[#9ca3af] line-through">{formatPrice(bp, 'UZS', language)}</span>
-                            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">−{pct}%</span>
+                            <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">-{pct}%</span>
                           </div>
                         )}
                       </>

@@ -35,7 +35,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const [hideWebHeader, setHideWebHeader] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [footerCategories, setFooterCategories] = useState<Array<{ id: string; name: string; name_uz?: string | null; name_ru?: string | null; name_en?: string | null; parent_id?: string | null }>>([]);
-    const langRef = useRef<HTMLDivElement>(null);
+    const mobileLangRef = useRef<HTMLDivElement>(null);
+    const desktopLangRef = useRef<HTMLDivElement>(null);
     const mobileUserMenuRef = useRef<HTMLDivElement>(null);
     const desktopUserMenuRef = useRef<HTMLDivElement>(null);
     const isDark = settings.themeMode === 'dark';
@@ -63,7 +64,9 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const onDocClick = (event: PointerEvent) => {
             const target = event.target as Node;
-            if (langRef.current && !langRef.current.contains(event.target as Node)) {
+            const isInsideMobileLangMenu = mobileLangRef.current?.contains(target) ?? false;
+            const isInsideDesktopLangMenu = desktopLangRef.current?.contains(target) ?? false;
+            if (!isInsideMobileLangMenu && !isInsideDesktopLangMenu) {
                 setLangOpen(false);
             }
             const isInsideMobileUserMenu = mobileUserMenuRef.current?.contains(target) ?? false;
@@ -256,17 +259,43 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 {isDark ? <Sun className={cn("sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} /> : <Moon className={cn("sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} />}
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={() => selectLanguage(settings.language === 'uz' ? 'ru' : settings.language === 'ru' ? 'en' : 'uz')}
-                                title={w.navbar.lang}
-                                className={cn(
-                                    "inline-flex shrink-0 items-center justify-center rounded-full border border-[#13ec37]/25 bg-[#effff2] font-semibold text-[#0d8f2a] shadow-[0_10px_20px_-16px_rgba(19,236,55,0.72)] dark:border-[#13ec37]/25 dark:bg-[#112315] dark:text-[#72f58a] sm:h-10 sm:min-w-10 sm:px-3",
-                                    isCompactMobileHeader ? 'h-8 min-w-8 px-2 text-[10px]' : 'h-9 min-w-9 px-2.5 text-[11px]',
+                            <div className="relative shrink-0" ref={mobileLangRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setLangOpen((prev) => !prev)}
+                                    title={w.navbar.lang}
+                                    className={cn(
+                                        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#13ec37] text-[#06200f] shadow-[0_16px_28px_-18px_rgba(19,236,55,0.72)] transition-all duration-300 hover:bg-[#0fd430] dark:bg-[#13ec37] dark:text-[#06200f] dark:hover:bg-[#38f05c] sm:h-10 sm:w-10",
+                                        isCompactMobileHeader ? 'h-8 w-8' : 'h-9 w-9',
+                                    )}
+                                >
+                                    <Globe className={cn("sm:h-[17px] sm:w-[17px]", isCompactMobileHeader ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
+                                </button>
+                                {langOpen && (
+                                    <div
+                                        className="absolute right-0 z-[220] mt-2 w-36 touch-manipulation overflow-hidden rounded-[18px] border border-[#13ec37]/20 bg-white shadow-[0_24px_46px_-22px_rgba(0,0,0,0.35)] pointer-events-auto dark:bg-[#111411]"
+                                        onPointerDown={(event) => event.stopPropagation()}
+                                        onClick={(event) => event.stopPropagation()}
+                                    >
+                                        {languages.map((language) => (
+                                            <button
+                                                key={language.code}
+                                                type="button"
+                                                onPointerDown={(event) => event.stopPropagation()}
+                                                onPointerUp={() => selectLanguage(language.code)}
+                                                className={cn(
+                                                    'block w-full px-4 py-3 text-left text-[13px] font-semibold transition-colors',
+                                                    settings.language === language.code
+                                                        ? 'bg-[#effff2] text-[#0d8f2a] dark:bg-[#16351d] dark:text-[#72f58a]'
+                                                        : 'text-[#111111] hover:bg-[#f5fff7] dark:text-white dark:hover:bg-[#16351d]',
+                                                )}
+                                            >
+                                                {language.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 )}
-                            >
-                                {(settings.language ?? 'uz').toUpperCase()}
-                            </button>
+                            </div>
 
                             {user ? (
                                 <div className="relative shrink-0" ref={mobileUserMenuRef}>
@@ -400,7 +429,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                             </button>
 
-                            <div className="relative shrink-0" ref={langRef}>
+                            <div className="relative shrink-0" ref={desktopLangRef}>
                                 <button
                                     type="button"
                                     onClick={() => setLangOpen((prev) => !prev)}
