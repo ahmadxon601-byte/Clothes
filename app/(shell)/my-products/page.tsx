@@ -12,6 +12,12 @@ import { RichTextEditor } from '../../../src/shared/ui/RichTextEditor';
 import { stripRichText } from '../../../src/shared/lib/richText';
 import { DEPARTMENTS, getDepartmentBySlug, type DepartmentKey } from '../../../src/shared/lib/productCategoryMeta';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
+import {
+  getMarketingCampaignSummary,
+  MARKETING_CAMPAIGNS_SETTING_KEY,
+  parseMarketingCampaigns,
+  type MarketingCampaign,
+} from '../../../src/shared/lib/marketingCampaigns';
 
 interface Product {
   id: string;
@@ -30,6 +36,20 @@ interface Product {
   store_id: string;
   store_name: string;
   thumbnail: string | null;
+  marketing_campaign_id?: string | null;
+}
+
+interface ProductDetailResponse extends Product {
+  images?: Array<{ url: string; sort_order: number }>;
+  variants?: Array<{ size?: string; price?: number; stock?: number }>;
+  marketing_campaign?: {
+    id: string;
+    name: string;
+    label: string;
+    type: string;
+    description?: string;
+    summary?: string;
+  } | null;
 }
 
 interface Store {
@@ -169,6 +189,7 @@ export default function MyProductsPage() {
   const [dailyDealInvites, setDailyDealInvites] = useState<DailyDealInvite[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
   const [fetching, setFetching] = useState(true);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -178,24 +199,12 @@ export default function MyProductsPage() {
   const [form, setForm] = useState({
     name: '',
     base_price: '',
-    discount: '',
-    current_price: '',
     stock: '1',
     description: '',
     category_id: '',
     store_id: '',
+    marketing_campaign_id: '',
   });
-
-  const calcCurrentPrice = (base: string, disc: string) => {
-    const b = Number(base); const d = Number(disc);
-    if (!b || isNaN(b) || isNaN(d)) return '';
-    return String(Math.round(b * (1 - d / 100)));
-  };
-  const calcDiscount = (base: string, cur: string) => {
-    const b = Number(base); const c = Number(cur);
-    if (!b || !c || isNaN(b) || isNaN(c)) return '';
-    return String(Math.round((1 - c / b) * 100));
-  };
   const [formImages, setFormImages] = useState<string[]>([]);
   const [temporaryUploadUrls, setTemporaryUploadUrls] = useState<string[]>([]);
   const [uploadingImg, setUploadingImg] = useState(false);
@@ -309,12 +318,25 @@ export default function MyProductsPage() {
     }
   };
 
+  const loadCampaigns = async () => {
+    try {
+      const res = await fetch(`/api/ui-settings?key=${MARKETING_CAMPAIGNS_SETTING_KEY}`);
+      const json = await res.json().catch(() => ({}));
+      const raw = json?.data?.value ?? json?.value ?? null;
+      const parsed = parseMarketingCampaigns(raw).filter((item) => item.status === 'active');
+      setCampaigns(parsed);
+    } catch {
+      setCampaigns([]);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadProducts();
       loadStores();
       loadCategories();
       loadDailyDealInvites();
+      loadCampaigns();
     } else if (!loading) {
       setFetching(false);
     }
@@ -380,7 +402,15 @@ export default function MyProductsPage() {
       : null;
     setDepartment(getDepartmentBySlug(defaultParent?.slug));
     setParentCategoryId(defaultParent?.id ?? '');
-    setForm({ name: '', base_price: '', discount: '', current_price: '', stock: '1', description: '', category_id: defaultSubcategory?.id ?? defaultParent?.id ?? '', store_id: stores[0]?.id ?? '' });
+    setForm({
+      name: '',
+      base_price: '',
+      stock: '1',
+      description: '',
+      category_id: defaultSubcategory?.id ?? defaultParent?.id ?? '',
+      store_id: stores[0]?.id ?? '',
+      marketing_campaign_id: '',
+    });
     setFormImages([]);
     setTemporaryUploadUrls([]);
     setFormError('');
@@ -402,12 +432,11 @@ export default function MyProductsPage() {
     setForm({
       name: p.name,
       base_price: String(p.base_price),
-      discount: '',
-      current_price: String(p.base_price),
       stock: '1',
       description: p.description ?? '',
       category_id: p.category_id ?? '',
       store_id: p.store_id,
+      marketing_campaign_id: p.marketing_campaign_id ?? '',
     });
     setFormImages(p.thumbnail ? [p.thumbnail] : []);
     setTemporaryUploadUrls([]);
@@ -422,21 +451,21 @@ export default function MyProductsPage() {
     try {
       const res = await fetch(`/api/products/${p.id}`);
       const json = await res.json();
-      const detail = json.data?.product ?? json.product;
+      const detail: ProductDetailResponse = json.data?.product ?? json.product;
       const imgs: { url: string; sort_order: number }[] = detail?.images ?? [];
       if (imgs.length > 0) setFormImages(imgs.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order).map((i: { url: string }) => i.url));
       const variants: { size?: string; price?: number; stock?: number }[] = detail?.variants ?? [];
       setForm(prev => {
-        const base: typeof prev = { ...prev, description: detail?.description ?? '' };
+        const base: typeof prev = {
+          ...prev,
+          description: detail?.description ?? '',
+          marketing_campaign_id: detail?.marketing_campaign?.id ?? detail?.marketing_campaign_id ?? '',
+        };
         if (variants.length > 0) {
           const v = variants[0];
           return {
             ...base,
             stock: v.stock != null ? String(v.stock) : '1',
-            current_price: v.price != null ? String(v.price) : prev.base_price,
-            discount: v.price != null && v.price < p.base_price
-              ? String(Math.round((1 - v.price / p.base_price) * 100))
-              : '',
           };
         }
         return base;
@@ -529,8 +558,7 @@ export default function MyProductsPage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setFormErrors({});
     setSaving(true);
-    const finalPrice = form.current_price ? Number(form.current_price) : Number(form.base_price);
-    const variantPayload = { variants: [{ price: finalPrice, stock: Number(form.stock) || 1 }] };
+    const variantPayload = { variants: [{ price: Number(form.base_price), stock: Number(form.stock) || 1 }] };
     try {
       let res: Response;
       const imagePayload = formImages.length > 0
@@ -545,6 +573,7 @@ export default function MyProductsPage() {
             base_price: Number(form.base_price),
             ...(descriptionText && { description: form.description }),
             category_id: form.category_id || null,
+            marketing_campaign_id: form.marketing_campaign_id || null,
             ...imagePayload,
             ...variantPayload,
           }),
@@ -559,6 +588,7 @@ export default function MyProductsPage() {
             ...(descriptionText && { description: form.description }),
             ...(form.category_id && { category_id: form.category_id }),
             ...(form.store_id && { store_id: form.store_id }),
+            ...(form.marketing_campaign_id && { marketing_campaign_id: form.marketing_campaign_id }),
             ...imagePayload,
             ...variantPayload,
           }),
@@ -935,44 +965,13 @@ export default function MyProductsPage() {
                     onChange={(e) => {
                       const v = e.target.value;
                       if (formErrors.price) setFormErrors(p => ({ ...p, price: false }));
-                      setForm((p) => ({ ...p, base_price: v, current_price: calcCurrentPrice(v, p.discount) }));
+                      setForm((p) => ({ ...p, base_price: v }));
                     }}
                     className={formErrors.price ? fieldErrorClass : fieldClass}
                     placeholder="50000"
                   />
                   {formErrors.price && <p className="mt-1 text-[12px] text-red-500">{p.invalidPrice}</p>}
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className={subtleLabelClass}>{p.discount}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={form.discount}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setForm((p) => ({ ...p, discount: v, current_price: calcCurrentPrice(p.base_price, v) }));
-                      }}
-                      className={fieldClass}
-                      placeholder="0"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className={subtleLabelClass}>{p.currentPrice}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={form.current_price}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setForm((p) => ({ ...p, current_price: v, discount: calcDiscount(p.base_price, v) }));
-                      }}
-                      className={fieldClass}
-                      placeholder="50000"
-                    />
-                  </label>
-                </div>
                 <label className="block">
                   <span className={subtleLabelClass}>{p.stock}</span>
                   <input
@@ -1059,6 +1058,24 @@ export default function MyProductsPage() {
                       </div>
                     )}
                   </div>
+                </label>
+                <label className="block">
+                  <span className={subtleLabelClass}>Aksiya tanlash</span>
+                  <select
+                    value={form.marketing_campaign_id}
+                    onChange={(e) => setForm((prev) => ({ ...prev, marketing_campaign_id: e.target.value }))}
+                    className={selectClass}
+                  >
+                    <option value="">Aksiya tanlanmagan</option>
+                    {campaigns.map((campaign) => (
+                      <option key={campaign.id} value={campaign.id}>
+                        {campaign.name} - {getMarketingCampaignSummary(campaign)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
+                    Mahsulot shu aksiya bilan ko‘rinadi va detail sahifasida ham chiqadi.
+                  </p>
                 </label>
                 <label className="block">
                   <span className={subtleLabelClass}>{p.description}</span>

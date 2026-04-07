@@ -54,6 +54,15 @@ interface ProductDetail {
   } | null;
   images: ProductImage[];
   variants: ProductVariant[];
+  marketing_campaign?: {
+    id: string;
+    name: string;
+    label: string;
+    type: string;
+    status: string;
+    description?: string;
+    summary?: string;
+  } | null;
 }
 
 interface SimilarProduct {
@@ -372,6 +381,21 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <p className="break-words text-[11px] font-bold uppercase tracking-[0.12em] text-[#00a645]">{product.category_name}</p>
             )}
             <h1 className="mt-1.5 break-words text-[20px] font-black leading-tight text-[#111111] dark:text-white sm:text-[28px] md:text-[34px]">{translatedName || sanitizeProductLabel(product.name, language)}</h1>
+
+            {product.marketing_campaign ? (
+              <div className="mt-4 rounded-[24px] border border-[#00c853]/20 bg-[linear-gradient(135deg,rgba(0,200,83,0.09),rgba(0,200,83,0.02))] p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#00a645]">Aksiya</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-[#00c853] px-3 py-1 text-[12px] font-black text-white">
+                    {product.marketing_campaign.label}
+                  </span>
+                  <span className="text-[14px] font-bold text-[#111111] dark:text-white">{product.marketing_campaign.name}</span>
+                </div>
+                {product.marketing_campaign.summary ? (
+                  <p className="mt-2 text-[13px] leading-6 text-[#46604c] dark:text-[#b7d7be]">{product.marketing_campaign.summary}</p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-[24px] border border-[#00c853]/20 bg-[linear-gradient(135deg,rgba(0,200,83,0.08),rgba(0,200,83,0.02))] px-4 py-4 sm:px-5">
               <p className="min-w-0 break-words text-[clamp(28px,8vw,32px)] font-black leading-none text-[#00c853]">{formatPrice(Number(displayPrice), 'UZS', language)}</p>

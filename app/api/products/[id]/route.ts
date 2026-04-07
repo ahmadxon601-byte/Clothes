@@ -7,6 +7,13 @@ import { getProductReviewSupport } from "@/src/lib/productReview";
 import { getProductViewSupport } from "@/src/lib/productViewSupport";
 import { deleteStagedImages, readStagedImages, saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
+import { getUiSetting } from "@/src/lib/uiSettings";
+import {
+  getMarketingCampaignSummary,
+  MARKETING_CAMPAIGNS_SETTING_KEY,
+  parseMarketingCampaigns,
+  resolveMarketingCampaignLabel,
+} from "@/src/shared/lib/marketingCampaigns";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -153,6 +160,24 @@ export async function GET(req: NextRequest, { params }: Params) {
       }));
     }
 
+    const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+    const campaigns = parseMarketingCampaigns(rawCampaigns);
+    const marketingCampaignId = typeof product.marketing_campaign_id === "string" ? product.marketing_campaign_id : null;
+    const marketingCampaign = marketingCampaignId
+      ? campaigns.find((item) => item.id === marketingCampaignId) ?? null
+      : null;
+    product.marketing_campaign = marketingCampaign
+      ? {
+          id: marketingCampaign.id,
+          name: marketingCampaign.name,
+          label: resolveMarketingCampaignLabel(marketingCampaign),
+          type: marketingCampaign.type,
+          status: marketingCampaign.status,
+          description: marketingCampaign.description || "",
+          summary: getMarketingCampaignSummary(marketingCampaign),
+        }
+      : null;
+
     const response = buildProductResponse(product);
     if (uniqueView.shouldSetCookie && uniqueView.viewerId) {
       response.cookies.set(PRODUCT_VIEWER_COOKIE, uniqueView.viewerId, {
@@ -184,6 +209,7 @@ const updateSchema = z.object({
   description: z.string().optional(),
   base_price: z.number().positive().optional(),
   category_id: z.string().uuid().nullable().optional(),
+  marketing_campaign_id: z.string().min(1).nullable().optional(),
   is_active: z.boolean().optional(),
   images: z
     .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
@@ -228,11 +254,26 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return fail(parsed.error.errors[0].message, 422);
 
-    const { images, variants, ...rest } = parsed.data;
+    const { images, variants, marketing_campaign_id, ...rest } = parsed.data;
+
+    let selectedCampaignId: string | null | undefined = marketing_campaign_id;
+    if (marketing_campaign_id !== undefined) {
+      if (!marketing_campaign_id) {
+        selectedCampaignId = null;
+      } else {
+        const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+        const campaign = parseMarketingCampaigns(rawCampaigns).find(
+          (item) => item.id === marketing_campaign_id && item.status === "active"
+        );
+        if (!campaign) return fail("Selected campaign not found", 422);
+        selectedCampaignId = campaign.id;
+      }
+    }
 
     const sellerChangedData =
       images !== undefined ||
       variants !== undefined ||
+      marketing_campaign_id !== undefined ||
       Object.entries(rest).some(([key, val]) => key !== "is_active" && val !== undefined);
 
     if (
@@ -248,6 +289,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       } = {
         ...Object.fromEntries(Object.entries(rest).filter(([, val]) => val !== undefined && val !== null)),
         ...(Object.entries(rest).some(([, val]) => val === null) ? Object.fromEntries(Object.entries(rest).filter(([, val]) => val === null)) : {}),
+        ...(marketing_campaign_id !== undefined ? { marketing_campaign_id: selectedCampaignId } : {}),
         ...(images !== undefined ? { images_changed: true } : {}),
         ...(variants !== undefined ? { variants } : {}),
       };
@@ -284,6 +326,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
       if (jwtUser.role === "seller" && key === "is_active") continue;
       vals.push(val);
       fields.push(`${key} = $${vals.length}`);
+    }
+
+    if (marketing_campaign_id !== undefined) {
+      vals.push(selectedCampaignId ?? null);
+      fields.push(`marketing_campaign_id = $${vals.length}`);
     }
 
     if (

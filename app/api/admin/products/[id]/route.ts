@@ -60,6 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         description?: string | null;
         base_price?: number;
         category_id?: string | null;
+        marketing_campaign_id?: string | null;
         images?: Array<{ url: string; sort_order: number }>;
         images_changed?: boolean;
         variants?: Array<{ size?: string; color?: string; price: number; stock: number }>;
@@ -101,6 +102,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (pending.description !== undefined) { applyVals.push(pending.description); applyFields.push(`description = $${applyVals.length}`); }
         if (pending.base_price !== undefined) { applyVals.push(pending.base_price); applyFields.push(`base_price = $${applyVals.length}`); }
         if (pending.category_id !== undefined) { applyVals.push(pending.category_id); applyFields.push(`category_id = $${applyVals.length}`); }
+        if (pending.marketing_campaign_id !== undefined) { applyVals.push(pending.marketing_campaign_id); applyFields.push(`marketing_campaign_id = $${applyVals.length}`); }
 
         applyVals.push(id);
         const updated = await db.query(

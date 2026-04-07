@@ -6,6 +6,8 @@ import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
 import { saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
+import { getUiSetting } from "@/src/lib/uiSettings";
+import { MARKETING_CAMPAIGNS_SETTING_KEY, parseMarketingCampaigns } from "@/src/shared/lib/marketingCampaigns";
 
 // ── GET /api/products ────────────────────────────────────────────────────────
 // Query params: sort (newest|popular|price_asc|price_desc), category, search,
@@ -152,6 +154,7 @@ const createSchema = z.object({
   base_price: z.number().positive(),
   category_id: z.string().uuid().optional(),
   store_id: z.string().uuid().optional(),
+  marketing_campaign_id: z.string().min(1).nullable().optional(),
   images: z
     .array(z.object({ url: z.string().min(1), sort_order: z.number().int().min(0) }))
     .max(20, "Ko'pi bilan 20 ta rasm yuklash mumkin")
@@ -198,8 +201,18 @@ export async function POST(req: NextRequest) {
       return fail(parsed.error.errors[0].message, 422);
     }
 
-    const { name, description, base_price, category_id, store_id, images, variants, location } =
+    const { name, description, base_price, category_id, store_id, marketing_campaign_id, images, variants, location } =
       parsed.data;
+
+    let selectedCampaignId: string | null = null;
+    if (marketing_campaign_id) {
+      const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+      const campaign = parseMarketingCampaigns(rawCampaigns).find(
+        (item) => item.id === marketing_campaign_id && item.status === "active"
+      );
+      if (!campaign) return fail("Selected campaign not found", 422);
+      selectedCampaignId = campaign.id;
+    }
 
     // Find store owned by this seller
     let storeId: string;
@@ -240,16 +253,16 @@ export async function POST(req: NextRequest) {
       const isActive = reviewSupport.hasReviewStatus ? actualRole === "admin" : true;
       const productResult = reviewSupport.hasReviewStatus
         ? await client.query(
-            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, review_status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, review_status, marketing_campaign_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
-            [storeId, category_id ?? null, name, description ?? null, base_price, sku, isActive, reviewStatus]
+            [storeId, category_id ?? null, name, description ?? null, base_price, sku, isActive, reviewStatus, selectedCampaignId]
           )
         : await client.query(
-            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, marketing_campaign_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [storeId, category_id ?? null, name, description ?? null, base_price, sku, true]
+            [storeId, category_id ?? null, name, description ?? null, base_price, sku, true, selectedCampaignId]
           );
       const product = productResult.rows[0];
 

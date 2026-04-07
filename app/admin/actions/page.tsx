@@ -4,7 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   BadgePercent,
-  Clock3,
+  CheckCircle2,
   Flame,
   Gift,
   Layers3,
@@ -210,6 +210,18 @@ function campaignSummary(item: Campaign) {
   return 'Yangi qo‘shilgan mahsulotlarni ajratadi';
 }
 
+function campaignFieldHint(type: CampaignType) {
+  if (type === 'discount_percent') return 'Chegirma foizini kiriting.';
+  if (type === 'buy_x_get_y') return 'Nechta mahsulot olinishi va nechta bonus berilishini belgilang.';
+  if (type === 'bundle_price') return 'Set ichidagi mahsulot soni va umumiy narxni kiriting.';
+  if (type === 'gift') return 'Qaysi sovg‘a berilishini yozing.';
+  if (type === 'promo_code') return 'Foydalanuvchi kiritadigan promo kodni belgilang.';
+  if (type === 'flash_sale') return 'Aksiya necha soat davom etishini kiriting.';
+  if (type === 'free_shipping') return 'Yetkazib berish shartini qisqa yozing.';
+  if (type === 'trending') return 'Qo‘shimcha sozlama talab qilinmaydi.';
+  return 'Qo‘shimcha sozlama talab qilinmaydi.';
+}
+
 function deriveQuickFilters(campaigns: Campaign[]): ProductQuickFilter[] {
   const mapped = campaigns
     .filter((item) => item.status === 'active')
@@ -275,6 +287,7 @@ export default function AdminActionsPage() {
   const editing = useMemo(() => items.find((item) => item.id === form.id) ?? null, [form.id, items]);
   const selectedType = typeMeta(form.type);
   const storefrontFilters = useMemo(() => deriveQuickFilters(items), [items]);
+  const activeCount = useMemo(() => items.filter((item) => item.status === 'active').length, [items]);
 
   const canSubmit = useMemo(() => {
     const titleOk = form.name.trim().length > 1;
@@ -450,7 +463,7 @@ export default function AdminActionsPage() {
     >
       <AdminPageSection
         title='Aksiya konstruktori'
-        description='Foizli chegirma, 1+1, 2+1, promo kod, sovg‘a, flash sale va boshqa ko‘plab aksiyalarni bir joydan yarating.'
+        description='Sahifani soddalashtirdik: aksiya turini tanlang, kerakli maydonlarni to‘ldiring va saqlang.'
       />
 
       <div className='marketing-builder grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_360px]'>
@@ -458,11 +471,26 @@ export default function AdminActionsPage() {
           <div className='border-b border-[var(--admin-border)] bg-[linear-gradient(135deg,rgba(18,210,32,0.12),rgba(18,210,32,0.02)_45%,transparent_85%)] px-5 py-4'>
             <h2 className='text-[20px] font-black text-[var(--admin-fg)]'>{editing ? 'Aksiyani tahrirlash' : 'Yangi aksiya yaratish'}</h2>
             <p className='mt-1 max-w-[44ch] text-[13px] leading-5 text-[var(--admin-muted)]'>
-              Bu yerda faqat chip emas, turli marketing va savdo aksiyalarini alohida konstruksiya qilasiz.
+              Faqat kerakli maydonlar ko‘rsatiladi. Murakkab konstruktor o‘rniga oddiy forma ishlaydi.
             </p>
           </div>
 
           <div className='space-y-5 p-5'>
+            <div className='grid gap-3 rounded-[22px] border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4 md:grid-cols-3'>
+              <div className='rounded-[18px] border border-[var(--admin-border)] bg-[var(--admin-card)] p-3'>
+                <p className='text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]'>1-qadam</p>
+                <p className='mt-1 text-sm font-semibold text-[var(--admin-fg)]'>Turini tanlang</p>
+              </div>
+              <div className='rounded-[18px] border border-[var(--admin-border)] bg-[var(--admin-card)] p-3'>
+                <p className='text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]'>2-qadam</p>
+                <p className='mt-1 text-sm font-semibold text-[var(--admin-fg)]'>Kerakli maydonni to‘ldiring</p>
+              </div>
+              <div className='rounded-[18px] border border-[var(--admin-border)] bg-[var(--admin-card)] p-3'>
+                <p className='text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]'>3-qadam</p>
+                <p className='mt-1 text-sm font-semibold text-[var(--admin-fg)]'>Saqlang va ro‘yxatda tekshiring</p>
+              </div>
+            </div>
+
             <div className='grid gap-3 md:grid-cols-2'>
               <label className='block'>
                 <span className='mb-1.5 block text-xs font-semibold text-[var(--admin-muted)]'>Aksiya nomi</span>
@@ -473,51 +501,31 @@ export default function AdminActionsPage() {
                   placeholder='Masalan: Yozgi 1+1 kampaniya'
                 />
               </label>
-              <label className='block'>
-                <span className='mb-1.5 block text-xs font-semibold text-[var(--admin-muted)]'>Badge / chip matni</span>
-                <input
-                  value={form.label}
-                  onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
-                  className='admin-input h-11 w-full rounded-[16px] px-4'
-                  placeholder='Masalan: 1+1 yoki 30%'
-                />
-              </label>
             </div>
 
             <div>
               <div className='mb-2 flex items-center justify-between gap-3'>
                 <span className='text-xs font-semibold text-[var(--admin-muted)]'>Aksiya turi</span>
                 <span className='rounded-full border border-[var(--admin-border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--admin-muted)]'>
-                  9 ta tur
+                  {selectedType.title}
                 </span>
               </div>
-              <div className='grid gap-2.5 md:grid-cols-2 xl:grid-cols-3'>
-                {TYPE_DEFS.map((item) => {
-                  const Icon = item.icon;
-                  const active = form.type === item.type;
-
-                  return (
-                    <button
-                      key={item.type}
-                      type='button'
-                      onClick={() => setForm((prev) => ({ ...prev, type: item.type }))}
-                      className={
-                        active
-                          ? 'group relative overflow-hidden rounded-[20px] border border-[#12d220]/40 bg-[var(--admin-card)] px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#12d220]/55'
-                          : 'group relative overflow-hidden rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-card)] px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#12d220]/28 hover:bg-[rgba(19,29,46,0.98)]'
-                      }
-                    >
-                      <div className='flex items-start justify-between gap-3'>
-                        <span className={active ? 'flex h-8 w-8 items-center justify-center rounded-[16px] bg-[#12d220] text-white transition-colors duration-200' : 'flex h-8 w-8 items-center justify-center rounded-[16px] bg-[var(--admin-card)] text-[#12d220] transition-colors duration-200 group-hover:bg-[#12d220]/10'}>
-                          <Icon className='size-4' />
-                        </span>
-                        <span className={active ? 'mt-1 h-3 w-3 rounded-full bg-[#12d220] transition-colors duration-200' : 'mt-1 h-3 w-3 rounded-full border border-[var(--admin-border)] transition-colors duration-200 group-hover:border-[#12d220]/35'} />
-                      </div>
-                      <p className='mt-2.5 text-[13px] font-black leading-5 text-[var(--admin-fg)]'>{item.title}</p>
-                      <p className='mt-1 text-[11px] leading-4 text-[var(--admin-muted)]'>{item.subtitle}</p>
-                    </button>
-                  );
-                })}
+              <div className='grid gap-3 md:grid-cols-[minmax(0,220px)_1fr]'>
+                <select
+                  value={form.type}
+                  onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value as CampaignType }))}
+                  className='admin-input h-11 rounded-[16px] px-4'
+                >
+                  {TYPE_DEFS.map((item) => (
+                    <option key={item.type} value={item.type}>
+                      {item.title}
+                    </option>
+                  ))}
+                </select>
+                <div className='rounded-[18px] border border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3'>
+                  <p className='text-sm font-semibold text-[var(--admin-fg)]'>{selectedType.title}</p>
+                  <p className='mt-1 text-xs leading-5 text-[var(--admin-muted)]'>{selectedType.subtitle}</p>
+                </div>
               </div>
             </div>
 
@@ -548,6 +556,10 @@ export default function AdminActionsPage() {
                   placeholder='Ichki tavsif yoki menejer uchun izoh'
                 />
               </label>
+            </div>
+
+            <div className='rounded-[18px] border border-dashed border-[var(--admin-border)] bg-[var(--admin-pill)] px-4 py-3 text-sm text-[var(--admin-muted)]'>
+              {campaignFieldHint(form.type)}
             </div>
 
             {form.type === 'discount_percent' ? (
@@ -670,7 +682,7 @@ export default function AdminActionsPage() {
             <div className='rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(24,41,68,0.98),rgba(18,30,50,0.88))] p-4'>
               <div className='mb-3 flex items-center justify-between gap-3'>
                 <div>
-                  <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#91a6c6]'>Preview</p>
+                  <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#91a6c6]'>Qisqa preview</p>
                   <p className='mt-1.5 text-[18px] font-black leading-none tracking-tight text-[var(--admin-fg)]'>{previewCampaign.name}</p>
                 </div>
                 <span className={previewCampaign.status === 'active' ? 'rounded-full border border-[#12d220]/25 bg-[#12d220]/10 px-4 py-1.5 text-[12px] font-semibold text-[#12d220]' : 'rounded-full border border-[var(--admin-border)] bg-[rgba(255,255,255,0.02)] px-4 py-1.5 text-[12px] font-semibold text-[var(--admin-muted)]'}>
@@ -710,12 +722,13 @@ export default function AdminActionsPage() {
           <div className='admin-card p-5'>
             <div className='mb-4 flex items-center justify-between gap-3'>
               <div>
-                <p className='text-sm font-semibold text-[var(--admin-fg)]'>Aksiyalar paneli</p>
-                <p className='mt-1 text-xs text-[var(--admin-muted)]'>Bitta sahifada ko‘p turdagi aksiyalarni yuritish uchun tayyor ro‘yxat.</p>
+                <p className='text-sm font-semibold text-[var(--admin-fg)]'>Aksiyalar ro‘yxati</p>
+                <p className='mt-1 text-xs text-[var(--admin-muted)]'>Bu yerda yaratilgan aksiyalarni ko‘rasiz, tahrirlaysiz va tartibini o‘zgartirasiz.</p>
               </div>
-              <span className='rounded-full border border-[var(--admin-border)] px-3 py-1 text-[11px] font-semibold text-[var(--admin-muted)]'>
-                {items.length} ta aksiya
-              </span>
+              <div className='flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--admin-muted)]'>
+                <span className='rounded-full border border-[var(--admin-border)] px-3 py-1'>{items.length} ta jami</span>
+                <span className='rounded-full border border-[#12d220]/20 bg-[#12d220]/10 px-3 py-1 text-[#12d220]'>{activeCount} ta faol</span>
+              </div>
             </div>
 
             {loading ? (
@@ -729,34 +742,40 @@ export default function AdminActionsPage() {
                   const Icon = meta.icon;
 
                   return (
-                    <div key={item.id} className='rounded-[28px] border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4 transition-all'>
+                    <div key={item.id} className='rounded-[22px] border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4 transition-all'>
                       <div className='flex flex-wrap items-start justify-between gap-4'>
                         <div className='min-w-0 flex-1'>
                           <div className='flex flex-wrap items-center gap-3'>
-                            <span className='flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--admin-card)] text-[#12d220]'>
-                              <Icon className='size-5' />
+                            <span className='flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--admin-card)] text-[#12d220]'>
+                              <Icon className='size-4.5' />
                             </span>
-                            <div className='min-w-0'>
-                              <p className='text-[15px] font-black text-[var(--admin-fg)]'>{item.name}</p>
+                            <div className='min-w-0 flex-1'>
+                              <div className='flex flex-wrap items-center gap-2'>
+                                <p className='text-[15px] font-black text-[var(--admin-fg)]'>{item.name}</p>
+                                <span className='rounded-full border border-[var(--admin-border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--admin-muted)]'>
+                                  {meta.title}
+                                </span>
+                              </div>
                               <p className='mt-1 text-xs text-[var(--admin-muted)]'>{campaignSummary(item)}</p>
                             </div>
                             <span className={item.status === 'active' ? 'rounded-full border border-[#12d220]/25 bg-[#12d220]/10 px-2.5 py-1 text-[11px] font-semibold text-[#12d220]' : 'rounded-full border border-[var(--admin-border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--admin-muted)]'}>
                               {item.status === 'active' ? 'Faol' : 'Draft'}
                             </span>
                           </div>
-                          <div className='mt-4'>
+                          <div className='mt-3'>
                             <CampaignBadge item={item} />
                           </div>
                           {item.description ? (
-                            <p className='mt-4 text-sm text-[var(--admin-muted)]'>{item.description}</p>
+                            <p className='mt-3 text-sm text-[var(--admin-muted)]'>{item.description}</p>
                           ) : null}
                         </div>
 
-                        <div className='flex items-center gap-2'>
+                        <div className='flex flex-wrap items-center gap-2'>
                           <button
                             type='button'
                             onClick={() => void moveItem(index, index - 1)}
                             className='flex h-9 w-9 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition-colors hover:text-[var(--admin-fg)]'
+                            aria-label='Yuqoriga'
                           >
                             <ArrowUp className='size-4' />
                           </button>
@@ -764,22 +783,25 @@ export default function AdminActionsPage() {
                             type='button'
                             onClick={() => void moveItem(index, index + 1)}
                             className='flex h-9 w-9 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition-colors hover:text-[var(--admin-fg)]'
+                            aria-label='Pastga'
                           >
                             <ArrowDown className='size-4' />
                           </button>
                           <button
                             type='button'
                             onClick={() => fillForm(item)}
-                            className='flex h-9 w-9 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition-colors hover:text-sky-500'
+                            className='inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--admin-border)] px-3 text-[12px] font-semibold text-[var(--admin-muted)] transition-colors hover:text-sky-500'
                           >
                             <Pencil className='size-4' />
+                            Tahrirlash
                           </button>
                           <button
                             type='button'
                             onClick={() => void deleteItem(item.id)}
-                            className='flex h-9 w-9 items-center justify-center rounded-full border border-[var(--admin-border)] text-[var(--admin-muted)] transition-colors hover:text-rose-500'
+                            className='inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--admin-border)] px-3 text-[12px] font-semibold text-[var(--admin-muted)] transition-colors hover:text-rose-500'
                           >
                             <Trash2 className='size-4' />
+                            O‘chirish
                           </button>
                         </div>
                       </div>
@@ -792,35 +814,28 @@ export default function AdminActionsPage() {
 
           <div className='admin-card overflow-hidden p-0'>
             <div className='border-b border-[var(--admin-border)] px-5 py-4'>
-              <p className='text-sm font-semibold text-[var(--admin-fg)]'>Storefront preview</p>
-              <p className='mt-1 text-xs text-[var(--admin-muted)]'>Products sahifasiga filter sifatida faqat `Trend`, `Eng yangi` va foizli aksiyalar uzatiladi.</p>
+              <p className='text-sm font-semibold text-[var(--admin-fg)]'>Saytda ko‘rinadigan filterlar</p>
+              <p className='mt-1 text-xs text-[var(--admin-muted)]'>Faqat faol `Trend`, `Yangi` va foizli aksiyalar mahsulot filteriga chiqadi.</p>
             </div>
-            <div className='grid gap-3 p-4 2xl:grid-cols-2'>
-              <div className='rounded-[24px] border border-[var(--admin-border)] bg-[#f6f7f8] p-4'>
-                <p className='mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]'>Light</p>
-                <div className='flex flex-wrap gap-3'>
-                  {storefrontFilters.map((item) => (
-                    <div key={item.id} className='inline-flex min-h-10 items-center gap-2.5 rounded-full border border-[#d9dde3] bg-white px-4 py-2 text-[13px] font-black leading-4 text-[#0f172a]'>
-                      <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#12d220] text-white'>
-                        <BadgePercent className='size-3.5' />
-                      </span>
-                      <span className='break-words'>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className='rounded-[24px] border border-white/10 bg-[#101010] p-4'>
-                <p className='mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#94a3b8]'>Dark</p>
-                <div className='flex flex-wrap gap-3'>
-                  {storefrontFilters.map((item) => (
-                    <div key={`${item.id}-preview`} className='inline-flex min-h-10 items-center gap-2.5 rounded-full border border-white/10 bg-[#181818] px-4 py-2 text-[13px] font-black leading-4 text-white shadow-[0_14px_28px_-18px_rgba(0,0,0,0.45)]'>
-                      <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#12d220] text-white'>
-                        <BadgePercent className='size-3.5' />
-                      </span>
-                      <span className='break-words'>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className='p-4'>
+              <div className='rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-pill)] p-4'>
+                {storefrontFilters.length === 0 ? (
+                  <div className='flex items-center gap-2 text-sm text-[var(--admin-muted)]'>
+                    <CheckCircle2 className='size-4 text-[#12d220]' />
+                    Hozircha storefront filteriga chiqadigan faol aksiya yo‘q.
+                  </div>
+                ) : (
+                  <div className='flex flex-wrap gap-3'>
+                    {storefrontFilters.map((item) => (
+                      <div key={item.id} className='inline-flex min-h-10 items-center gap-2.5 rounded-full border border-[var(--admin-border)] bg-[var(--admin-card)] px-4 py-2 text-[13px] font-black leading-4 text-[var(--admin-fg)]'>
+                        <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#12d220] text-white'>
+                          <BadgePercent className='size-3.5' />
+                        </span>
+                        <span className='break-words'>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
