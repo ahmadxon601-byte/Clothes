@@ -129,8 +129,9 @@ function typeMeta(type: CampaignType) {
 function normalizeCampaign(raw: unknown): Campaign | null {
   if (!raw || typeof raw !== 'object') return null;
   const item = raw as Record<string, unknown>;
-  const type = item.type;
-  if (!TYPE_DEFS.some((row) => row.type === type)) return null;
+  if (typeof item.type !== 'string') return null;
+  if (!TYPE_DEFS.some((row) => row.type === item.type)) return null;
+  const type = item.type as CampaignType;
 
   return {
     id: typeof item.id === 'string' && item.id ? item.id : createId(),
@@ -223,20 +224,19 @@ function campaignFieldHint(type: CampaignType) {
 }
 
 function deriveQuickFilters(campaigns: Campaign[]): ProductQuickFilter[] {
-  const mapped = campaigns
+  const mapped: Array<ProductQuickFilter | null> = campaigns
     .filter((item) => item.status === 'active')
     .map((item) => {
       const label = resolveCampaignLabel(item);
-      if (item.type === 'trending') return { id: item.id, label, mode: 'popular' as const };
-      if (item.type === 'newest') return { id: item.id, label, mode: 'newest' as const };
+      if (item.type === 'trending') return { id: item.id, label, mode: 'popular' };
+      if (item.type === 'newest') return { id: item.id, label, mode: 'newest' };
       if (item.type === 'discount_percent' && item.config.discountPercent) {
-        return { id: item.id, label, mode: 'discount' as const, value: item.config.discountPercent };
+        return { id: item.id, label, mode: 'discount', value: item.config.discountPercent };
       }
       return null;
-    })
-    .filter((item): item is ProductQuickFilter => Boolean(item));
+    });
 
-  return mapped;
+  return mapped.filter((item): item is ProductQuickFilter => item !== null);
 }
 
 function CampaignBadge({ item }: { item: Campaign }) {

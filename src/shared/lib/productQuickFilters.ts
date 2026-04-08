@@ -33,33 +33,42 @@ export function parseProductQuickFilters(
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return fallback;
 
-    const normalized = parsed
+    const normalized: Array<ProductQuickFilter | null> = parsed
       .map((item, index) => {
         if (!item || typeof item !== 'object') return null;
+        const candidate = item as Record<string, unknown>;
 
-        const mode = item.mode;
+        const mode = candidate.mode;
         if (mode !== 'popular' && mode !== 'newest' && mode !== 'discount') return null;
 
-        const label = typeof item.label === 'string' ? item.label.trim() : '';
+        const label = typeof candidate.label === 'string' ? candidate.label.trim() : '';
         if (!label) return null;
 
         const value =
-          mode === 'discount' && Number.isFinite(Number(item.value))
-            ? Number(item.value)
+          mode === 'discount' && Number.isFinite(Number(candidate.value))
+            ? Number(candidate.value)
             : undefined;
 
         if (mode === 'discount' && (!value || value < 1 || value > 99)) return null;
 
+        if (mode === 'discount') {
+          return {
+            id: typeof candidate.id === 'string' && candidate.id.trim() ? candidate.id.trim() : `${mode}-${value}`,
+            label,
+            mode,
+            value,
+          };
+        }
+
         return {
-          id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : `${mode}-${value ?? index}`,
+          id: typeof candidate.id === 'string' && candidate.id.trim() ? candidate.id.trim() : `${mode}-${index}`,
           label,
           mode,
-          value,
-        } satisfies ProductQuickFilter;
-      })
-      .filter((item): item is ProductQuickFilter => Boolean(item));
+        };
+      });
 
-    return normalized.length > 0 ? normalized : fallback;
+    const filtered = normalized.filter((item): item is ProductQuickFilter => item !== null);
+    return filtered.length > 0 ? filtered : fallback;
   } catch {
     return fallback;
   }

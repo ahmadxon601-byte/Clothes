@@ -5,13 +5,20 @@ const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
 });
 
-export default [
+const config = [
   {
     ignores: [
       '.next/**',
+      '.next-dev/**',
+      '.next-admin/**',
+      'out/**',
+      'dist/**',
+      'build/**',
       'node_modules/**',
       'public/uploads/**',
       '.staged-images/**',
+      '.vercel/**',
+      '.local-postgres/**',
       'coverage/**',
     ],
   },
@@ -22,3 +29,5 @@ export default [
     },
   },
 ];
+
+export default config;

@@ -52,8 +52,9 @@ function createId() {
 function normalizeCampaign(raw: unknown): MarketingCampaign | null {
   if (!raw || typeof raw !== "object") return null;
   const item = raw as Record<string, unknown>;
-  const type = item.type;
-  if (!VALID_TYPES.some((row) => row === type)) return null;
+  if (typeof item.type !== "string") return null;
+  if (!VALID_TYPES.some((row) => row === item.type)) return null;
+  const type = item.type as MarketingCampaignType;
 
   return {
     id: typeof item.id === "string" && item.id ? item.id : createId(),
