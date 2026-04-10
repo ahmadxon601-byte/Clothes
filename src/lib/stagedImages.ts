@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { getUploadAbsolutePathFromUrl } from "@/src/lib/uploadStorage";
 
 export type StagedImage = {
   url: string;
@@ -70,8 +71,7 @@ async function deleteLocalUploads(images: StagedImage[]) {
   await Promise.all(
     images.map(async (image) => {
       if (!isLocalUpload(image.url)) return;
-      const relativePath = image.url.replace(/^\/+/, "");
-      const absolutePath = path.join(process.cwd(), "public", relativePath);
+      const absolutePath = getUploadAbsolutePathFromUrl(image.url);
       try {
         await unlink(absolutePath);
       } catch {

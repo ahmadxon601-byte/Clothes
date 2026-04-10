@@ -251,18 +251,32 @@ export async function POST(req: NextRequest) {
       // Insert product
       const reviewStatus = actualRole === "admin" ? "approved" : "pending";
       const isActive = reviewSupport.hasReviewStatus ? actualRole === "admin" : true;
-      const productResult = reviewSupport.hasReviewStatus
+      const productResult = reviewSupport.hasReviewStatus && reviewSupport.hasMarketingCampaignId
         ? await client.query(
             `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, review_status, marketing_campaign_id)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
             [storeId, category_id ?? null, name, description ?? null, base_price, sku, isActive, reviewStatus, selectedCampaignId]
           )
+        : reviewSupport.hasReviewStatus
+          ? await client.query(
+              `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, review_status)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+               RETURNING *`,
+              [storeId, category_id ?? null, name, description ?? null, base_price, sku, isActive, reviewStatus]
+            )
+          : reviewSupport.hasMarketingCampaignId
+            ? await client.query(
+                `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, marketing_campaign_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 RETURNING *`,
+                [storeId, category_id ?? null, name, description ?? null, base_price, sku, true, selectedCampaignId]
+              )
         : await client.query(
-            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active, marketing_campaign_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO products (store_id, category_id, name, description, base_price, sku, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [storeId, category_id ?? null, name, description ?? null, base_price, sku, true, selectedCampaignId]
+            [storeId, category_id ?? null, name, description ?? null, base_price, sku, true]
           );
       const product = productResult.rows[0];
 

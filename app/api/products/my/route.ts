@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
 
     const result = await query(
       `SELECT
-         p.id, p.name, p.description, p.base_price, p.category_id, p.sku, p.is_active, p.marketing_campaign_id,
+         p.id, p.name, p.description, p.base_price, p.category_id, p.sku, p.is_active,
+         ${reviewSupport.hasMarketingCampaignId ? "p.marketing_campaign_id" : "NULL::text AS marketing_campaign_id"},
          ${
            reviewSupport.hasPendingUpdatePayload
              ? `CASE

@@ -1,9 +1,16 @@
 import { NextRequest } from "next/server";
-import { writeFile, mkdir, unlink } from "fs/promises";
+import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { enforceRateLimit } from "@/src/lib/rateLimit";
+import {
+  ensureUploadsDirWritable,
+  getUploadAbsolutePathFromUrl,
+  getUploadPublicUrl,
+  getUploadsDir,
+  isUploadStorageError,
+} from "@/src/lib/uploadStorage";
 
 const MAX_UPLOAD_SIZE = 4 * 1024 * 1024;
 const MIME_TO_EXT: Record<string, string> = {
@@ -73,22 +80,19 @@ export async function POST(req: NextRequest) {
       return fail("Invalid image file", 400);
     }
 
-    if (process.env.VERCEL === "1") {
-      return fail("File uploads require persistent storage configuration in production", 503);
-    }
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
+    const uploadDir = await ensureUploadsDirWritable();
 
     const filename = `${user.userId}_${randomUUID()}.${detectedExt}`;
     await writeFile(path.join(uploadDir, filename), buffer);
 
-    // Return URL that goes through web frontend proxy
-    return ok({ url: `/uploads/${filename}` });
+    return ok({ url: getUploadPublicUrl(filename) });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     if (e instanceof Error && e.message.startsWith("RATE_LIMIT:")) {
       return fail("Too many uploads. Please try again later.", 429);
+    }
+    if (isUploadStorageError(e)) {
+      return fail("Upload storage is not writable. Mount a persistent writable volume at public/uploads.", 503);
     }
     console.error("[upload POST]", e);
     return fail("Internal server error", 500);
@@ -107,9 +111,8 @@ export async function DELETE(req: NextRequest) {
     const cleanUrl = url.split("#")[0].split("?")[0];
     if (!cleanUrl.startsWith("/uploads/")) return fail("Only /uploads files can be deleted", 400);
 
-    const relativePath = cleanUrl.replace(/^\/+/, "");
-    const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
-    const absolutePath = path.resolve(process.cwd(), "public", relativePath);
+    const uploadsRoot = getUploadsDir();
+    const absolutePath = getUploadAbsolutePathFromUrl(cleanUrl);
     const inUploadsDir =
       absolutePath === uploadsRoot || absolutePath.startsWith(`${uploadsRoot}${path.sep}`);
     if (!inUploadsDir) return fail("Invalid upload path", 400);

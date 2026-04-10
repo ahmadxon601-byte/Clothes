@@ -328,6 +328,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
       fields.push(`${key} = $${vals.length}`);
     }
 
+    if (marketing_campaign_id !== undefined && !reviewSupport.hasMarketingCampaignId) {
+      return fail("Database schema not ready. Marketing campaign column is missing.", 503);
+    }
+
     if (marketing_campaign_id !== undefined) {
       vals.push(selectedCampaignId ?? null);
       fields.push(`marketing_campaign_id = $${vals.length}`);
