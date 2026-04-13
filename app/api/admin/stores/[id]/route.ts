@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { query } from "@/src/lib/db";
+import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
+import { purgeStagedImages } from "@/src/lib/stagedImages";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -58,12 +59,45 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const admin = requireRole(req, "admin");
     const { id } = await params;
 
-    const result = await query(
-      "DELETE FROM stores WHERE id = $1 RETURNING id, name",
-      [id]
-    );
-    if (result.rows.length === 0) return fail("Store not found", 404);
-    logAction({ admin, action: "delete", entity: "store", entityId: id, details: { name: result.rows[0].name } });
+    const client = await pool.connect();
+    let result;
+    let deletedProducts = 0;
+    let deletedProductIds: string[] = [];
+    try {
+      await client.query("BEGIN");
+      const deletedProductsResult = await client.query(
+        "DELETE FROM products WHERE store_id = $1 RETURNING id",
+        [id]
+      );
+      deletedProducts = deletedProductsResult.rowCount ?? deletedProductsResult.rows.length;
+      deletedProductIds = deletedProductsResult.rows.map((row) => String(row.id));
+
+      result = await client.query(
+        "DELETE FROM stores WHERE id = $1 RETURNING id, name",
+        [id]
+      );
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return fail("Store not found", 404);
+      }
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    await Promise.all(deletedProductIds.map((productId) => purgeStagedImages("product", productId)));
+
+    logAction({
+      admin,
+      action: "delete",
+      entity: "store",
+      entityId: id,
+      details: { name: result.rows[0].name, deleted_products: deletedProducts },
+    });
 
     return ok({ message: "Store deleted" });
   } catch (e) {

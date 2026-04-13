@@ -107,6 +107,27 @@
         box-shadow: 0 0 0 3px color-mix(in oklab, var(--admin-accent) 15%, transparent);
     }
 
+    .admin-input:-webkit-autofill,
+    .admin-input:-webkit-autofill:hover,
+    .admin-input:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--admin-text);
+        caret-color: var(--admin-text);
+        border-color: var(--admin-border);
+        -webkit-box-shadow: 0 0 0 1000px var(--admin-pill) inset;
+        box-shadow: 0 0 0 1000px var(--admin-pill) inset;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+    .admin-input:-webkit-autofill:focus {
+        border-color: var(--admin-accent);
+        -webkit-box-shadow:
+            0 0 0 1000px var(--admin-card) inset,
+            0 0 0 3px color-mix(in oklab, var(--admin-accent) 15%, transparent);
+        box-shadow:
+            0 0 0 1000px var(--admin-card) inset,
+            0 0 0 3px color-mix(in oklab, var(--admin-accent) 15%, transparent);
+    }
+
     .admin-chip {
         display: inline-flex;
         align-items: center;

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
        LEFT JOIN categories c ON c.id = p.category_id
        JOIN stores st ON st.id = p.store_id
        WHERE st.owner_id = $1
+         AND st.is_active = TRUE
        ORDER BY p.created_at DESC`,
       [jwtUser.userId]
     );

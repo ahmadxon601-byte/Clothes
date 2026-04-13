@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronDown, Edit3, Loader2, Package, Plus, Trash2, X, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Camera, ChevronDown, Edit3, Loader2, Package, Plus, Trash2, X, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useWebAuth } from '../../../src/context/WebAuthContext';
 import { AuthModal } from '../../../src/shared/ui/AuthModal';
@@ -10,7 +10,6 @@ import { ConfirmDialog } from '../../../src/shared/ui/ConfirmDialog';
 import { useSettingsStore } from '../../../src/features/settings/model';
 import { RichTextEditor } from '../../../src/shared/ui/RichTextEditor';
 import { stripRichText } from '../../../src/shared/lib/richText';
-import { DEPARTMENTS, getDepartmentBySlug, type DepartmentKey } from '../../../src/shared/lib/productCategoryMeta';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import {
   getMarketingCampaignSummary,
@@ -215,9 +214,6 @@ export default function MyProductsPage() {
   const [inviteSelections, setInviteSelections] = useState<Record<string, string[]>>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState('');
-  const [parentCategoryMenuOpen, setParentCategoryMenuOpen] = useState(false);
-  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
-  const [department, setDepartment] = useState<DepartmentKey>('electronics');
 
   useEffect(() => {
     const hidden = createOpen || Boolean(deleteProduct);
@@ -236,12 +232,6 @@ export default function MyProductsPage() {
     return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
   };
 
-  const categoryPlaceholder =
-    language === 'ru'
-      ? '— Категория не выбрана —'
-      : language === 'en'
-        ? '— No category selected —'
-        : '— Kategoriya tanlanmagan —';
   const fieldClass =
     'w-full rounded-[20px] border border-black/10 bg-[#f8fafc] px-4 py-3 text-[14px] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all duration-200 placeholder:text-[#94a3b8] focus:border-[#22c55e]/55 focus:bg-white focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:border-white/8 dark:bg-[#101010] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:placeholder:text-[#9ca3af] dark:focus:bg-[#141414]';
   const fieldErrorClass =
@@ -257,14 +247,7 @@ export default function MyProductsPage() {
     () => categories.filter((category) => category.parent_id),
     [categories]
   );
-  const selectedParentCategory = parentCategories.find((category) => category.id === parentCategoryId) ?? null;
   const filteredCategories = subcategories.filter((category) => category.parent_id === parentCategoryId);
-  const selectedCategory = categories.find((c) => c.id === form.category_id) ?? null;
-  const selectedCategoryLabel = selectedCategory ? getCategoryLabel(selectedCategory) : categoryPlaceholder;
-  const selectedParentCategoryLabel = selectedParentCategory ? getCategoryLabel(selectedParentCategory) : categoryPlaceholder;
-  const availableDepartments = DEPARTMENTS.filter(({ key }) =>
-    parentCategories.some((category) => getDepartmentBySlug(category.slug) === key)
-  );
 
   const loadProducts = async () => {
     try {
@@ -379,8 +362,6 @@ export default function MyProductsPage() {
     const selectedParent = parentCategories.find((category) => category.id === parentCategoryId);
     if (!selectedParent) return;
 
-    setDepartment(getDepartmentBySlug(selectedParent.slug));
-
     const nestedSubcategories = subcategories.filter((category) => category.parent_id === parentCategoryId);
     setForm((prev) => {
       if (nestedSubcategories.length === 0) {
@@ -400,7 +381,6 @@ export default function MyProductsPage() {
     const defaultSubcategory = defaultParent
       ? subcategories.find((category) => category.parent_id === defaultParent.id) ?? null
       : null;
-    setDepartment(getDepartmentBySlug(defaultParent?.slug));
     setParentCategoryId(defaultParent?.id ?? '');
     setForm({
       name: '',
@@ -416,8 +396,6 @@ export default function MyProductsPage() {
     setFormError('');
     setFormErrors({});
     setSuccessMessage('');
-    setParentCategoryMenuOpen(false);
-    setCategoryMenuOpen(false);
     setEditProduct(null);
     setCreateOpen(true);
   };
@@ -427,7 +405,6 @@ export default function MyProductsPage() {
     const resolvedParent = existingCategory?.parent_id
       ? parentCategories.find((category) => category.id === existingCategory.parent_id) ?? null
       : existingCategory ?? null;
-    setDepartment(getDepartmentBySlug(resolvedParent?.slug));
     setParentCategoryId(resolvedParent?.id ?? '');
     setForm({
       name: p.name,
@@ -443,8 +420,6 @@ export default function MyProductsPage() {
     setFormError('');
     setFormErrors({});
     setSuccessMessage('');
-    setParentCategoryMenuOpen(false);
-    setCategoryMenuOpen(false);
     setEditProduct(p);
     setCreateOpen(true);
     // Load variant data
@@ -617,28 +592,6 @@ export default function MyProductsPage() {
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch {
       /* noop */
-    }
-  };
-
-  const toggleActive = async (p: Product) => {
-    if (p.review_status !== 'approved') {
-      setSuccessMessage('');
-      setFormError("Tasdiqlanmagan mahsulotni faollashtirib bo'lmaydi.");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/products/${p.id}`, {
-        method: 'PUT',
-        headers: authHeader(),
-        body: JSON.stringify({ is_active: !p.is_active }),
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json?.error ?? "Holatni o'zgartirib bo'lmadi");
-      }
-      loadProducts();
-    } catch {
-      setFormError("Holatni o'zgartirib bo'lmadi");
     }
   };
 
@@ -872,8 +825,7 @@ export default function MyProductsPage() {
               </Link>
 
               {/* Actions */}
-              <div className="flex items-center justify-between border-t border-black/8 px-4 py-2.5 dark:border-white/8">
-                <span className="text-[11px] text-[#9ca3af]">{p.views} ko'rishlar</span>
+              <div className="flex items-center justify-end border-t border-black/8 px-4 py-2.5 dark:border-white/8">
                 <div className="flex items-center gap-1">
                   <Link
                     href={`/product/${p.id}`}
@@ -882,13 +834,6 @@ export default function MyProductsPage() {
                   >
                     <ExternalLink size={13} />
                   </Link>
-                  <button
-                    title={p.is_active ? 'Yashirish' : "Ko'rsatish"}
-                    onClick={() => toggleActive(p)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-[#6b7280] transition-colors hover:text-amber-500 dark:border-white/10"
-                  >
-                    {p.is_active ? <EyeOff size={13} /> : <Eye size={13} />}
-                  </button>
                   <button
                     title="Tahrirlash"
                     onClick={() => openEdit(p)}
@@ -921,7 +866,7 @@ export default function MyProductsPage() {
                   {editProduct ? p.editTitle : p.createTitle}
                 </h2>
                 <button
-                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); setCategoryMenuOpen(false); }}
+                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); }}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/[0.03] text-[#6b7280] transition-all hover:rotate-90 hover:text-[#111111] dark:bg-white/[0.03] dark:text-[#9ca3af] dark:hover:text-white"
                 >
                   <X size={16} />
@@ -986,77 +931,44 @@ export default function MyProductsPage() {
                 <label className="block">
                   <span className={subtleLabelClass}>{p.parentCategory}</span>
                   <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setParentCategoryMenuOpen((prev) => !prev)}
-                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${parentCategoryMenuOpen ? 'border-[#22c55e]/55 bg-white shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''}`}
-                      aria-haspopup="listbox"
-                      aria-expanded={parentCategoryMenuOpen}
+                    <select
+                      value={parentCategoryId}
+                      onChange={(e) => setParentCategoryId(e.target.value)}
+                      className={selectClass}
                     >
-                      <span className={`${selectedParentCategory ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}`}>
-                        {parentCategories.length ? selectedParentCategoryLabel : p.parentCategoryMissing}
-                      </span>
-                      <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${parentCategoryMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {parentCategoryMenuOpen && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-black/10 bg-[rgba(255,255,255,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
-                        <div className="soft-scrollbar max-h-60 space-y-1 overflow-y-auto pr-1">
-                          {parentCategories.map((category) => {
-                            const active = parentCategoryId === category.id;
-                            return (
-                              <button
-                                key={category.id}
-                                type="button"
-                                onClick={() => {
-                                  setParentCategoryId(category.id);
-                                  setParentCategoryMenuOpen(false);
-                                  setCategoryMenuOpen(false);
-                                }}
-                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#111111] hover:bg-[#f3f4f6] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'}`}
-                              >
-                                {getCategoryLabel(category)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                      {parentCategories.length === 0 ? (
+                        <option value="">{p.parentCategoryMissing}</option>
+                      ) : (
+                        parentCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {getCategoryLabel(category)}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
                   </div>
                 </label>
                 <label className="block">
                   <span className={subtleLabelClass}>{p.subcategory}</span>
                   <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => filteredCategories.length > 0 && setCategoryMenuOpen((prev) => !prev)}
-                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${categoryMenuOpen ? 'border-[#22c55e]/55 bg-white shadow-[0_0_0_4px_rgba(34,197,94,0.12)] dark:bg-[#141414]' : ''} ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
-                      aria-haspopup="listbox"
-                      aria-expanded={categoryMenuOpen}
+                    <select
+                      value={filteredCategories.length === 0 ? '' : form.category_id}
+                      onChange={(e) => setForm((prev) => ({ ...prev, category_id: e.target.value }))}
+                      disabled={filteredCategories.length === 0}
+                      className={`${selectClass} ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
-                      <span className={`${selectedCategory ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}`}>
-                        {filteredCategories.length ? selectedCategoryLabel : "Bu kategoriya uchun subkategoriya yo'q"}
-                      </span>
-                      <ChevronDown className={`size-4 text-[#94a3b8] transition-transform ${categoryMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {categoryMenuOpen && filteredCategories.length > 0 && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[22px] border border-black/10 bg-[rgba(255,255,255,0.98)] p-2 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
-                        <div className="soft-scrollbar max-h-60 space-y-1 overflow-y-auto pr-1">
-                          {filteredCategories.map((c) => {
-                            const active = form.category_id === c.id;
-                            return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => { setForm((p) => ({ ...p, category_id: c.id })); setCategoryMenuOpen(false); }}
-                                className={`flex w-full items-center rounded-2xl px-4 py-3 text-left text-[14px] transition-colors ${active ? 'bg-[#13ec37] text-[#06200f]' : 'text-[#111111] hover:bg-[#f3f4f6] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'}`}
-                              >
-                                {getCategoryLabel(c)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                      {filteredCategories.length === 0 ? (
+                        <option value="">Bu kategoriya uchun subkategoriya yo'q</option>
+                      ) : (
+                        filteredCategories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {getCategoryLabel(c)}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
                   </div>
                 </label>
                 <label className="block">
@@ -1134,7 +1046,7 @@ export default function MyProductsPage() {
               {formError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); setParentCategoryMenuOpen(false); setCategoryMenuOpen(false); }}
+                  onClick={() => { void cleanupTemporaryUploads(); setCreateOpen(false); setEditProduct(null); setFormImages([]); }}
                   className="flex-1 h-12 rounded-full border border-white/10 bg-black/[0.03] text-[13px] font-black text-[#111111] transition-colors hover:bg-black/[0.05] dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/[0.06]"
                 >
                   {p.cancel}

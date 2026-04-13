@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Camera, ChevronDown, Edit3, Eye, Loader2, Package, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, Edit3, Loader2, Package, Plus, Trash2, X } from 'lucide-react';
 import { getApiToken, setApiToken, telegramWebAppAuth } from '../../../../src/lib/apiClient';
 import { isTelegramLoggedOutByUser } from '../../../../src/lib/telegramAuthState';
 import { useTelegram } from '../../../../src/telegram/useTelegram';
@@ -822,7 +822,7 @@ export default function ProfileProductsPage() {
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Link href={TELEGRAM_ROUTES.PRODUCT(product.id)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)]/10 text-[12px] font-bold text-[var(--color-primary)]">
-                      <Eye size={14} /> {t.view}
+                      {t.view}
                     </Link>
                     <button onClick={() => openEdit(product)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 text-[12px] font-bold text-blue-500">
                       <Edit3 size={14} /> {t.edit}

@@ -9,6 +9,25 @@ import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 import { getUiSetting } from "@/src/lib/uiSettings";
 import { MARKETING_CAMPAIGNS_SETTING_KEY, parseMarketingCampaigns } from "@/src/shared/lib/marketingCampaigns";
 
+function isNonCriticalStagedImageError(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return (
+    code === "EPERM" ||
+    code === "EACCES" ||
+    code === "EROFS" ||
+    code === "ENOSPC" ||
+    message.includes("EPERM") ||
+    message.includes("EACCES") ||
+    message.includes("EROFS") ||
+    message.includes("read-only file system")
+  );
+}
+
 // ── GET /api/products ────────────────────────────────────────────────────────
 // Query params: sort (newest|popular|price_asc|price_desc), category, search,
 //               store_id, min_price, max_price, on_sale, size, page, limit
@@ -313,7 +332,14 @@ export async function POST(req: NextRequest) {
 
       await client.query("COMMIT");
       if (images?.length && actualRole !== "admin") {
-        await saveStagedImages("product", product.id, images);
+        try {
+          await saveStagedImages("product", product.id, images);
+        } catch (error) {
+          if (!isNonCriticalStagedImageError(error)) {
+            throw error;
+          }
+          console.warn("[products POST] staged image persistence skipped:", error);
+        }
       }
       emitAdminEvent({ type: "products", action: "created" });
       if (reviewSupport.hasReviewStatus && reviewStatus === "pending") {

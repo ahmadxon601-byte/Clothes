@@ -36,12 +36,39 @@ interface Product {
   category_name: string | null;
 }
 
-function parseCoords(address: string | null) {
-  if (!address) return { text: '', lat: null as null | number, lng: null as null | number };
-  const m = address.match(/Coordinates:\s*([-\d.]+),\s*([-\d.]+)/i);
-  if (!m) return { text: address.trim(), lat: null, lng: null };
-  const idx = address.toLowerCase().indexOf('coordinates:');
-  return { text: idx > 0 ? address.slice(0, idx).trim() : '', lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+function isValidLatLng(lat: number, lng: number) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+function parseCoords(raw: string | null) {
+  if (!raw) return { text: '', lat: null as null | number, lng: null as null | number };
+  const value = raw.trim();
+
+  const labeledMatch = value.match(/Coordinates:\s*([-\d.]+)\s*,\s*([-\d.]+)/i);
+  if (labeledMatch) {
+    const lat = parseFloat(labeledMatch[1]);
+    const lng = parseFloat(labeledMatch[2]);
+    const text = value.replace(labeledMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  const latLngMatch = value.match(/lat(?:itude)?\s*[:=]\s*([-\d.]+).{0,40}?(?:lng|lon|longitude)\s*[:=]\s*([-\d.]+)/i);
+  if (latLngMatch) {
+    const lat = parseFloat(latLngMatch[1]);
+    const lng = parseFloat(latLngMatch[2]);
+    const text = value.replace(latLngMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  const plainMatch = value.match(/([+-]?\d{1,2}(?:\.\d+)?)\s*,\s*([+-]?\d{1,3}(?:\.\d+)?)/);
+  if (plainMatch) {
+    const lat = parseFloat(plainMatch[1]);
+    const lng = parseFloat(plainMatch[2]);
+    const text = value.replace(plainMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  return { text: value, lat: null, lng: null };
 }
 
 const DEFAULT_STORE_IMAGE =
@@ -55,6 +82,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
   const [store, setStore] = useState<StoreData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fallbackCoords, setFallbackCoords] = useState<{ lat: number; lng: number } | null>(null);
   const translatedNames = useTranslatedLabelMap(products.map((product) => ({ id: product.id, label: product.name })), language);
 
   useEffect(() => {
@@ -67,6 +95,56 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!store) {
+      setFallbackCoords(null);
+      return;
+    }
+
+    const { text: addrText, lat: addrLat, lng: addrLng } = parseCoords(store.address);
+    const { text: descText, lat: descLat, lng: descLng } = parseCoords(store.description);
+    const existingLat = addrLat ?? descLat;
+    const existingLng = addrLng ?? descLng;
+
+    if (existingLat !== null && existingLng !== null) {
+      setFallbackCoords({ lat: existingLat, lng: existingLng });
+      return;
+    }
+
+    const queryText = (addrText || descText || store.name || '').trim();
+    if (!queryText) {
+      setFallbackCoords(null);
+      return;
+    }
+
+    let cancelled = false;
+    setFallbackCoords(null);
+
+    void fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&limit=1`,
+      { headers: { 'Accept-Language': 'uz,ru,en' } }
+    )
+      .then((res) => res.json())
+      .then((data: Array<{ lat?: string; lon?: string }>) => {
+        if (cancelled) return;
+        const item = Array.isArray(data) ? data[0] : undefined;
+        const lat = item?.lat ? parseFloat(item.lat) : NaN;
+        const lng = item?.lon ? parseFloat(item.lon) : NaN;
+        if (isValidLatLng(lat, lng)) {
+          setFallbackCoords({ lat, lng });
+        } else {
+          setFallbackCoords(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackCoords(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [store]);
 
   if (loading) {
     return (
@@ -92,8 +170,8 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
 
   const { text: addressText, lat: addressLat, lng: addressLng } = parseCoords(store.address);
   const { text: descriptionText, lat: descriptionLat, lng: descriptionLng } = parseCoords(store.description);
-  const lat = addressLat ?? descriptionLat;
-  const lng = addressLng ?? descriptionLng;
+  const lat = addressLat ?? descriptionLat ?? fallbackCoords?.lat ?? null;
+  const lng = addressLng ?? descriptionLng ?? fallbackCoords?.lng ?? null;
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] dark:bg-[#0f0f0f]">
@@ -124,7 +202,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
 
       <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
         {/* Store meta */}
-        <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
+        <div className="mb-6">
           <div className="rounded-[24px] border border-black/8 bg-white p-5 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a] md:p-6">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-[#00c853]/10 text-[#00a645]">
@@ -169,7 +247,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
                   </a>
                 ) : null}
 
-                {lat && lng ? (
+                {lat !== null && lng !== null ? (
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
                     target="_blank"
@@ -185,16 +263,16 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
               {descriptionText ? (
                 <p className="max-w-[62ch] text-[14px] leading-7 text-[#4b5563] dark:text-[#cbd5e1]">{descriptionText}</p>
               ) : null}
+
+              {lat !== null && lng !== null ? (
+                <div className="overflow-hidden rounded-[20px] border border-black/8 bg-white p-1.5 dark:border-white/10 dark:bg-[#202020]">
+                  <div className="overflow-hidden rounded-[16px]">
+                    <MapDisplay lat={lat} lng={lng} height={320} label={addressText || store.name} />
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
-
-          {lat && lng ? (
-            <div className="overflow-hidden rounded-[24px] border border-black/8 bg-white p-2 shadow-[0_20px_50px_-40px_rgba(0,0,0,0.45)] dark:border-white/10 dark:bg-[#1a1a1a]">
-              <div className="overflow-hidden rounded-[20px]">
-                <MapDisplay lat={lat} lng={lng} height={320} label={addressText || store.name} />
-              </div>
-            </div>
-          ) : null}
         </div>
 
         {/* Products */}

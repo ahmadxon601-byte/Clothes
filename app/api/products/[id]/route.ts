@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import pool, { query } from "@/src/lib/db";
-import { ok, fail, getUser, requireRole, AuthError } from "@/src/lib/auth";
+import { ok, fail, getUser, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getProductReviewSupport } from "@/src/lib/productReview";
 import { getProductViewSupport } from "@/src/lib/productViewSupport";
@@ -56,6 +56,25 @@ const PRODUCT_DETAIL_SQL = `
 `;
 
 const PRODUCT_VIEWER_COOKIE = "product_viewer_id";
+
+function isNonCriticalStagedImageError(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return (
+    code === "EPERM" ||
+    code === "EACCES" ||
+    code === "EROFS" ||
+    code === "ENOSPC" ||
+    message.includes("EPERM") ||
+    message.includes("EACCES") ||
+    message.includes("EROFS") ||
+    message.includes("read-only file system")
+  );
+}
 
 function buildProductResponse(product: Record<string, unknown>, status = 200): NextResponse {
   return NextResponse.json({ success: true, data: { product } }, { status });
@@ -227,10 +246,15 @@ function genVariantSku(productSku: string, size?: string, color?: string): strin
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const jwtUser = requireRole(req, "seller", "admin");
+    const jwtUser = requireAuth(req);
     const { id } = await params;
+    const roleResult = await query("SELECT role FROM users WHERE id = $1", [jwtUser.userId]);
+    if (roleResult.rows.length === 0) return fail("Unauthorized", 401);
+    const actualRole = roleResult.rows[0].role as string;
+    if (!["seller", "admin"].includes(actualRole)) return fail("Forbidden", 403);
+
     const reviewSupport = await getProductReviewSupport();
-    if (jwtUser.role === "seller" && !reviewSupport.hasReviewStatus) {
+    if (actualRole === "seller" && !reviewSupport.hasReviewStatus) {
       return fail("Database schema not ready. Run migrations/008_product_review.sql.", 503);
     }
 
@@ -238,7 +262,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       | { id: string; sku: string; review_status?: string | null }
       | null = null;
 
-    if (jwtUser.role === "seller") {
+    if (actualRole === "seller") {
       const own = await query(
         `SELECT p.id, p.sku, p.name${reviewSupport.hasReviewStatus ? ", p.review_status" : ""}
          FROM products p
@@ -277,7 +301,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       Object.entries(rest).some(([key, val]) => key !== "is_active" && val !== undefined);
 
     if (
-      jwtUser.role === "seller" &&
+      actualRole === "seller" &&
       sellerChangedData &&
       reviewSupport.hasPendingUpdatePayload &&
       (existingProduct?.review_status ?? "approved") === "approved"
@@ -302,7 +326,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
         [JSON.stringify(pendingPayload), id]
       );
       if (images !== undefined) {
-        await saveStagedImages("product", id, images);
+        try {
+          await saveStagedImages("product", id, images);
+        } catch (error) {
+          if (!isNonCriticalStagedImageError(error)) {
+            throw error;
+          }
+          console.warn("[product PUT] staged image persistence skipped:", error);
+        }
       }
 
       emitAdminEvent({ type: "products", action: "updated" });
@@ -323,7 +354,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     for (const [key, val] of Object.entries(rest)) {
       if (val === undefined) continue;
-      if (jwtUser.role === "seller" && key === "is_active") continue;
+      if (actualRole === "seller" && key === "is_active") continue;
       vals.push(val);
       fields.push(`${key} = $${vals.length}`);
     }
@@ -338,7 +369,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
 
     if (
-      jwtUser.role === "seller" &&
+      actualRole === "seller" &&
       sellerChangedData
     ) {
       if (reviewSupport.hasReviewStatus) {
@@ -411,10 +442,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
 // ── DELETE /api/products/[id]  (seller — own, or admin) ──────────────────────
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const jwtUser = requireRole(req, "seller", "admin");
+    const jwtUser = requireAuth(req);
     const { id } = await params;
+    const roleResult = await query("SELECT role FROM users WHERE id = $1", [jwtUser.userId]);
+    if (roleResult.rows.length === 0) return fail("Unauthorized", 401);
+    const actualRole = roleResult.rows[0].role as string;
+    if (!["seller", "admin"].includes(actualRole)) return fail("Forbidden", 403);
 
-    if (jwtUser.role === "seller") {
+    if (actualRole === "seller") {
       const own = await query(
         `SELECT p.id FROM products p
          JOIN stores st ON st.id = p.store_id

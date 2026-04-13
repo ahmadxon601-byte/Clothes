@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { query } from "@/src/lib/db";
+import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireAuth, AuthError } from "@/src/lib/auth";
 import { emitAdminEvent } from "@/src/lib/events";
 import { getSellerRequestSupport } from "@/src/lib/sellerRequestSupport";
 import { getStoreColumnSupport } from "@/src/lib/storeColumnSupport";
-import { saveStagedImages } from "@/src/lib/stagedImages";
+import { purgeStagedImages, saveStagedImages } from "@/src/lib/stagedImages";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -196,21 +196,66 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const jwtUser = requireAuth(req);
     const { id } = await params;
 
-    const storeResult = await query(
-      "SELECT owner_id FROM stores WHERE id = $1 AND is_active = TRUE",
-      [id]
-    );
-    if (storeResult.rows.length === 0) return fail("Store not found", 404);
-    if (jwtUser.role !== "admin" && storeResult.rows[0].owner_id !== jwtUser.userId) {
-      return fail("Forbidden", 403);
+    const client = await pool.connect();
+    let deletedProducts = 0;
+    let deletedProductIds: string[] = [];
+    try {
+      await client.query("BEGIN");
+
+      const storeResult = await client.query(
+        "SELECT owner_id FROM stores WHERE id = $1 AND is_active = TRUE",
+        [id]
+      );
+      if (storeResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return fail("Store not found", 404);
+      }
+      if (jwtUser.role !== "admin" && storeResult.rows[0].owner_id !== jwtUser.userId) {
+        await client.query("ROLLBACK");
+        return fail("Forbidden", 403);
+      }
+
+      const deletedProductsResult = await client.query(
+        "DELETE FROM products WHERE store_id = $1 RETURNING id",
+        [id]
+      );
+      deletedProducts = deletedProductsResult.rowCount ?? deletedProductsResult.rows.length;
+      deletedProductIds = deletedProductsResult.rows.map((row) => String(row.id));
+
+      const deletedStoreResult = await client.query(
+        "DELETE FROM stores WHERE id = $1 RETURNING id",
+        [id]
+      );
+      if (deletedStoreResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return fail("Store not found", 404);
+      }
+
+      if (jwtUser.role === "seller") {
+        const remainingStoresResult = await client.query(
+          "SELECT COUNT(*)::int AS count FROM stores WHERE owner_id = $1 AND is_active = TRUE",
+          [jwtUser.userId]
+        );
+        if ((remainingStoresResult.rows[0]?.count ?? 0) === 0) {
+          await client.query("UPDATE users SET role = 'user', updated_at = NOW() WHERE id = $1", [jwtUser.userId]);
+        }
+      }
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
 
-    await query("UPDATE stores SET is_active = FALSE, updated_at = NOW() WHERE id = $1", [id]);
-    if (jwtUser.role === "seller") {
-      await query("UPDATE users SET role = 'user', updated_at = NOW() WHERE id = $1", [jwtUser.userId]);
+    await Promise.all(deletedProductIds.map((productId) => purgeStagedImages("product", productId)));
+
+    if (deletedProducts > 0) {
+      emitAdminEvent({ type: "products", action: "deleted" });
     }
     emitAdminEvent({ type: "stores", action: "deleted" });
-    return ok({ message: "Store deactivated" });
+    return ok({ message: "Store deleted", deleted_products: deletedProducts });
   } catch (e) {
     if (e instanceof AuthError) return fail(e.message, e.status);
     console.error("[store DELETE]", e);

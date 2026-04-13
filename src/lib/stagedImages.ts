@@ -125,6 +125,14 @@ export async function deleteStagedImages(kind: EntityKind, entityId: string) {
   }
 }
 
+export async function purgeStagedImages(kind: EntityKind, entityId: string) {
+  const images = await readStagedImages(kind, entityId);
+  if (images.length > 0) {
+    await deleteLocalUploads(images);
+  }
+  await deleteStagedImages(kind, entityId);
+}
+
 export async function scheduleStagedImageDeletion(kind: EntityKind, entityId: string) {
   const data = await readStagedFile(kind, entityId);
   if (!data) return;

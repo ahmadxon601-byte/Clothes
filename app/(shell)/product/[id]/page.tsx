@@ -73,15 +73,39 @@ interface SimilarProduct {
   store_name: string | null;
 }
 
+function isValidLatLng(lat: number, lng: number) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
 function parseAddressCoords(raw: string | null | undefined): { text: string; lat: number | null; lng: number | null } {
   if (!raw) return { text: '', lat: null, lng: null };
-  const m = raw.match(/Coordinates:\s*([-\d.]+),\s*([-\d.]+)/i);
-  const text = raw.replace(/\s*Coordinates:.*$/i, '').trim();
-  if (!m) return { text, lat: null, lng: null };
-  const lat = Number(m[1]);
-  const lng = Number(m[2]);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return { text, lat: null, lng: null };
-  return { text, lat, lng };
+  const value = raw.trim();
+
+  const labeledMatch = value.match(/Coordinates:\s*([-\d.]+)\s*,\s*([-\d.]+)/i);
+  if (labeledMatch) {
+    const lat = parseFloat(labeledMatch[1]);
+    const lng = parseFloat(labeledMatch[2]);
+    const text = value.replace(labeledMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  const latLngMatch = value.match(/lat(?:itude)?\s*[:=]\s*([-\d.]+).{0,40}?(?:lng|lon|longitude)\s*[:=]\s*([-\d.]+)/i);
+  if (latLngMatch) {
+    const lat = parseFloat(latLngMatch[1]);
+    const lng = parseFloat(latLngMatch[2]);
+    const text = value.replace(latLngMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  const plainMatch = value.match(/([+-]?\d{1,2}(?:\.\d+)?)\s*,\s*([+-]?\d{1,3}(?:\.\d+)?)/);
+  if (plainMatch) {
+    const lat = parseFloat(plainMatch[1]);
+    const lng = parseFloat(plainMatch[2]);
+    const text = value.replace(plainMatch[0], '').trim();
+    if (isValidLatLng(lat, lng)) return { text, lat, lng };
+  }
+
+  return { text: value, lat: null, lng: null };
 }
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -99,6 +123,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [translatedSimilar, setTranslatedSimilar] = useState<Record<string, string>>({});
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
+  const [fallbackCoords, setFallbackCoords] = useState<{ lat: number; lng: number } | null>(null);
   const variants = useMemo(() => product?.variants ?? [], [product?.variants]);
   const images = useMemo(
     () => (product?.images?.length ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
@@ -130,13 +155,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const { lat: storeLatFromDescription, lng: storeLngFromDescription } = parseAddressCoords(product?.store_description);
   const productLat = product?.location?.latitude == null ? null : Number(product.location.latitude);
   const productLng = product?.location?.longitude == null ? null : Number(product.location.longitude);
-  const storeLat = storeLatFromAddress ?? storeLatFromDescription ?? (Number.isFinite(productLat) ? productLat : null);
-  const storeLng = storeLngFromAddress ?? storeLngFromDescription ?? (Number.isFinite(productLng) ? productLng : null);
+  const storeLat = storeLatFromAddress ?? storeLatFromDescription ?? (Number.isFinite(productLat) ? productLat : null) ?? fallbackCoords?.lat ?? null;
+  const storeLng = storeLngFromAddress ?? storeLngFromDescription ?? (Number.isFinite(productLng) ? productLng : null) ?? fallbackCoords?.lng ?? null;
   const storeAddressLabel = storeAddressText || product?.location?.address || '';
   const storeMapLabel = storeAddressText || product?.location?.address || product?.store_name || '';
   const variantLabel = getVariantMeta(getDepartmentBySlug(product?.category_slug ?? null)).label;
-  const viewsLabel = language === 'ru' ? 'просмотров' : language === 'en' ? 'views' : "ko'rish";
-
   useEffect(() => {
     fetch(`/api/products/${id}`)
       .then((r) => r.json())
@@ -246,6 +269,58 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       cancelled = true;
     };
   }, [language, similar]);
+
+  useEffect(() => {
+    if (!product) {
+      setFallbackCoords(null);
+      return;
+    }
+
+    const parsedAddress = parseAddressCoords(product.store_address);
+    const parsedDescription = parseAddressCoords(product.store_description);
+    const productLatValue = product.location?.latitude == null ? null : Number(product.location.latitude);
+    const productLngValue = product.location?.longitude == null ? null : Number(product.location.longitude);
+    const existingLat = parsedAddress.lat ?? parsedDescription.lat ?? (Number.isFinite(productLatValue) ? productLatValue : null);
+    const existingLng = parsedAddress.lng ?? parsedDescription.lng ?? (Number.isFinite(productLngValue) ? productLngValue : null);
+
+    if (existingLat !== null && existingLng !== null) {
+      setFallbackCoords({ lat: existingLat, lng: existingLng });
+      return;
+    }
+
+    const queryText = (parsedAddress.text || parsedDescription.text || product.store_name || '').trim();
+    if (!queryText) {
+      setFallbackCoords(null);
+      return;
+    }
+
+    let cancelled = false;
+    setFallbackCoords(null);
+
+    void fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&limit=1`,
+      { headers: { 'Accept-Language': 'uz,ru,en' } }
+    )
+      .then((res) => res.json())
+      .then((data: Array<{ lat?: string; lon?: string }>) => {
+        if (cancelled) return;
+        const item = Array.isArray(data) ? data[0] : undefined;
+        const lat = item?.lat ? parseFloat(item.lat) : NaN;
+        const lng = item?.lon ? parseFloat(item.lon) : NaN;
+        if (isValidLatLng(lat, lng)) {
+          setFallbackCoords({ lat, lng });
+        } else {
+          setFallbackCoords(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackCoords(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
 
   const handleFav = async () => {
     if (typeof window === 'undefined' || !product) return;
@@ -513,10 +588,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 break-words text-[12px] text-[#9ca3af] md:mt-5">
-              <span>{product.views} {viewsLabel}</span>
             </div>
           </div>
         </div>
