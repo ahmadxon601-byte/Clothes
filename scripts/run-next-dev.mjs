@@ -7,6 +7,9 @@ const [portArg, distDirArg] = process.argv.slice(2);
 
 const port = portArg?.trim() || "3010";
 const distDir = distDirArg?.trim() || ".next-dev";
+const useTurbopack =
+  process.platform === "win32" &&
+  process.env.NEXT_DISABLE_TURBOPACK !== "1";
 
 const env = {
   ...process.env,
@@ -23,7 +26,14 @@ if ((predev.status ?? 1) !== 0) {
 }
 
 const nextBin = require.resolve("next/dist/bin/next");
-const dev = spawnSync(process.execPath, [nextBin, "dev", "--hostname", "127.0.0.1", "--port", port], {
+const nextArgs = [nextBin, "dev", "--hostname", "127.0.0.1", "--port", port];
+
+if (useTurbopack) {
+  nextArgs.push("--turbopack");
+  console.log("[run-next-dev] using Turbopack on Windows");
+}
+
+const dev = spawnSync(process.execPath, nextArgs, {
   stdio: "inherit",
   env,
 });

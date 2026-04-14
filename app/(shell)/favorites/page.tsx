@@ -25,6 +25,8 @@ type FavProduct = {
     created_at: string;
 };
 
+const FAVORITES_CACHE_KEY = 'favorites_page_cache';
+
 function getToken() {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('marketplace_token');
@@ -34,21 +36,44 @@ export default function FavoritesPage() {
     const { user, loading: authLoading } = useWebAuth();
     const { w } = useWebI18n();
     const { language } = useTranslation();
-    const [products, setProducts] = useState<FavProduct[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState<FavProduct[]>(() => {
+        try {
+            if (typeof window === 'undefined') return [];
+            const cached = localStorage.getItem(FAVORITES_CACHE_KEY);
+            const parsed = cached ? JSON.parse(cached) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    });
+    const [loading, setLoading] = useState(() => {
+        try {
+            if (typeof window === 'undefined') return true;
+            return !localStorage.getItem(FAVORITES_CACHE_KEY);
+        } catch {
+            return true;
+        }
+    });
     const [toggling, setToggling] = useState<Set<string>>(new Set());
     const [authModal, setAuthModal] = useState(false);
     const translatedTitles = useTranslatedLabelMap(products.map((product) => ({ id: product.product_id, label: product.title })), language);
 
     const fetchFavorites = async () => {
         const token = getToken();
-        if (!token) { setLoading(false); return; }
+        if (!token) {
+            setProducts([]);
+            try { localStorage.removeItem(FAVORITES_CACHE_KEY); } catch { /* ignore */ }
+            setLoading(false);
+            return;
+        }
         try {
             const res = await fetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
                 const data = json?.data ?? json ?? [];
-                setProducts(Array.isArray(data) ? data : []);
+                const next = Array.isArray(data) ? data : [];
+                setProducts(next);
+                try { localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
             }
         } catch { /* ignore */ } finally {
             setLoading(false);
@@ -73,7 +98,13 @@ export default function FavoritesPage() {
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ product_id: productId }),
             });
-            if (res.ok) setProducts((prev) => prev.filter((p) => p.product_id !== productId));
+            if (res.ok) {
+                setProducts((prev) => {
+                    const next = prev.filter((p) => p.product_id !== productId);
+                    try { localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+                    return next;
+                });
+            }
         } catch { /* ignore */ } finally {
             setToggling((p) => { const s = new Set(p); s.delete(productId); return s; });
         }

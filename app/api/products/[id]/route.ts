@@ -23,6 +23,7 @@ const PRODUCT_DETAIL_SQL = `
     c.id   AS category_id,   c.name AS category_name, c.slug AS category_slug,
     st.id  AS store_id,      st.name AS store_name,
     st.address AS store_address, st.description AS store_description,
+    (SELECT pi2.url FROM product_images pi2 WHERE pi2.product_id = p.id ORDER BY pi2.sort_order LIMIT 1) AS thumbnail,
     COALESCE(
       JSON_AGG(DISTINCT jsonb_build_object(
         'id', pi.id, 'url', pi.url, 'sort_order', pi.sort_order
@@ -177,6 +178,9 @@ export async function GET(req: NextRequest, { params }: Params) {
         url: image.url,
         sort_order: image.sort_order,
       }));
+    }
+    if (!product.thumbnail && stagedImages.length > 0) {
+      product.thumbnail = stagedImages[0].url;
     }
 
     const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);

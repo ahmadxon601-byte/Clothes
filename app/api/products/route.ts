@@ -8,6 +8,7 @@ import { saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 import { getUiSetting } from "@/src/lib/uiSettings";
 import { MARKETING_CAMPAIGNS_SETTING_KEY, parseMarketingCampaigns } from "@/src/shared/lib/marketingCampaigns";
+import { readStagedImages } from "@/src/lib/stagedImages";
 
 function isNonCriticalStagedImageError(error: unknown) {
   const code =
@@ -149,8 +150,20 @@ export async function GET(req: NextRequest) {
       params
     );
 
+    const products = await Promise.all(
+      dataResult.rows.map(async (row) => {
+        if (row.thumbnail) return row;
+
+        const stagedImages = await readStagedImages("product", String(row.id));
+        return {
+          ...row,
+          thumbnail: stagedImages[0]?.url ?? null,
+        };
+      })
+    );
+
     return ok({
-      products: dataResult.rows,
+      products,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (e) {

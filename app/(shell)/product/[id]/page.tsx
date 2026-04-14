@@ -52,6 +52,7 @@ interface ProductDetail {
     longitude?: number | string | null;
     address?: string | null;
   } | null;
+  thumbnail?: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
   marketing_campaign?: {
@@ -129,6 +130,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     () => (product?.images?.length ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
     [product?.images]
   );
+  const displayImage = images[activeImg]?.url || product?.thumbnail || null;
   const sizeOptions = useMemo(
     () => Array.from(new Set(variants.map((v) => v.size).filter((v): v is string => Boolean(v)))),
     [variants]
@@ -416,10 +418,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <Heart size={18} className={isFav ? 'fill-red-500 text-red-500' : ''} />
                   )}
                 </button>
-                {images.length > 0 ? (
+                {displayImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={images[activeImg]?.url}
+                    src={displayImage}
                     alt={translatedName || sanitizeProductLabel(product.name, language)}
                     className="h-[min(68svh,520px)] w-full object-contain md:aspect-[4/4.65] md:rounded-[26px] md:bg-white md:object-contain dark:md:bg-[#101010]"
                   />
