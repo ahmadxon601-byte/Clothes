@@ -214,6 +214,9 @@ export default function MyProductsPage() {
   const [inviteSelections, setInviteSelections] = useState<Record<string, string[]>>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState('');
+  const [parentCategoryMenuOpen, setParentCategoryMenuOpen] = useState(false);
+  const [subcategoryMenuOpen, setSubcategoryMenuOpen] = useState(false);
+  const [campaignMenuOpen, setCampaignMenuOpen] = useState(false);
 
   useEffect(() => {
     const hidden = createOpen || Boolean(deleteProduct);
@@ -248,6 +251,19 @@ export default function MyProductsPage() {
     [categories]
   );
   const filteredCategories = subcategories.filter((category) => category.parent_id === parentCategoryId);
+  const selectedParentCategory =
+    parentCategories.find((category) => category.id === parentCategoryId) ?? null;
+  const selectedParentCategoryLabel = selectedParentCategory ? getCategoryLabel(selectedParentCategory) : p.parentCategory;
+  const selectedSubcategory =
+    filteredCategories.find((category) => category.id === form.category_id) ?? null;
+  const subcategoryPlaceholder =
+    filteredCategories.length === 0 ? "Bu kategoriya uchun subkategoriya yo'q" : p.subcategory;
+  const selectedSubcategoryLabel = selectedSubcategory ? getCategoryLabel(selectedSubcategory) : subcategoryPlaceholder;
+  const selectedCampaign =
+    campaigns.find((campaign) => campaign.id === form.marketing_campaign_id) ?? null;
+  const selectedCampaignLabel = selectedCampaign
+    ? `${selectedCampaign.name} - ${getMarketingCampaignSummary(selectedCampaign)}`
+    : 'Aksiya tanlanmagan';
 
   const loadProducts = async () => {
     try {
@@ -375,6 +391,12 @@ export default function MyProductsPage() {
       return { ...prev, category_id: nestedSubcategories[0]?.id ?? '' };
     });
   }, [categories, parentCategoryId, parentCategories, subcategories]);
+
+  useEffect(() => {
+    setParentCategoryMenuOpen(false);
+    setSubcategoryMenuOpen(false);
+    setCampaignMenuOpen(false);
+  }, [parentCategoryId, createOpen, editProduct]);
 
   const openCreate = () => {
     const defaultParent = parentCategories[0] ?? null;
@@ -931,60 +953,142 @@ export default function MyProductsPage() {
                 <label className="block">
                   <span className={subtleLabelClass}>{p.parentCategory}</span>
                   <div className="relative">
-                    <select
-                      value={parentCategoryId}
-                      onChange={(e) => setParentCategoryId(e.target.value)}
-                      className={selectClass}
+                    <button
+                      type="button"
+                      onClick={() => parentCategories.length > 0 && setParentCategoryMenuOpen((prev) => !prev)}
+                      disabled={parentCategories.length === 0}
+                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${
+                        parentCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''
+                      }`}
                     >
-                      {parentCategories.length === 0 ? (
-                        <option value="">{p.parentCategoryMissing}</option>
-                      ) : (
-                        parentCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {getCategoryLabel(category)}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                      <span className={selectedParentCategory ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}>
+                        {parentCategories.length > 0 ? selectedParentCategoryLabel : p.parentCategoryMissing}
+                      </span>
+                      <ChevronDown
+                        className={`size-4 text-[#94a3b8] transition-transform ${parentCategoryMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {parentCategoryMenuOpen && parentCategories.length > 0 && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.96)] p-2 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
+                        <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                          {parentCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              type="button"
+                              onClick={() => {
+                                setParentCategoryId(category.id);
+                                setParentCategoryMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                                parentCategoryId === category.id
+                                  ? 'bg-[#22c55e] text-[#052e16]'
+                                  : 'text-[#111111] hover:bg-black/[0.04] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'
+                              }`}
+                            >
+                              {getCategoryLabel(category)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </label>
                 <label className="block">
                   <span className={subtleLabelClass}>{p.subcategory}</span>
                   <div className="relative">
-                    <select
-                      value={filteredCategories.length === 0 ? '' : form.category_id}
-                      onChange={(e) => setForm((prev) => ({ ...prev, category_id: e.target.value }))}
+                    <button
+                      type="button"
+                      onClick={() => filteredCategories.length > 0 && setSubcategoryMenuOpen((prev) => !prev)}
                       disabled={filteredCategories.length === 0}
-                      className={`${selectClass} ${filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
+                      className={`${fieldClass} flex items-center justify-between pr-4 text-left ${
+                        filteredCategories.length === 0 ? 'cursor-not-allowed opacity-70' : ''
+                      }`}
                     >
-                      {filteredCategories.length === 0 ? (
-                        <option value="">Bu kategoriya uchun subkategoriya yo'q</option>
-                      ) : (
-                        filteredCategories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {getCategoryLabel(c)}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                      <span className={selectedSubcategory ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}>
+                        {selectedSubcategoryLabel}
+                      </span>
+                      <ChevronDown
+                        className={`size-4 text-[#94a3b8] transition-transform ${subcategoryMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {subcategoryMenuOpen && filteredCategories.length > 0 && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.96)] p-2 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
+                        <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                          {filteredCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({ ...prev, category_id: category.id }));
+                                setSubcategoryMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                                form.category_id === category.id
+                                  ? 'bg-[#22c55e] text-[#052e16]'
+                                  : 'text-[#111111] hover:bg-black/[0.04] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'
+                              }`}
+                            >
+                              {getCategoryLabel(category)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </label>
                 <label className="block">
                   <span className={subtleLabelClass}>Aksiya tanlash</span>
-                  <select
-                    value={form.marketing_campaign_id}
-                    onChange={(e) => setForm((prev) => ({ ...prev, marketing_campaign_id: e.target.value }))}
-                    className={selectClass}
-                  >
-                    <option value="">Aksiya tanlanmagan</option>
-                    {campaigns.map((campaign) => (
-                      <option key={campaign.id} value={campaign.id}>
-                        {campaign.name} - {getMarketingCampaignSummary(campaign)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCampaignMenuOpen((prev) => !prev)}
+                      className={`${fieldClass} flex items-center justify-between pr-4 text-left`}
+                    >
+                      <span className={selectedCampaign ? 'text-[#111111] dark:text-white' : 'text-[#94a3b8]'}>
+                        {selectedCampaignLabel}
+                      </span>
+                      <ChevronDown
+                        className={`size-4 text-[#94a3b8] transition-transform ${campaignMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {campaignMenuOpen && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[24px] border border-black/10 bg-[rgba(255,255,255,0.96)] p-2 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,18,18,0.98)] dark:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]">
+                        <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, marketing_campaign_id: '' }));
+                              setCampaignMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                              !form.marketing_campaign_id
+                                ? 'bg-[#22c55e] text-[#052e16]'
+                                : 'text-[#111111] hover:bg-black/[0.04] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'
+                            }`}
+                          >
+                            Aksiya tanlanmagan
+                          </button>
+                          {campaigns.map((campaign) => (
+                            <button
+                              key={campaign.id}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({ ...prev, marketing_campaign_id: campaign.id }));
+                                setCampaignMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                                form.marketing_campaign_id === campaign.id
+                                  ? 'bg-[#22c55e] text-[#052e16]'
+                                  : 'text-[#111111] hover:bg-black/[0.04] dark:text-[#d1d5db] dark:hover:bg-white/5 dark:hover:text-white'
+                              }`}
+                            >
+                              {campaign.name} - {getMarketingCampaignSummary(campaign)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <p className="mt-1 text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                     Mahsulot shu aksiya bilan ko‘rinadi va detail sahifasida ham chiqadi.
                   </p>
