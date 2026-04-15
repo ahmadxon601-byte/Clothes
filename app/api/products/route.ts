@@ -9,6 +9,7 @@ import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 import { getUiSetting } from "@/src/lib/uiSettings";
 import { MARKETING_CAMPAIGNS_SETTING_KEY, parseMarketingCampaigns } from "@/src/shared/lib/marketingCampaigns";
 import { readStagedImages } from "@/src/lib/stagedImages";
+import { ensureProductListIndexes } from "@/src/lib/productListSupport";
 
 function isNonCriticalStagedImageError(error: unknown) {
   const code =
@@ -34,6 +35,7 @@ function isNonCriticalStagedImageError(error: unknown) {
 //               store_id, min_price, max_price, on_sale, size, page, limit
 export async function GET(req: NextRequest) {
   try {
+    await ensureProductListIndexes();
     const s = req.nextUrl.searchParams;
     const sortParam = s.get("sort") ?? "newest";
     const sort = ["popular", "price_asc", "price_desc", "oldest"].includes(sortParam) ? sortParam : "newest";
@@ -130,20 +132,29 @@ export async function GET(req: NextRequest) {
          p.id, p.name, p.base_price, p.sku, p.views, p.created_at,
          c.id AS category_id, c.name AS category_name,
          st.id AS store_id, st.name AS store_name,
-         (SELECT pi.url FROM product_images pi
-          WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail,
-         ${
-           exactDiscountParamIndex
-             ? `(SELECT MIN(pv.price) FROM product_variants pv
-                 WHERE pv.product_id = p.id
-                   AND p.base_price > 0
-                   AND ROUND((1.0 - pv.price::numeric / p.base_price) * 100) = $${exactDiscountParamIndex}) AS sale_price`
-             : `(SELECT MIN(pv.price) FROM product_variants pv
-                 WHERE pv.product_id = p.id) AS sale_price`
-         }
+         thumb.thumbnail,
+         sale.sale_price
        FROM products p
        LEFT JOIN categories c  ON c.id  = p.category_id
        JOIN  stores st          ON st.id = p.store_id
+       LEFT JOIN LATERAL (
+         SELECT pi.url AS thumbnail
+         FROM product_images pi
+         WHERE pi.product_id = p.id
+         ORDER BY pi.sort_order
+         LIMIT 1
+       ) thumb ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT MIN(pv.price) AS sale_price
+         FROM product_variants pv
+         WHERE pv.product_id = p.id
+           ${
+             exactDiscountParamIndex
+               ? `AND p.base_price > 0
+           AND ROUND((1.0 - pv.price::numeric / p.base_price) * 100) = $${exactDiscountParamIndex}`
+               : ""
+           }
+       ) sale ON TRUE
        WHERE ${where}
        ORDER BY ${orderBy}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

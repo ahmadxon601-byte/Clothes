@@ -6,6 +6,7 @@ const PORT = 3010;
 const isWindows = process.platform === "win32";
 const nextDirName = process.env.NEXT_DIST_DIR?.trim() || ".next";
 const nextDir = join(process.cwd(), nextDirName);
+const forceClean = process.env.NEXT_FORCE_CLEAN === "1";
 
 function getListeningPids(port) {
   try {
@@ -74,7 +75,11 @@ function clearNextDir() {
 try {
   const pids = getListeningPids(PORT);
   if (pids.length) stopPids(pids);
-  clearNextDir();
+  if (forceClean) {
+    clearNextDir();
+  } else {
+    console.log(`[predev] keeping ${nextDirName} cache (set NEXT_FORCE_CLEAN=1 to force a clean build)`);
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[predev] setup failed: ${message}`);

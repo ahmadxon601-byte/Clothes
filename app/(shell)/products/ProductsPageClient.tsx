@@ -93,7 +93,7 @@ function ProductsPageContent({ initialProducts }: ProductsPageClientProps) {
     }) => {
         setLoading(true);
         fetchProducts({
-            limit: 100,
+            limit: 48,
             search: params.search || undefined,
             sort: (params.sort || undefined) as 'newest' | 'popular' | undefined,
             min_price: params.minPrice ? Number(params.minPrice) : undefined,
@@ -480,7 +480,13 @@ function ProductsPageContent({ initialProducts }: ProductsPageClientProps) {
                                     </button>
                                     {product.thumbnail ? (
                                         // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={product.thumbnail} alt={sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                        <img
+                                            src={product.thumbnail}
+                                            alt={sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)}
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                        />
                                     ) : (
                                         <div className="flex h-full items-center justify-center">
                                             <Package size={28} className="text-[#d1d5db]" />

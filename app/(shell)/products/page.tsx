@@ -18,7 +18,7 @@ function getBaseUrl() {
 
 async function getInitialProducts() {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/products?limit=100`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/products?limit=48`, { next: { revalidate: 60 } });
     const json = (await res.json().catch(() => ({}))) as ProductsResponse;
     return json.data?.products ?? json.products ?? [];
   } catch {

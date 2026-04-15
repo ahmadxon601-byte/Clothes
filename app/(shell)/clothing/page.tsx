@@ -45,7 +45,7 @@ function getBaseUrl() {
 
 async function getInitialProducts() {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/products?limit=80`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/products?limit=40`, { next: { revalidate: 60 } });
     const json = (await res.json().catch(() => ({}))) as ProductsResponse;
     return json.data?.products ?? json.products ?? [];
   } catch {
@@ -55,7 +55,7 @@ async function getInitialProducts() {
 
 async function getInitialCategories() {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/categories`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/categories`, { next: { revalidate: 300 } });
     const json = (await res.json().catch(() => ({}))) as CategoriesResponse;
     return json.data?.categories ?? json.categories ?? [];
   } catch {

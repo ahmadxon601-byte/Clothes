@@ -27,7 +27,7 @@ function getBaseUrl() {
 
 async function getInitialProducts() {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/products?limit=24`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/products?limit=24`, { next: { revalidate: 60 } });
     const json = (await res.json().catch(() => ({}))) as ProductsResponse;
     return json.data?.products ?? json.products ?? [];
   } catch {
@@ -37,7 +37,7 @@ async function getInitialProducts() {
 
 async function getInitialDailyDeals() {
   try {
-    const res = await fetch(`${getBaseUrl()}/api/daily-deals/active`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/daily-deals/active`, { next: { revalidate: 60 } });
     const json = (await res.json().catch(() => ({}))) as DailyDealsResponse;
     return {
       products: json.data?.products ?? json.products ?? [],

@@ -129,7 +129,7 @@ export default function ClothingPageClient({
     minPrice: string; maxPrice: string; minDiscount: string;
   }) => {
     setLoading(true);
-    const p = new URLSearchParams({ limit: '80' });
+    const p = new URLSearchParams({ limit: '40' });
     if (params.category) p.set('category', params.category);
     if (params.query.trim()) p.set('search', params.query.trim());
     if (params.minPrice) p.set('min_price', params.minPrice);
@@ -374,7 +374,13 @@ export default function ClothingPageClient({
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white dark:bg-[#242424]">
                 {product.thumbnail ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.thumbnail} alt={sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)} className="absolute inset-0 h-full w-full object-cover" />
+                  <img
+                    src={product.thumbnail}
+                    alt={sanitizeProductLabel(translatedNames[product.id] ?? product.name, language)}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#f3f4f6]">
                     <Package size={32} className="text-[#d1d5db]" />

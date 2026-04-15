@@ -19,7 +19,7 @@ import type { ApiProduct } from '../../src/lib/apiClient';
 import { formatPrice } from '../../src/shared/lib/formatPrice';
 import { repairText, repairTextTree } from '../../src/shared/lib/repairText';
 import { stripRichText } from '../../src/shared/lib/richText';
-import { translateText, type UiLanguage } from '../../src/shared/lib/translateClient';
+import { translateText, translateTexts, type UiLanguage } from '../../src/shared/lib/translateClient';
 import { cn } from '../../src/shared/lib/utils';
 import { useWebI18n } from '../../src/shared/lib/webI18n';
 import { useWebAuth } from '../../src/context/WebAuthContext';
@@ -339,16 +339,19 @@ export default function HomePageClient({
 
             if (language === 'uz') return;
 
-            const translatedPairs = await Promise.all(
-                Array.from(nameEntries.entries()).map(async ([id, label]) => {
-                    try {
-                        const translated = await translateText(label, language, detectSourceLanguage(label));
-                        return [id, normalizeTranslatedText(translated)] as const;
-                    } catch {
-                        return [id, label] as const;
-                    }
-                }),
-            );
+            const translatedMap = await translateTexts(
+                Array.from(nameEntries.entries()).map(([id, label]) => ({
+                    key: id,
+                    text: label,
+                    from: detectSourceLanguage(label),
+                })),
+                language
+            ).catch(() => nextNames);
+
+            const translatedPairs = Array.from(nameEntries.entries()).map(([id, label]) => [
+                id,
+                normalizeTranslatedText(translatedMap[id] ?? label),
+            ] as const);
 
             let translatedTitle = heroTitle;
             if (heroTitle.trim()) {
@@ -524,6 +527,7 @@ export default function HomePageClient({
                             <img
                                 src={imageFor(heroProduct)}
                                 alt={displayName(heroProduct) || 'Hero product'}
+                                decoding="async"
                                 className="aspect-[1.02] w-full rounded-[20px] object-cover transition-transform duration-500 group-hover:scale-[1.03] sm:aspect-[1.1] sm:rounded-[24px]"
                             />
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b-[20px] bg-gradient-to-t from-black/72 via-black/28 to-transparent px-3 pb-3 pt-10 sm:rounded-b-[24px] sm:px-4 sm:pb-4 sm:pt-14">
@@ -573,7 +577,13 @@ export default function HomePageClient({
                                     <Link href={`/product/${product.id}`} className="block">
                                         <div className="relative overflow-hidden rounded-[22px] bg-[#eef1f4]">
                                             <div className="pointer-events-none absolute inset-y-0 left-[-65%] z-[1] w-[42%] -skew-x-12 bg-white/20 opacity-0 blur-md transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
-                                            <img src={imageFor(product)} alt={displayName(product)} className="aspect-[0.95] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                            <img
+                                                src={imageFor(product)}
+                                                alt={displayName(product)}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="aspect-[0.95] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
                                             {discount > 0 && (
                                                 <span className="absolute left-3 top-3 rounded-full bg-[#10be33] px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#04230d] transition-transform duration-300 group-hover:scale-105">
                                                     -{discount}% {partnerCopy.saleLabel}
@@ -626,7 +636,13 @@ export default function HomePageClient({
                                     className="group rounded-[24px] border border-black/5 bg-white p-3 shadow-[0_18px_50px_-34px_rgba(17,24,39,0.28)] transition-all duration-300 hover:-translate-y-1 dark:border-white/10 dark:bg-[#151515]"
                                 >
                                     <div className="relative overflow-hidden rounded-[18px] bg-[#f0f2f5]">
-                                        <img src={imageFor(product)} alt={displayName(product)} className="aspect-[0.92] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        <img
+                                            src={imageFor(product)}
+                                            alt={displayName(product)}
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="aspect-[0.92] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
                                         <button
                                             type="button"
                                             onClick={(event) => toggleWishlist(event, product.id)}
@@ -701,6 +717,8 @@ export default function HomePageClient({
                         <img
                             src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1400&auto=format&fit=crop"
                             alt="Two businessmen meeting"
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
                         />
                     </div>
@@ -709,4 +727,3 @@ export default function HomePageClient({
         </div>
     );
 }
-

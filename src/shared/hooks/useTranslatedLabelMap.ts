@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { translateText, type UiLanguage } from '../lib/translateClient';
+import { translateTexts, type UiLanguage } from '../lib/translateClient';
 import { detectSourceLanguage } from '../lib/webProductText';
 
 type Item = {
@@ -11,16 +11,13 @@ type Item = {
 
 export function useTranslatedLabelMap(items: Item[], language: UiLanguage) {
   const [translatedLabels, setTranslatedLabels] = useState<Record<string, string>>({});
+  const itemsKey = items.map((item) => `${item.id}:${item.label}`).join('|');
   const stableItems = useMemo(
     () => items.map((item) => ({ id: item.id, label: item.label })),
-    [JSON.stringify(items)]
+    [items]
   );
   const baseLabels = useMemo(
     () => Object.fromEntries(stableItems.map((item) => [item.id, item.label])),
-    [stableItems]
-  );
-  const itemsKey = useMemo(
-    () => stableItems.map((item) => `${item.id}:${item.label}`).join('|'),
     [stableItems]
   );
 
@@ -33,18 +30,34 @@ export function useTranslatedLabelMap(items: Item[], language: UiLanguage) {
     }
 
     const run = async () => {
-      const translated = await Promise.all(
-        stableItems.map(async (item) => {
-          try {
-            return [item.id, await translateText(item.label, language, detectSourceLanguage(item.label))] as const;
-          } catch {
-            return [item.id, item.label] as const;
-          }
-        })
-      );      
+      const uniqueItems = Array.from(
+        new Map(
+          stableItems.map((item) => [`${detectSourceLanguage(item.label)}:${item.label}`, item])
+        ).values()
+      );
+      const uniqueItemsByLabel = new Map(uniqueItems.map((item) => [item.label, item]));
+
+      let translatedById: Record<string, string>;
+      try {
+        translatedById = await translateTexts(
+          uniqueItems.map((item) => ({
+            key: item.id,
+            text: item.label,
+            from: detectSourceLanguage(item.label),
+          })),
+          language
+        );
+      } catch {
+        translatedById = Object.fromEntries(uniqueItems.map((item) => [item.id, item.label]));
+      }
 
       if (!cancelled) {
-        const next = Object.fromEntries(translated);
+        const next = Object.fromEntries(
+          stableItems.map((item) => {
+            const match = uniqueItemsByLabel.get(item.label);
+            return [item.id, match ? translatedById[match.id] ?? item.label : item.label];
+          })
+        );
         setTranslatedLabels((prev) => {
           const prevKey = Object.entries(prev).map(([id, label]) => `${id}:${label}`).join('|');
           const nextKey = Object.entries(next).map(([id, label]) => `${id}:${label}`).join('|');
