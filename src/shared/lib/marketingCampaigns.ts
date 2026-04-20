@@ -128,3 +128,40 @@ export function getMarketingCampaignSummary(item: MarketingCampaign) {
   return "Yangi qo‘shilgan mahsulotlarni ajratadi";
 }
 
+export function getMarketingCampaignDiscountPercent(item: MarketingCampaign | null | undefined) {
+  if (!item || item.type !== "discount_percent") return 0;
+  const discountPercent = Number(item.config.discountPercent ?? 0);
+  if (!Number.isFinite(discountPercent)) return 0;
+  return Math.max(0, Math.min(99, Math.round(discountPercent)));
+}
+
+export function applyMarketingCampaignPrice(basePrice: number, item: MarketingCampaign | null | undefined) {
+  const normalizedBasePrice = Number(basePrice);
+  if (!Number.isFinite(normalizedBasePrice) || normalizedBasePrice <= 0) return basePrice;
+
+  const discountPercent = getMarketingCampaignDiscountPercent(item);
+  if (discountPercent <= 0) return Math.round(normalizedBasePrice);
+
+  return Math.max(1, Math.round((normalizedBasePrice * (100 - discountPercent)) / 100));
+}
+
+export function resolveProductSalePrice(
+  basePrice: number,
+  salePrice: number | null | undefined,
+  item: MarketingCampaign | null | undefined,
+) {
+  const normalizedBasePrice = Number(basePrice);
+  const normalizedSalePrice = salePrice == null ? null : Number(salePrice);
+
+  if (
+    normalizedSalePrice != null &&
+    Number.isFinite(normalizedSalePrice) &&
+    normalizedSalePrice > 0 &&
+    normalizedSalePrice < normalizedBasePrice
+  ) {
+    return Math.round(normalizedSalePrice);
+  }
+
+  const campaignPrice = applyMarketingCampaignPrice(normalizedBasePrice, item);
+  return campaignPrice < normalizedBasePrice ? campaignPrice : normalizedBasePrice;
+}

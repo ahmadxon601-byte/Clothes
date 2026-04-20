@@ -1,6 +1,12 @@
 import { NextRequest } from "next/server";
 import { query } from "@/src/lib/db";
 import { ok, fail, paginate } from "@/src/lib/auth";
+import { getUiSetting } from "@/src/lib/uiSettings";
+import {
+  MARKETING_CAMPAIGNS_SETTING_KEY,
+  parseMarketingCampaigns,
+  resolveProductSalePrice,
+} from "@/src/shared/lib/marketingCampaigns";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,8 +29,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     const dataResult = await query(
       `SELECT
-         p.id, p.name, p.base_price, p.sku, p.views, p.created_at,
+         p.id, p.name, p.base_price, p.sku, p.views, p.created_at, p.marketing_campaign_id,
          c.id AS category_id, c.name AS category_name,
+         (SELECT MIN(pv.price) FROM product_variants pv
+          WHERE pv.product_id = p.id) AS sale_price,
          (SELECT pi.url FROM product_images pi
           WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail
        FROM products p
@@ -35,8 +43,22 @@ export async function GET(req: NextRequest, { params }: Params) {
       [storeId, limit, offset]
     );
 
+    const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+    const campaigns = parseMarketingCampaigns(rawCampaigns);
+    const products = dataResult.rows.map((row) => {
+      const campaign =
+        typeof row.marketing_campaign_id === "string"
+          ? campaigns.find((item) => item.id === row.marketing_campaign_id) ?? null
+          : null;
+
+      return {
+        ...row,
+        sale_price: resolveProductSalePrice(row.base_price, row.sale_price, campaign),
+      };
+    });
+
     return ok({
-      products: dataResult.rows,
+      products,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (e) {

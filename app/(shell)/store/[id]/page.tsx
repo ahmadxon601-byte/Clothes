@@ -32,6 +32,7 @@ interface Product {
   id: string;
   name: string;
   base_price: number;
+  sale_price: number | null;
   thumbnail: string | null;
   category_name: string | null;
 }
@@ -295,11 +296,37 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
                       <Package size={24} className="text-[#d1d5db]" />
                     </div>
                   )}
+                  {(() => {
+                    const bp = Number(p.base_price);
+                    const sp = p.sale_price != null ? Number(p.sale_price) : null;
+                    const cur = sp != null && sp < bp ? sp : bp;
+                    const pct = cur < bp ? Math.round((1 - cur / bp) * 100) : 0;
+                    return pct > 0 ? (
+                      <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-[9px] font-black text-white">
+                        -{pct}%
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
                 <div className="mt-2 px-0.5">
                   {p.category_name && <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">{p.category_name}</p>}
                   <p className="mt-0.5 line-clamp-2 text-[12px] font-bold text-[#111111] dark:text-white">{sanitizeProductLabel(translatedNames[p.id] ?? p.name, language)}</p>
-                  <p className="mt-1 text-[13px] font-black text-[#00c853]">{formatPrice(Number(p.base_price), 'UZS', language)}</p>
+                  {(() => {
+                    const bp = Number(p.base_price);
+                    const sp = p.sale_price != null ? Number(p.sale_price) : null;
+                    const cur = sp != null && sp < bp ? sp : bp;
+                    const hasDis = cur < bp;
+                    return (
+                      <div className="mt-1">
+                        <p className="text-[13px] font-black text-[#00c853]">{formatPrice(cur, 'UZS', language)}</p>
+                        {hasDis ? (
+                          <p className="text-[11px] font-semibold text-[#00a645] line-through">
+                            {formatPrice(bp, 'UZS', language)}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </div>
               </Link>
             ))}

@@ -53,6 +53,7 @@ interface ProductDetail {
     address?: string | null;
   } | null;
   thumbnail?: string | null;
+  effective_sale_price?: number | null;
   images: ProductImage[];
   variants: ProductVariant[];
   marketing_campaign?: {
@@ -148,7 +149,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       variants[0]
     );
   }, [variants, selectedSize, selectedColor]);
-  const displayPrice = selectedVariant ? selectedVariant.price : product?.base_price ?? 0;
+  const displayPrice = selectedVariant?.price ?? product?.effective_sale_price ?? product?.base_price ?? 0;
   const {
     text: storeAddressText,
     lat: storeLatFromAddress,
@@ -468,21 +469,26 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   </span>
                   <span className="text-[14px] font-bold text-[#111111] dark:text-white">{product.marketing_campaign.name}</span>
                 </div>
-                {product.marketing_campaign.summary ? (
-                  <p className="mt-2 text-[13px] leading-6 text-[#46604c] dark:text-[#b7d7be]">{product.marketing_campaign.summary}</p>
-                ) : null}
               </div>
             ) : null}
 
-            <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-[24px] border border-[#00c853]/20 bg-[linear-gradient(135deg,rgba(0,200,83,0.08),rgba(0,200,83,0.02))] px-4 py-4 sm:px-5">
-              <p className="min-w-0 break-words text-[clamp(28px,8vw,32px)] font-black leading-none text-[#00c853]">{formatPrice(Number(displayPrice), 'UZS', language)}</p>
+            <div className="mt-5 rounded-[24px] border border-[#00c853]/20 bg-[linear-gradient(135deg,rgba(0,200,83,0.08),rgba(0,200,83,0.02))] px-4 py-4 sm:px-5">
+              <div className="flex min-w-0 items-end justify-between gap-3">
+                <p className="min-w-0 break-words text-[clamp(28px,8vw,32px)] font-black leading-none text-[#00c853]">
+                  {formatPrice(Number(displayPrice), 'UZS', language)}
+                </p>
+                {displayPrice < product.base_price && (
+                  <p className="shrink-0 pb-1 text-right text-[14px] font-semibold text-[#00a645] line-through sm:text-[17px]">
+                    {formatPrice(Number(product.base_price), 'UZS', language)}
+                  </p>
+                )}
+              </div>
               {displayPrice < product.base_price && (
-                <>
-                  <p className="break-words text-[14px] font-semibold text-[#9ca3af] line-through sm:text-[18px]">{formatPrice(Number(product.base_price), 'UZS', language)}</p>
+                <div className="mt-2 flex justify-end">
                   <span className="inline-flex min-h-8 items-center rounded-full bg-red-500 px-2.5 py-0.5 text-[12px] font-black text-white">
                     -{Math.round((1 - displayPrice / product.base_price) * 100)}%
                   </span>
-                </>
+                </div>
               )}
             </div>
 

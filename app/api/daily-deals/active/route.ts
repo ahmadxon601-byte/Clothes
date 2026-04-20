@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { ok, fail } from "@/src/lib/auth";
 import { query } from "@/src/lib/db";
 import { ensureDailyDealTables } from "@/src/lib/dailyDeals";
+import { getUiSetting } from "@/src/lib/uiSettings";
+import {
+  MARKETING_CAMPAIGNS_SETTING_KEY,
+  parseMarketingCampaigns,
+  resolveProductSalePrice,
+} from "@/src/shared/lib/marketingCampaigns";
 
 export async function GET(_req: NextRequest) {
   try {
@@ -9,7 +15,7 @@ export async function GET(_req: NextRequest) {
     const result = await query(
       `
       SELECT
-        p.id, p.name, p.base_price, p.sku, p.views, p.created_at,
+        p.id, p.name, p.base_price, p.sku, p.views, p.created_at, p.marketing_campaign_id,
         c.id AS category_id, c.name AS category_name,
         st.id AS store_id, st.name AS store_name,
         (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.sort_order LIMIT 1) AS thumbnail,
@@ -43,7 +49,21 @@ export async function GET(_req: NextRequest) {
         AND st.is_active = TRUE
       `
     );
-    return ok({ products: result.rows, expires_at: expiresResult.rows[0]?.expires_at ?? null });
+    const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+    const campaigns = parseMarketingCampaigns(rawCampaigns);
+    const products = result.rows.map((row) => {
+      const campaign =
+        typeof row.marketing_campaign_id === "string"
+          ? campaigns.find((item) => item.id === row.marketing_campaign_id) ?? null
+          : null;
+
+      return {
+        ...row,
+        sale_price: resolveProductSalePrice(row.base_price, row.sale_price, campaign),
+      };
+    });
+
+    return ok({ products, expires_at: expiresResult.rows[0]?.expires_at ?? null });
   } catch (e) {
     console.error("[daily-deals/active GET]", e);
     return fail("Internal server error", 500);

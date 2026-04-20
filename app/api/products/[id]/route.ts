@@ -9,10 +9,13 @@ import { deleteStagedImages, readStagedImages, saveStagedImages } from "@/src/li
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 import { getUiSetting } from "@/src/lib/uiSettings";
 import {
+  applyMarketingCampaignPrice,
   getMarketingCampaignSummary,
   MARKETING_CAMPAIGNS_SETTING_KEY,
   parseMarketingCampaigns,
+  resolveProductSalePrice,
   resolveMarketingCampaignLabel,
+  type MarketingCampaign,
 } from "@/src/shared/lib/marketingCampaigns";
 
 type Params = { params: Promise<{ id: string }> };
@@ -189,6 +192,13 @@ export async function GET(req: NextRequest, { params }: Params) {
     const marketingCampaign = marketingCampaignId
       ? campaigns.find((item) => item.id === marketingCampaignId) ?? null
       : null;
+    if (Array.isArray(product.variants)) {
+      product.variants = product.variants.map((variant: Record<string, unknown>) => ({
+        ...variant,
+        price: resolveProductSalePrice(product.base_price, Number(variant.price), marketingCampaign),
+      }));
+    }
+    product.effective_sale_price = resolveProductSalePrice(product.base_price, null, marketingCampaign);
     product.marketing_campaign = marketingCampaign
       ? {
           id: marketingCampaign.id,
@@ -285,6 +295,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { images, variants, marketing_campaign_id, ...rest } = parsed.data;
 
     let selectedCampaignId: string | null | undefined = marketing_campaign_id;
+    let selectedCampaign: MarketingCampaign | null = null;
     if (marketing_campaign_id !== undefined) {
       if (!marketing_campaign_id) {
         selectedCampaignId = null;
@@ -295,8 +306,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
         );
         if (!campaign) return fail("Selected campaign not found", 422);
         selectedCampaignId = campaign.id;
+        selectedCampaign = campaign;
       }
     }
+
+    const normalizedVariants = variants?.map((variant) => ({
+      ...variant,
+      price: applyMarketingCampaignPrice(variant.price, selectedCampaign),
+    }));
 
     const sellerChangedData =
       images !== undefined ||
@@ -319,7 +336,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         ...(Object.entries(rest).some(([, val]) => val === null) ? Object.fromEntries(Object.entries(rest).filter(([, val]) => val === null)) : {}),
         ...(marketing_campaign_id !== undefined ? { marketing_campaign_id: selectedCampaignId } : {}),
         ...(images !== undefined ? { images_changed: true } : {}),
-        ...(variants !== undefined ? { variants } : {}),
+        ...(variants !== undefined ? { variants: normalizedVariants } : {}),
       };
 
       await query(
@@ -415,10 +432,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
         }
       }
 
-      if (variants !== undefined) {
+      if (normalizedVariants !== undefined) {
         await client.query("DELETE FROM product_variants WHERE product_id = $1", [id]);
         const sku = (product as { sku?: string }).sku ?? existingProduct?.sku ?? "PRD";
-        for (const v of variants) {
+        for (const v of normalizedVariants) {
           const vSku = genVariantSku(sku, v.size, v.color);
           await client.query(
             `INSERT INTO product_variants (product_id, size, color, price, stock, sku) VALUES ($1, $2, $3, $4, $5, $6)`,

@@ -12,6 +12,8 @@ import { RichTextEditor } from '../../../src/shared/ui/RichTextEditor';
 import { stripRichText } from '../../../src/shared/lib/richText';
 import { useWebI18n } from '../../../src/shared/lib/webI18n';
 import {
+  applyMarketingCampaignPrice,
+  getMarketingCampaignDiscountPercent,
   getMarketingCampaignSummary,
   MARKETING_CAMPAIGNS_SETTING_KEY,
   parseMarketingCampaigns,
@@ -264,6 +266,11 @@ export default function MyProductsPage() {
   const selectedCampaignLabel = selectedCampaign
     ? `${selectedCampaign.name} - ${getMarketingCampaignSummary(selectedCampaign)}`
     : 'Aksiya tanlanmagan';
+  const previewBasePrice = Number(form.base_price) || 0;
+  const previewDiscountPercent = getMarketingCampaignDiscountPercent(selectedCampaign);
+  const previewCurrentPrice = previewBasePrice > 0
+    ? applyMarketingCampaignPrice(previewBasePrice, selectedCampaign)
+    : 0;
 
   const loadProducts = async () => {
     try {
@@ -555,7 +562,7 @@ export default function MyProductsPage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setFormErrors({});
     setSaving(true);
-    const variantPayload = { variants: [{ price: Number(form.base_price), stock: Number(form.stock) || 1 }] };
+    const variantPayload = { variants: [{ price: previewCurrentPrice || Number(form.base_price), stock: Number(form.stock) || 1 }] };
     try {
       let res: Response;
       const imagePayload = formImages.length > 0
@@ -1092,6 +1099,29 @@ export default function MyProductsPage() {
                   <p className="mt-1 text-[12px] text-[#6b7280] dark:text-[#9ca3af]">
                     Mahsulot shu aksiya bilan ko‘rinadi va detail sahifasida ham chiqadi.
                   </p>
+                  {previewBasePrice > 0 && (
+                    <div className="mt-3 rounded-[20px] border border-[#22c55e]/20 bg-[#effff2] px-4 py-3 dark:bg-[#0f2012]">
+                      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#0d8f2a]">
+                        {previewDiscountPercent > 0 ? `${previewDiscountPercent}% chegirma preview` : 'Narx preview'}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {previewDiscountPercent > 0 ? (
+                          <>
+                            <span className="text-[13px] font-semibold text-[#6b7280] line-through dark:text-[#9ca3af]">
+                              {previewBasePrice.toLocaleString()} UZS
+                            </span>
+                            <span className="text-[18px] font-black text-[#0d8f2a]">
+                              {previewCurrentPrice.toLocaleString()} UZS
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[18px] font-black text-[#0d8f2a]">
+                            {previewCurrentPrice.toLocaleString()} UZS
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </label>
                 <label className="block">
                   <span className={subtleLabelClass}>{p.description}</span>

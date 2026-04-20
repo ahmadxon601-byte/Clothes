@@ -7,7 +7,13 @@ import { getProductReviewSupport } from "@/src/lib/productReview";
 import { saveStagedImages } from "@/src/lib/stagedImages";
 import { notifyAdminsViaTelegram } from "@/src/server/telegram/admin-notifier";
 import { getUiSetting } from "@/src/lib/uiSettings";
-import { MARKETING_CAMPAIGNS_SETTING_KEY, parseMarketingCampaigns } from "@/src/shared/lib/marketingCampaigns";
+import {
+  applyMarketingCampaignPrice,
+  MARKETING_CAMPAIGNS_SETTING_KEY,
+  parseMarketingCampaigns,
+  resolveProductSalePrice,
+  type MarketingCampaign,
+} from "@/src/shared/lib/marketingCampaigns";
 import { readStagedImages } from "@/src/lib/stagedImages";
 import { ensureProductListIndexes } from "@/src/lib/productListSupport";
 
@@ -130,6 +136,7 @@ export async function GET(req: NextRequest) {
     const dataResult = await query(
       `SELECT
          p.id, p.name, p.base_price, p.sku, p.views, p.created_at,
+         ${reviewSupport.hasMarketingCampaignId ? "p.marketing_campaign_id," : "NULL::text AS marketing_campaign_id,"}
          c.id AS category_id, c.name AS category_name,
          st.id AS store_id, st.name AS store_name,
          thumb.thumbnail,
@@ -161,13 +168,26 @@ export async function GET(req: NextRequest) {
       params
     );
 
+    const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
+    const campaigns = parseMarketingCampaigns(rawCampaigns);
+
     const products = await Promise.all(
       dataResult.rows.map(async (row) => {
-        if (row.thumbnail) return row;
+        const campaign =
+          typeof row.marketing_campaign_id === "string"
+            ? campaigns.find((item) => item.id === row.marketing_campaign_id) ?? null
+            : null;
+
+        const normalizedRow = {
+          ...row,
+          sale_price: resolveProductSalePrice(row.base_price, row.sale_price, campaign),
+        };
+
+        if (row.thumbnail) return normalizedRow;
 
         const stagedImages = await readStagedImages("product", String(row.id));
         return {
-          ...row,
+          ...normalizedRow,
           thumbnail: stagedImages[0]?.url ?? null,
         };
       })
@@ -248,6 +268,7 @@ export async function POST(req: NextRequest) {
       parsed.data;
 
     let selectedCampaignId: string | null = null;
+    let selectedCampaign: MarketingCampaign | null = null;
     if (marketing_campaign_id) {
       const rawCampaigns = await getUiSetting(MARKETING_CAMPAIGNS_SETTING_KEY);
       const campaign = parseMarketingCampaigns(rawCampaigns).find(
@@ -255,7 +276,13 @@ export async function POST(req: NextRequest) {
       );
       if (!campaign) return fail("Selected campaign not found", 422);
       selectedCampaignId = campaign.id;
+      selectedCampaign = campaign;
     }
+
+    const normalizedVariants = variants?.map((variant) => ({
+      ...variant,
+      price: applyMarketingCampaignPrice(variant.price, selectedCampaign),
+    }));
 
     // Find store owned by this seller
     let storeId: string;
@@ -334,8 +361,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Insert variants
-      if (variants?.length) {
-        for (const v of variants) {
+      if (normalizedVariants?.length) {
+        for (const v of normalizedVariants) {
           const vSku = genVariantSku(sku, v.size, v.color);
           await client.query(
             `INSERT INTO product_variants (product_id, size, color, price, stock, sku)

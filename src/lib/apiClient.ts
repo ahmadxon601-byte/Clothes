@@ -102,6 +102,7 @@ export interface Pagination {
 export interface ApiProductDetail extends ApiProduct {
     description: string | null;
     category_slug: string | null;
+    effective_sale_price?: number | null;
     images: { id: string; url: string; sort_order: number }[];
     variants: { id: string; size: string | null; color: string | null; price: number; stock: number; sku: string }[];
     location: { latitude: number; longitude: number; address: string } | null;

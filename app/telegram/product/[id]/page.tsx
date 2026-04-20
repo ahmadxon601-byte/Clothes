@@ -208,7 +208,7 @@ export default function TgProductDetailPage({ params }: { params: Promise<{ id: 
 
                 {(() => {
                     const v = product.variants?.[0];
-                    const currentPrice = v?.price ?? product.base_price;
+                    const currentPrice = v?.price ?? product.effective_sale_price ?? product.base_price;
                     const basePrice = product.base_price;
                     const hasDiscount = currentPrice < basePrice;
                     const discountPct = hasDiscount ? Math.round((1 - currentPrice / basePrice) * 100) : 0;
