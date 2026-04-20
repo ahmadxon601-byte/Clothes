@@ -11,6 +11,7 @@ import {
   getUploadsDir,
   isUploadStorageError,
 } from "@/src/lib/uploadStorage";
+import { cleanupOrphanedUploads } from "@/src/lib/uploadCleanup";
 
 const MAX_UPLOAD_SIZE = 4 * 1024 * 1024;
 const MIME_TO_EXT: Record<string, string> = {
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
 
     const filename = `${user.userId}_${randomUUID()}.${detectedExt}`;
     await writeFile(path.join(uploadDir, filename), buffer);
+    await cleanupOrphanedUploads();
 
     return ok({ url: getUploadPublicUrl(filename) });
   } catch (e) {
@@ -128,6 +130,8 @@ export async function DELETE(req: NextRequest) {
     } catch {
       // Ignore missing files and keep delete idempotent.
     }
+
+    await cleanupOrphanedUploads(true);
 
     return ok({ deleted: true });
   } catch (e) {

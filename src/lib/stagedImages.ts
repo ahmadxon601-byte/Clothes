@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { getUploadAbsolutePathFromUrl } from "@/src/lib/uploadStorage";
+import { cleanupOrphanedUploads } from "@/src/lib/uploadCleanup";
 
 export type StagedImage = {
   url: string;
@@ -123,6 +124,7 @@ export async function deleteStagedImages(kind: EntityKind, entityId: string) {
   } catch {
     // Ignore missing staging files.
   }
+  await cleanupOrphanedUploads();
 }
 
 export async function purgeStagedImages(kind: EntityKind, entityId: string) {
@@ -131,6 +133,7 @@ export async function purgeStagedImages(kind: EntityKind, entityId: string) {
     await deleteLocalUploads(images);
   }
   await deleteStagedImages(kind, entityId);
+  await cleanupOrphanedUploads(true);
 }
 
 export async function scheduleStagedImageDeletion(kind: EntityKind, entityId: string) {

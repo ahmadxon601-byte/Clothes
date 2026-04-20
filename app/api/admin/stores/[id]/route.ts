@@ -3,6 +3,7 @@ import pool, { query } from "@/src/lib/db";
 import { ok, fail, requireRole, AuthError } from "@/src/lib/auth";
 import { logAction } from "@/src/lib/audit";
 import { purgeStagedImages } from "@/src/lib/stagedImages";
+import { cleanupOrphanedUploads } from "@/src/lib/uploadCleanup";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -44,6 +45,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       entityId: id,
       details: { is_active: body.is_active, image_url: body.image_url ?? undefined },
     });
+    await cleanupOrphanedUploads();
 
     return ok({ store: result.rows[0] });
   } catch (e) {
@@ -98,6 +100,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       entityId: id,
       details: { name: result.rows[0].name, deleted_products: deletedProducts },
     });
+    await cleanupOrphanedUploads(true);
 
     return ok({ message: "Store deleted" });
   } catch (e) {
